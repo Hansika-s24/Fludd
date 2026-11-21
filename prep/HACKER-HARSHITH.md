@@ -310,7 +310,7 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 - [ ] G1d `.claude/` tooling committed (36 skills, 9 agents)
 - [ ] G1e `prep/` committed: PLAN, both hacker docs, research 01 to 05 (or kept local by organizer ruling)
 - [x] G1f `docs/contracts.md` written, with "What the interface can call". Done 11:55 with exact names; items 1 to 4 marked "to be agreed"
-- [ ] G1g Scaffold with all packages installed; CI green
+- [x] G1g Scaffold with all packages installed; CI green. Green from `42d1c94` (web, pipeline, gitleaks)
 - [x] G1h Toy fixture committed; path in `docs/contracts.md`. `web/public/data/toy/`, 6 contract tests
 - [x] G1i Stubs in `web/lib/` and placeholder routes in `web/app/api/`. All rows incl. real-estate extras (`findBetterOptions`, `/api/gemini/remedies`)
 - [ ] G1j "Scaffold pushed" said; those folders handed to Hansika
