@@ -1,11 +1,11 @@
-// Liveness plus the data manifest version the server sees.
+import { apiError } from "@/lib/api";
 import { loadManifestFromDisk } from "@/lib/reports/data";
 
 export async function GET() {
   try {
-    const m = await loadManifestFromDisk();
-    return Response.json({ status: "ok", dataVersion: m.version });
+    const { version } = await loadManifestFromDisk();
+    return Response.json({ status: "ok", dataVersion: version });
   } catch {
-    return Response.json({ status: "degraded", dataVersion: "unavailable" }, { status: 503 });
+    return apiError(503, "manifest_unavailable", "The data manifest is unavailable.");
   }
 }

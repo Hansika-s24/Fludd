@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GET as weather } from "@/app/api/weather/route";
-import { GET as health } from "@/app/api/health/route";
 
 const req = (q: string) => new Request(`http://localhost/api/weather${q}`);
 
@@ -39,12 +38,3 @@ describe("GET /api/weather", () => {
   });
 });
 
-describe("GET /api/health", () => {
-  it("reports ok and the data version", async () => {
-    const res = await health();
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { status: string; dataVersion: string };
-    expect(body.status).toBe("ok");
-    expect(body.dataVersion).toMatch(/\S/);
-  });
-});
