@@ -6,6 +6,7 @@ import { cellIndex, depthAtCell, loadGold, loadLayer, loadLevels } from "@/lib/d
 import type { GoldData, Hour, LayerName, Levels, LngLat, PumpState, Scenario } from "@/lib/types";
 import { STORM_WORDS } from "@/components/ui/storm-words";
 import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
+import { onBootDone } from "@/components/boot/boot-signal";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
 setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -124,11 +125,19 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     let disposed = false;
     let breathe = 0;
 
+    // Parsing the flood data blocks the main thread for a few hundred ms (much longer on a phone), which froze the
+    // intro film. Tiles load meanwhile off the main thread; the data waits until the intro hands over (6 s at most).
+    const afterIntro = new Promise<void>((resolve) => {
+      onBootDone(resolve);
+      window.setTimeout(resolve, 6000);
+    });
     ready.current = Promise.all([
       new Promise<void>((resolve) => m.once("load", () => resolve())),
-      loadGold().then((g) => {
-        gold.current = g;
-      }),
+      afterIntro
+        .then(() => loadGold())
+        .then((g) => {
+          gold.current = g;
+        }),
     ]).then(() => {
       const g = gold.current;
       if (disposed || !g || m.getSource("flood-water")) return;

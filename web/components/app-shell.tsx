@@ -67,9 +67,11 @@ export function AppShell() {
   const [route, setRoute] = useState<LngLat[] | null>(null);
   const onError = useCallback((m: string) => setError(m), []);
 
+  // The flood data loads once the intro is out of the way, so parsing it never freezes the intro film.
   useEffect(() => {
+    if (!arrived) return;
     loadGold().then((g) => setManifest(g.manifest), (e: unknown) => onError(e instanceof Error ? e.message : "The flood data failed to load"));
-  }, [onError]);
+  }, [arrived, onError]);
 
   // The intro hands over (or was never shown); never wait longer than the fallback.
   useEffect(() => {
@@ -87,7 +89,7 @@ export function AppShell() {
   const placeKey = place ? place.position.join(",") : null;
 
   useEffect(() => {
-    if (!place) return;
+    if (!place || !arrived) return;
     let stale = false;
     gradeFor(place.position).then(
       (grade) => !stale && setGraded({ place, grade }),
@@ -98,7 +100,7 @@ export function AppShell() {
     };
     // placeKey stands for place: a new object with the same position needs no new grade.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placeKey]);
+  }, [placeKey, arrived]);
 
   function onPick(match: AddressMatch | null, err?: string) {
     setError(null);
