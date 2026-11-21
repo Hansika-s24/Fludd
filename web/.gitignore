@@ -43,3 +43,7 @@ next-env.d.ts
 .vercel
 .env*
 /public/maplibre-gl-worker.mjs
+
+# Playwright end-to-end output
+/test-results/
+/playwright-report/
