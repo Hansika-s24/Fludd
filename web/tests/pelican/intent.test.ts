@@ -73,3 +73,21 @@ describe("parseIntent", () => {
     expect(r).toEqual({ intent: { kind: "category", category: "grocery", vehicle: "foot" }, source: "gemini" });
   });
 });
+
+describe("fallbackIntent, everyday words and typos", () => {
+  it.each([
+    ["fopod", "grocery"],
+    ["I'm hungry", "grocery"],
+    ["need water and diapers", "grocery"],
+    ["groceires", "grocery"],
+    ["my kid is sick", "hospital"],
+    ["need my insulin", "pharmacy"],
+    ["low on fuel", "gas"],
+    ["somewhere dry to stay", "shelter"],
+  ])("%s → %s", (text, category) => {
+    expect(fallbackIntent(text)).toMatchObject({ kind: "category", category });
+  });
+  it("still says unclear for nonsense", () => {
+    expect(fallbackIntent("blorp zzz").kind).toBe("unclear");
+  });
+});
