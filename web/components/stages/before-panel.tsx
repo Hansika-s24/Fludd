@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useProfile } from "@/components/onboarding/profile";
+import { PropertyCheck } from "@/components/property-check/property-check";
 import { GradeCard } from "@/components/report-card/grade-card";
 import { SituationAdvice } from "@/components/stages/situation-advice";
 import { Group } from "@/components/ui/surface";
@@ -110,6 +111,7 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
   return (
     <>
       <GradeCard label={place.label} grade={grade} />
+      <PropertyCheck key={place.label} grade={grade} />
 
       <Group title="Flood history nearby">
         {history ? (

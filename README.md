@@ -16,7 +16,7 @@ Type any address near USF and get a flood report card: a letter grade, where the
 - **Grade** (`web/lib/grade/`): the letter comes from the smallest storm that puts 6 in or more of water at the building. Notches and caps (pump dependence, deep water at the floor, Milton damage within 100 m) can only lower it. A range and "low confidence" come from rainfall at the edges of the NOAA confidence interval.
 - **Routing** (`web/lib/routing/`, TypeScript in a web worker): the real OpenStreetMap road graph (6,481 junctions, 9,064 segments). Closing hours per vehicle class, time-aware best route, cut-off time (widest-path search), rescue reach (multi-source search from fire stations) and latest safe departure.
 - **Interface** (`web/app/`, `web/components/`): one map, one surface. Before, during and after a flood:
-  - **Before:** grade, flood history nearby, drainage network, steps that fit your home (own or rent, floor) and similar homes nearby with a better grade.
+  - **Before:** grade, flood history nearby, drainage network, steps that fit your home (own or rent, floor) and similar homes nearby with a better grade. For an address you do not live at yet, a checklist for buying, renting or building there, made from the same report.
   - **During:** water at the door hour by hour, move-your-car time, fire truck reach, last way out, live National Weather Service alerts, and "Ask Pelican" for a trip that avoids roads the model closes.
   - **After:** what Milton did at the address, what the pumps changed, and resident photo reports checked by a person before they appear.
 - **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server.
