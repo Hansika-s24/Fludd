@@ -29,8 +29,8 @@ let decided: Mode | null = null;
 function decideMode(): Mode {
   if (decided) return decided;
   // The intro is the loading animation: it plays on every open (the flood data loads after it, see map-view).
-  // The admin screen is a work tool, and reduced motion means no film: both skip it.
-  decided = window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
+  // The admin screen is a work tool, the guided demos open many times in a row, and reduced motion means no film: all skip it.
+  decided = /^\/(admin|demo)/.test(window.location.pathname) || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
   return decided;
 }
 

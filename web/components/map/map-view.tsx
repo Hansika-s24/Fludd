@@ -85,10 +85,21 @@ export interface MapViewProps {
   route: LngLat[] | null;
   /** A tap or click on the map: grade that spot (a building, usually). */
   onSelect?: (position: LngLat) => void;
+  /** Extra labelled rings, used by the guided demos. Nothing is drawn when this is absent. */
+  marks?: MapMark[];
   onError: (message: string) => void;
 }
 
-export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onSelect, onError }: MapViewProps) {
+/** A ring on the map: `size` is its diameter in px, `color` any CSS colour, `label` a short caption under it. */
+export interface MapMark {
+  id: string;
+  position: LngLat;
+  color: string;
+  size: number;
+  label: string;
+}
+
+export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onSelect, marks, onError }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -96,6 +107,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
   const marker = useRef<Marker | null>(null);
   const ready = useRef<Promise<void> | null>(null);
   const pinMarkers = useRef<Marker[]>([]);
+  const markMarkers = useRef(new Map<string, Marker>());
   // What the water layer shows right now, for the depth readout under the pointer.
   const shown = useRef<{ levels: Levels; hour: Hour; scenario: Scenario } | null>(null);
   const select = useRef(onSelect);
@@ -340,6 +352,34 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     add(pins.home, "Your home", `<svg ${stroke}><path d="m3 11 9-7 9 7M5 10v10h14V10"/></svg>`);
     add(pins.car, "Your car", `<svg ${stroke}><path d="M5 17h14v-5l-2-5H7l-2 5v5Z"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/></svg>`);
   }, [pins.home, pins.car]);
+
+  // Demo marks, kept by id so a ring that is already on the map does not re-enter when another arrives.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const wanted = new Map((marks ?? []).map((k) => [k.id, k]));
+    for (const [id, mk] of markMarkers.current) {
+      if (wanted.has(id)) continue;
+      mk.remove();
+      markMarkers.current.delete(id);
+    }
+    for (const k of wanted.values()) {
+      if (markMarkers.current.has(k.id)) continue;
+      // MapLibre positions the outer element with a transform, so the entrance animation lives on an inner one.
+      const el = document.createElement("div");
+      const ring = document.createElement("div");
+      ring.className = "map-mark pop-in";
+      ring.style.setProperty("--mark-size", `${k.size}px`);
+      ring.style.setProperty("--mark-color", k.color);
+      ring.setAttribute("role", "img");
+      ring.setAttribute("aria-label", k.label);
+      const caption = document.createElement("span");
+      caption.textContent = k.label;
+      ring.appendChild(caption);
+      el.appendChild(ring);
+      markMarkers.current.set(k.id, new Marker({ element: el }).setLngLat(k.position).addTo(m));
+    }
+  }, [marks]);
 
   // The searched address.
   useEffect(() => {
