@@ -127,5 +127,6 @@ CI runs lint, typecheck, both test suites and a secret scan on every push.
 - `docs/privacy.md`: what is collected, how reports stay anonymous, GDPR-style rights, and rules for public-safety cameras.
 - `docs/shortcut.md`: the "Report flooding" and "Flood brief" iPhone Shortcuts, and Home Screen widget options.
 - `docs/demo-script.md`: the 3-minute judging walkthrough.
+- `docs/food-share.md`: design for restaurants giving food to neighbours during a flood (giver and receiver portals, anonymous by design). Not built yet.
 - `prep/`: planning and research notes written before the event. They contain no code.
 - `design/boot/`: the boot animation's references and the earlier Blender build. The shipped intro is `web/components/boot/`.
