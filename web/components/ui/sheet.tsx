@@ -6,6 +6,8 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 /** Height of the phone tab bar above the home indicator. */
 export const TAB_BAR_PX = 58;
 const PEEK_PX = 200;
+/** Fired on window to lower the phone sheet to half height, if it is higher. */
+export const SHEET_HALF_EVENT = "fludd:sheet-half";
 
 const narrowQuery = "(max-width: 767px)";
 const subscribeNarrow = (cb: () => void) => {
@@ -55,6 +57,18 @@ export function Sheet({
   useEffect(() => {
     y.set(height - PEEK_PX);
   }, [height, y]);
+
+  // Something drawn on the map (a Pelican route) asks for the sheet at half so it shows above it.
+  const half = snaps[1];
+  useEffect(() => {
+    const lower = () => {
+      if (y.get() >= half) return;
+      if (reduce) y.set(half);
+      else animate(y, half, { type: "spring", bounce: 0.2, duration: 0.3 });
+    };
+    window.addEventListener(SHEET_HALF_EVENT, lower);
+    return () => window.removeEventListener(SHEET_HALF_EVENT, lower);
+  }, [half, reduce, y]);
 
   function settle(velocity: number) {
     const target = y.get() + project(velocity);

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
 import { loadGold, loadLayer, loadLevels } from "@/lib/data";
 import type { GoldData, Hour, LayerName, LngLat, PumpState, Scenario } from "@/lib/types";
+import { SHEET_HALF_EVENT, TAB_BAR_PX } from "@/components/ui/sheet";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
 setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -210,19 +211,32 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     if (!m) return;
     (async () => {
       await ready.current;
-      const data: GeoJSON.Feature = { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route ?? [] } };
-      const src = m.getSource("pelican-route") as { setData?: (d: GeoJSON.Feature) => void } | undefined;
+      const end = route && route.length > 1 ? route[route.length - 1] : null;
+      const data: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: [
+          { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route ?? [] } },
+          ...(end ? [{ type: "Feature" as const, properties: {}, geometry: { type: "Point" as const, coordinates: end } }] : []),
+        ],
+      };
+      const src = m.getSource("pelican-route") as { setData?: (d: GeoJSON.FeatureCollection) => void } | undefined;
       if (src?.setData) src.setData(data);
       else {
         m.addSource("pelican-route", { type: "geojson", data });
-        m.addLayer({ id: "pelican-route-casing", type: "line", source: "pelican-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9 } });
-        m.addLayer({ id: "pelican-route", type: "line", source: "pelican-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#0a6cff", "line-width": 5 } });
+        m.addLayer({ id: "pelican-route-casing", type: "line", source: "pelican-route", filter: ["==", ["geometry-type"], "LineString"], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9 } });
+        m.addLayer({ id: "pelican-route", type: "line", source: "pelican-route", filter: ["==", ["geometry-type"], "LineString"], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#0a6cff", "line-width": 5 } });
+        // The destination: a dot at the end of the line.
+        m.addLayer({ id: "pelican-route-end", type: "circle", source: "pelican-route", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 7, "circle-color": "#0a6cff", "circle-stroke-color": "#ffffff", "circle-stroke-width": 3 } });
       }
       if (route && route.length > 1) {
         let [w, s, e, n] = [route[0][0], route[0][1], route[0][0], route[0][1]];
         for (const [x, y] of route) { w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); }
         const narrow = window.matchMedia("(max-width: 767px)").matches;
-        m.fitBounds([[w, s], [e, n]], { padding: narrow ? { top: 40, left: 40, right: 40, bottom: window.innerHeight * 0.5 } : { top: 60, right: 60, bottom: 60, left: 440 }, maxZoom: 16.5 });
+        // The padding below assumes the phone sheet at half: put it there.
+        if (narrow) window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+        // flyTo leaves its padding on the map and fitBounds adds to it: clear it so the fit is the same every time.
+        m.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
+        m.fitBounds([[w, s], [e, n]], { padding: narrow ? { top: 100, left: 40, right: 40, bottom: window.innerHeight * 0.5 + TAB_BAR_PX + 24 } : { top: 60, right: 60, bottom: 60, left: 440 }, maxZoom: 16, pitch: 0 });
       }
     })().catch(() => undefined);
   }, [route]);
