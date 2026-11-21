@@ -34,7 +34,7 @@ export function StormControls({ scenario, pump, hour, hours, hourZero, onScenari
             role="radio"
             aria-checked={scenario === s.key}
             onClick={() => onScenario(s.key)}
-            className={`pressable h-9 rounded-[calc(var(--radius-control)-2px)] text-footnote font-medium
+            className={`pressable h-11 whitespace-nowrap rounded-[calc(var(--radius-control)-2px)] text-footnote font-medium
               ${scenario === s.key ? "bg-group text-label shadow-[var(--shadow-control)]" : "text-label-2"}`}
           >
             {s.label}

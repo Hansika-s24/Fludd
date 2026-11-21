@@ -8,6 +8,6 @@ export const STORM_WORDS: Record<Scenario, { short: string; name: string; often:
   "10yr": { short: "Heavy rain", name: "Heavy summer rain", often: "Likely in any given decade" },
   "25yr": { short: "Big storm", name: "A big storm", often: "A few times in a lifetime" },
   "100yr": { short: "Hurricane", name: "Hurricane-level rain", often: "About a 1 in 4 chance over a 30-year mortgage" },
-  "500yr": { short: "Worst case", name: "Worst-case rain", often: "About a 1 in 17 chance over 30 years" },
+  "500yr": { short: "Extreme", name: "Worst-case rain", often: "About a 1 in 17 chance over 30 years" },
   milton: { short: "Milton", name: "Hurricane Milton, Oct 2024", often: "What actually fell here" },
 };
