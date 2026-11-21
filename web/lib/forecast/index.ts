@@ -131,3 +131,14 @@ export async function getForecast([lng, lat]: LngLat): Promise<Forecast> {
     aqi: air.success ? air.data.current.us_aqi : null,
   };
 }
+
+/** The one-paragraph brief an iPhone Shortcut shows or speaks: alerts first, then rain, then the rest. */
+export function briefText(f: Forecast, alerts: string[]): string {
+  const parts: string[] = [];
+  if (alerts.length) parts.push(`Weather Service alert: ${[...new Set(alerts)].join(", ")}.`);
+  parts.push(`${rainWindow(f.hours)}.`);
+  parts.push(`Now ${f.tempF}° and ${weatherWords(f.code).toLowerCase()}, feels ${f.feelsF}°.`);
+  if (f.aqi !== null) parts.push(`Air quality ${aqiWords(f.aqi).toLowerCase()} (${Math.round(f.aqi)}).`);
+  if (alerts.length) parts.push("Never drive or walk into floodwater.");
+  return parts.join(" ");
+}

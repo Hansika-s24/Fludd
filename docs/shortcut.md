@@ -81,3 +81,61 @@ Long-press the Shortcut > Share > **Copy iCloud Link**. Paste it into the README
 ## What it never does
 
 It never says a road is safe. The reply only describes the photo and always ends with the floodwater warning when water is seen. Positions shown on the public map are snapped to the street; the exact point stays admin-only.
+
+---
+
+# "Flood brief" Shortcut and Home Screen widget
+
+**What iPhone allows.** Fludd is a Home Screen web app, not an App Store app, so it cannot ship its own live widget: that needs a native app with WidgetKit. What works today without one:
+
+| Option | What you see | Live? |
+|---|---|---|
+| **Shortcuts widget** (built in) | A Home Screen or Lock Screen button; one tap shows the brief | On tap |
+| **Personal automation** (built in) | The brief as a notification at set times, e.g. 7 am and 5 pm | On schedule |
+| **Scriptable widget** (free App Store app) | The brief's text on the Home Screen, refreshed by iOS every 15–30 min | Yes |
+
+All three read one URL: `https://fludd.app/api/brief?lat=<lat>&lng=<lng>&format=text`. It returns one paragraph, for example:
+
+> Weather Service alert: Flood Watch. Rain likely from 4 pm until 7 pm, about 1.2 in. Now 74° and rain, feels 80°. Air quality good (33). Never drive or walk into floodwater.
+
+Sources: Open-Meteo (weather, hourly rain chance, US air quality index) and National Weather Service active alerts. Nothing is stored; the position is used for that one answer.
+
+## 1. Build "Flood brief" (about 2 minutes)
+
+1. New Shortcut, name it **Flood brief**.
+2. **Get Current Location**. (For a fixed home instead, use **Text** with your home's latitude and longitude and skip steps 3–4.)
+3. **Get Details of Locations**: **Latitude** of *Current Location*. Rename **Lat**.
+4. **Get Details of Locations**: **Longitude** of *Current Location*. Rename **Lng**.
+5. **URL**: `https://fludd.app/api/brief?lat=[Lat]&lng=[Lng]&format=text`
+6. **Get Contents of URL** (method GET).
+7. **Show Result**: *Contents of URL*. (Or **Speak Text** for hands-free; Siri reads it when you say "Hey Siri, flood brief".)
+
+## 2. Put it on the Home Screen as a widget
+
+- Long-press the Home Screen > Edit > **Add Widget** > **Shortcuts** > choose the small size > tap the widget > pick **Flood brief**.
+- Lock Screen: Customize > Lock Screen > add the **Shortcuts** widget > **Flood brief**.
+
+## 3. Get it as a notification on a schedule
+
+Shortcuts > **Automation** > **+** > **Time of Day** (7:00, Daily) > **Run Immediately** > **Run Shortcut: Flood brief**, then replace its last action with **Show Notification** (*Contents of URL*). Add a second automation for 5 pm.
+
+## 4. Live text widget with Scriptable (optional)
+
+Install **Scriptable** (free), create a script with:
+
+```js
+const loc = await Location.current();
+const url = `https://fludd.app/api/brief?lat=${loc.latitude}&lng=${loc.longitude}&format=text`;
+const text = await new Request(url).loadString();
+const w = new ListWidget();
+w.addText("Fludd").font = Font.boldSystemFont(14);
+w.addSpacer(4);
+w.addText(text).font = Font.systemFont(12);
+w.url = "https://fludd.app";
+Script.setWidget(w);
+Script.complete();
+```
+
+Add a Scriptable widget to the Home Screen and pick this script. Tapping it opens Fludd.
+
+**Tradeoff:** a true Fludd widget with the grade and a mini map needs a native iOS app (WidgetKit); that is out of scope for a web app and listed as future work.
