@@ -332,14 +332,14 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [x] B3 Water movement tests and code; volume conserved. 7 tests incl. random-storm mass balance and monotonicity
 - [x] B4 Runs on real elevation: the FULL model (fill-spill-merge), not the cascade. About 1.5 s per storm
 - [x] B5 Milton replay; `validation.json` written; figures in notes (below, 12:25). 4 tests
-- [ ] B6 Four storm sizes, pump on and off; low and high variants. Storms and pump on/off done (export 22 s); low/high variants not yet. Pump drains the Duck Pond watershed (county polygon, 3,026 leaf bowls) at an assumed 70 cfs
+- [x] B6 Four storm sizes, pump on and off; low and high variants. Variants = NOAA Atlas 14 90% interval of the 24 h depth, pump on only (`levels/<scenario>-<low|high>-pump-on.json`). Commit a6d933f. Pump drains the Duck Pond watershed (county polygon, 3,026 leaf bowls) at an assumed 70 cfs
 
 **Lane C: routing**
 - [x] C1 Graph loads; shortest path correct (toy fixture)
 - [x] C2 Closing hours per vehicle class (toy)
 - [x] C3 Time-aware route (toy)
 - [x] C4 Cut-off time, rescue reach, latest safe departure (toy). 36 routing tests. Commit 44c8dbf
-- [ ] C5 Worker; benchmark on real graph recorded; routing stubs all real (14:00); Harshith told
+- [x] C5 Worker; benchmark on real graph recorded; routing stubs all real; Harshith told. Real graph from OSM: 6,481 nodes, 9,064 segments, 655 km; closingHours ~50 ms cold / 0.1 ms warm, latestDeparture ~45 ms cold / 2-4 ms warm (median of 5). Two-way roads only, two speed classes (toy format). Commit 441a0c2
 - [ ] C6 Approved reports override a segment (only if 15:00 goes ahead)
 
 **Lane E: logic half**
@@ -519,3 +519,6 @@ Added for the two-person setup (not in PLAN.md):
 | Claude usage limit reached | Session refuses work | Tell Harshith at once. Swap the least finished lane to their session and say it out loud |
 
 - 12:25 `validation.json` is real (`loadValidation` reads it). Headline for the validation panel and README: 286 of 547 Milton flood-damage points caught (52.3%); 136 of the 207 points outside FEMA high-risk zones caught; FEMA high-risk zones hold 340 of 547 (62.2%) but cover 9.07 km2 vs the model's 3.54 km2. Extra fields in the file: `femaHighRiskAreaKm2`, `wetAreaKm2`, `boxAreaKm2`, `outsideHighRisk`, `hitsOutsideHighRisk`, `pumpOnHits`, `notes`. Full table under "Notes" in my doc.
+- 12:45 Real road graph is in (`graph.bin`, `graph.json`, `segments.json` in `web/public/data/`), so routing now runs on real data with `NEXT_PUBLIC_DATA_SET=real`. Example: Milton replay, pump failing, at the flooded point [-82.441134, 28.074075]: "move your car by" hour 9 (about 21:00 Oct 9), to "High ground at junction 2490". Format limits: every road two-way; speed is 40 mph arterials / 25 mph the rest.
+- 12:45 New real files: `levels/<scenario>-<low|high>-pump-on.json` (grade range, 4 design storms) and `parcels.json` (13,837 residential homes with assessed value, beds, baths, living area, type and precomputed building depth per storm). The grade range and `findBetterOptions` are being finished now; I will tell you when they are real.
+- 12:45 Data folder is now 66 MB (levels 41 MB, rounded to the centimetre). Each levels file is ~2.3 MB: load one scenario at a time.
