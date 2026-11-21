@@ -323,22 +323,22 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 - [x] D1 Design direction as tokens; one screen shown at two widths. Tokens in `web/app/globals.css`; map + sidebar/sheet checked at 1440 and 393 wide. MapLibre worker is copied to `public/` by predev/prebuild (bundler breaks its relative URL). Basemap is busy (bus stops, POIs): quiet it in D2
 - [x] D2 App shell and basemap; deployed. Basemap quieted (POI and transit hidden). Deploy pending: Vercel is not Git-connected and needs `NEXT_PUBLIC_DATA_SET=real`
 - [x] D3 Water layer on the toy fixture (12:00), then on real files. Real data at 12:38 (`e657c8f`). CPU canvas pass per hour; WebGL surface still to do
-- [ ] D4 Timeline, storm selector, pump switch
+- [x] D4 Timeline, storm selector, pump switch. In the During stage; storm segmented control, pump switch, hour slider with clock
 - [ ] D5 Markers
 - [ ] D6 iPhone: bottom sheet, Home Screen app, safe areas; checked on the device
 - [ ] D7 Loading, empty, error states; reduced motion and reduced transparency
 
 **Lane E: interface half**
 - [x] E3 Address search box; "outside validated area". County locator suggestions, keyboard and Enter; "Outside the validated area" card (`6418faf`)
-- [ ] E4 Card: grade, range, reasons, "official map says / we found", depth by storm
-- [ ] E4a Validation panel
-- [ ] E5 Guidance cards on real routing results; fixed safety footnote
+- [x] E4 Card: grade, range, reasons, "official map says / we found", depth by storm. Plus Before/During/After stages, onboarding, Ask Pelican (agents, merged by me)
+- [x] E4a Validation panel. 52.3% of 547 Milton points; FEMA baseline 62% over 2.6x the area (`dd0fe43`)
+- [x] E5 Guidance cards on real routing results; fixed safety footnote. During panel: move car by, fire truck reach, last way out; never says a road is safe
 
 **Lane F: interface half**
-- [ ] F2 Photo flow screens
-- [ ] F4 Admin queue and inspector screens behind sign-in
+- [x] F2 Photo flow screens. Report flooding in the After stage (agent, `1d3619a`); not tested against live Supabase yet
+- [x] F4 Admin queue and inspector screens behind sign-in. `/admin` (agent, `1e3512e`); live sign-in still to test with Hansika
 - [ ] F5 Approved reports appear live on the map
-- [ ] F6 Calibration chart, or the single error number
+- [x] F6 Calibration chart, or the single error number. Mean absolute error as one number on `/admin`
 - [ ] F8 "Report flooding" Shortcut built; Home Screen, Action Button; share link saved
 
 **Lead, rest of day**
