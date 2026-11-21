@@ -6,7 +6,8 @@ import type { LngLat, Manifest } from "@/lib/types";
 import type { Category } from "./intent";
 
 export const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-const TIMEOUT_MS = 8_000;
+// ponytail: 3 s keeps a busy Overpass from stalling the reply; the ArcGIS fallback answers in about 1 s.
+const TIMEOUT_MS = 3_000;
 export const MAX_PLACES = 5;
 
 export const ARCGIS_URL = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates";
@@ -128,6 +129,8 @@ async function fetchArcgis(category: Category, position: LngLat, bbox: Manifest[
   const [west, south, east, north] = bbox;
   return (body.candidates ?? [])
     .filter((c) => c.location.x >= west && c.location.x <= east && c.location.y >= south && c.location.y <= north)
+    // Wholesalers and distributors are filed under the same categories; a resident can't shop there.
+    .filter((c) => !/distribut|wholesale/i.test(c.address ?? ""))
     .map((c) => ({ name: (c.address || FALLBACK_NAME[category]).slice(0, 80), position: [c.location.x, c.location.y] as LngLat }));
 }
 
