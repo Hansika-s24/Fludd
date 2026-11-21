@@ -20,6 +20,7 @@ from numpy.typing import NDArray
 from PIL import Image
 
 import config
+from ingest import storm_network
 from model.depressions import BowlTree, find_bowls
 from model.routing_volume import Regions
 from model.scenarios import basin_nodes, run_scenario
@@ -136,6 +137,7 @@ def layers() -> dict[str, int]:
         "milton-damage": _features("milton_flood_points", ["CreationDate", "TYPDAMAGE", "HOMETYPE"]),
         "known-flooding": _features("known_flooding_parcels", ["DESCRIP", "COMMENT_TY", "RECDFLOOD"]),
     }
+    groups.update(storm_network.build())
     for f in groups["pump-stations"]:
         if f["properties"].get("SITE_NAME") == "DUCK POND EAST":
             f["properties"]["approximate"] = True

@@ -6,7 +6,7 @@ Each stage is added to STAGES as its lane lands.
 
 from collections.abc import Callable
 
-from ingest import drainage, elevation, evidence, fema, parcels
+from ingest import drainage, elevation, evidence, fema, parcels, storm_network
 
 Stage = tuple[str, Callable[[], None]]
 
@@ -15,6 +15,7 @@ STAGES: list[Stage] = [
     ("ingest: fema", fema.download),
     ("ingest: evidence", evidence.download),
     ("ingest: drainage", drainage.download),
+    ("ingest: storm network", storm_network.download),
     ("ingest: parcels", parcels.download),
 ]
 
