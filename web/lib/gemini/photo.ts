@@ -69,7 +69,8 @@ export interface PhotoReader {
 const TIMEOUT_MS = 20_000;
 
 export function sdkCreatePhoto(apiKey: string): CreatePhotoInteraction {
-  const ai = new GoogleGenAI({ apiKey });
+  // Image input in the Interactions API exists only in v1beta (v1 answers 400 "'image' is not supported").
+  const ai = new GoogleGenAI({ apiKey, apiVersion: "v1beta" });
   return (params) => ai.interactions.create(params, { timeout: TIMEOUT_MS, maxRetries: 0 });
 }
 
