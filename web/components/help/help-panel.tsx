@@ -128,11 +128,19 @@ export function HelpPanel({ position }: { position: LngLat }) {
         </a>
       </Group>
 
-      <Group title="Restaurants and stores giving food">
-        <p className="px-4 py-3 text-subhead text-label-2">
-          Coming next: businesses that hand out food or water during a flood will be able to list themselves here, checked by a person before
-          they appear, so neighbours in need can find them.
-        </p>
+      <Group title="Food share">
+        <a href="/food/need" className="pressable flex min-h-14 items-center justify-between gap-3 border-b border-separator px-4 py-2.5">
+          <span><span className="block text-body font-semibold">I need food or supplies</span><span className="block text-footnote text-label-2">No name. See who is giving near you</span></span>
+          <span className="text-tint" aria-hidden>›</span>
+        </a>
+        <a href="/food/give" className="pressable flex min-h-14 items-center justify-between gap-3 border-b border-separator px-4 py-2.5">
+          <span><span className="block text-body font-semibold">I can give</span><span className="block text-footnote text-label-2">Restaurants, stores, churches and groups</span></span>
+          <span className="text-tint" aria-hidden>›</span>
+        </a>
+        <a href="/food" className="pressable flex min-h-14 items-center justify-between gap-3 px-4 py-2.5">
+          <span><span className="block text-body font-semibold">Giving leaderboard</span><span className="block text-footnote text-label-2">Who has served the most neighbours</span></span>
+          <span className="text-tint" aria-hidden>›</span>
+        </a>
       </Group>
     </>
   );

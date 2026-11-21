@@ -30,7 +30,7 @@ function decideMode(): Mode {
   if (decided) return decided;
   // The intro is the loading animation: it plays on every open (the flood data loads after it, see map-view).
   // The admin screen is a work tool, the guided demos open many times in a row, and reduced motion means no film: all skip it.
-  decided = /^\/(admin|demo)/.test(window.location.pathname) || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
+  decided = /^\/(admin|demo|food)/.test(window.location.pathname) || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
   return decided;
 }
 
