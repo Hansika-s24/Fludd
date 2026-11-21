@@ -14,7 +14,6 @@ const wordmarkFont = Fraunces({
 
 const WORDMARK = "Fludd";
 const CAPTION = "Be a pelican.\nWatch the water, then move.";
-const SEEN_KEY = "fludd-boot-seen";
 const FADE_MS = 520;
 /** The wordmark starts typing at 2.15 s, one letter every 0.1 s; the caption follows at 2.6 s. */
 const TYPE_FROM = 64;
@@ -29,15 +28,9 @@ let decided: Mode | null = null;
 
 function decideMode(): Mode {
   if (decided) return decided;
-  let seen = false;
-  try {
-    seen = sessionStorage.getItem(SEEN_KEY) === "1";
-  } catch {
-    seen = false;
-  }
-  // The admin screen is a work tool: no intro there.
-  decided =
-    seen || window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
+  // The intro is the loading animation: it plays on every open (the flood data loads after it, see map-view).
+  // The admin screen is a work tool, and reduced motion means no film: both skip it.
+  decided = window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
   return decided;
 }
 
@@ -76,11 +69,6 @@ export function BootIntro() {
   const leave = useCallback(() => {
     if (leftRef.current) return;
     leftRef.current = true;
-    try {
-      sessionStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      // Storage can be unavailable (private mode). The intro then simply shows again next load.
-    }
     setPhase("leaving");
     // The app starts its entrance as the intro zooms away, so the two overlap instead of queueing.
     signalBootDone();
@@ -122,7 +110,7 @@ export function BootIntro() {
   const letters = frame < TYPE_FROM ? 0 : Math.floor((frame - TYPE_FROM) / FRAMES_PER_LETTER) + 1;
   // During the server render the layer is a plain night-coloured cover; the film mounts in the browser.
   return (
-    <div className={`boot-layer ${phase === "leaving" ? "boot-leaving" : ""}`} onClick={leave} role="presentation">
+    <div className={`boot-layer ${phase === "leaving" ? "boot-leaving" : ""}`} role="presentation">
       {mode === "show" && w > 0 && (
         <div className="boot-stage">
           <BootFilm frame={frame} w={w} h={h} cx={at.cx} cy={at.cy} size={at.size} />
@@ -140,16 +128,6 @@ export function BootIntro() {
           </div>
         </div>
       )}
-      <button
-        type="button"
-        className="boot-skip"
-        onClick={(event) => {
-          event.stopPropagation();
-          leave();
-        }}
-      >
-        Skip intro
-      </button>
     </div>
   );
 }
