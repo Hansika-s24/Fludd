@@ -27,7 +27,7 @@ const SAFETY_FOOTNOTE =
 type ManifestWithClocks = Manifest & { hourZeroByScenario?: Partial<Record<Scenario, string>> };
 
 /** Drainage network layers shown by the map's Drainage button. */
-const DRAINAGE: LayerName[] = ["pump-stations", "drains", "ponds"];
+const DRAINAGE: LayerName[] = ["storm-pipes", "ponds", "drains", "outfalls", "pump-stations"];
 
 /** Longest the map waits for the boot intro before flying in anyway. */
 const INTRO_FALLBACK_MS = 6000;

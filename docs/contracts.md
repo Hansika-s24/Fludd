@@ -32,6 +32,10 @@ Agreed with Hansika 12:05, updated 12:20.
 - **Pump stations:** Duck Pond East has `approximate: true` (the county record says it needs GPS)
 - **Extra loader:** `depthAtBuilding` in `lib/data`, alongside `depthAt`
 
+## Contract change (14:45)
+
+New map layers `storm-pipes` (LineStrings; `kind` pipe | culvert | channel, `diameterIn`, `heightIn`, `material`, `shape`, `owner`) and `outfalls` (points). Agreed by Harshith as lead while Hansika was out of usage; added to `LAYER_NAMES` and the toy fixture. 4,604 lines and 943 outfalls on real data.
+
 ## Stub status (14:20)
 
 Everything in "Exact names" is real. Routing runs on the real OSM road graph (6,481 junctions, 9,064 segments). `findBetterOptions` works on real data only and throws on the toy set. `/api/weather` proxies NWS active alerts; `/api/health` returns the manifest version (both finished by Harshith's session at 14:15 while Hansika was out of usage).
