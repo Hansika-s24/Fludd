@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type CSSProperties } from "react";
 import { recordContribution } from "@/components/rewards/contributions";
 import { Group } from "@/components/ui/surface";
 import type { ApiError, QueueItem } from "@/lib/types";
@@ -114,16 +114,17 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
       </header>
 
       {phase.kind === "done" ? (
-        <Done aiReading={phase.aiReading} />
+        <Done key="done" aiReading={phase.aiReading} />
       ) : (
         <>
           <Group title="Photo">
             {preview && (
               // eslint-disable-next-line @next/next/no-img-element -- a local blob preview, nothing to optimise
               <img
+                key={preview}
                 src={preview}
                 alt="The photo you chose"
-                className="aspect-[4/3] w-full rounded-t-[var(--radius-group)] object-cover"
+                className="swap-in aspect-[4/3] w-full rounded-t-[var(--radius-group)] object-cover"
               />
             )}
             <label
@@ -152,7 +153,7 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
           </p>
 
           {phase.kind === "error" && (
-            <p role="alert" className="mx-4 mt-3 rounded-[var(--radius-group)] bg-group px-4 py-3 text-subhead text-late">
+            <p role="alert" className="nudge mx-4 mt-3 rounded-[var(--radius-group)] bg-group px-4 py-3 text-subhead text-late">
               {phase.message}
             </p>
           )}
@@ -164,11 +165,27 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
               disabled={!photo || busy}
               className="pressable min-h-11 w-full rounded-[var(--radius-control)] bg-tint px-4 text-headline font-semibold text-white active:bg-tint-pressed disabled:opacity-40"
             >
-              {phase.kind === "locating" ? "Finding your position" : phase.kind === "uploading" ? "Sending" : "Send report"}
+              {/* Keyed by phase so each new label swaps in; the dots only show while the photo is on its way. */}
+              <span key={busy ? phase.kind : "send"} className="swap-in inline-flex items-center justify-center">
+                {phase.kind === "locating" ? "Finding your position" : phase.kind === "uploading" ? "Sending" : "Send report"}
+                {busy && (
+                  <span className="typing ml-2" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                )}
+              </span>
             </button>
             <p aria-live="polite" className="sr-only">
               {phase.kind === "locating" ? "Finding your position" : phase.kind === "uploading" ? "Sending the photo" : ""}
             </p>
+            {/* Holds the place of the reading while it is on its way. Below the button, so the button never moves. */}
+            {busy && (
+              <div className="rise-in mt-4" aria-hidden="true">
+                <div className="shimmer h-16 rounded-[var(--radius-group)]" />
+              </div>
+            )}
           </div>
         </>
       )}
@@ -178,7 +195,7 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
 
 function Done({ aiReading }: { aiReading: AiReading | null }) {
   return (
-    <>
+    <div className="swap-in">
       <Group>
         <p role="status" className="px-4 py-3 text-subhead">
           Thanks. A person checks every photo before it appears on the map.
@@ -188,23 +205,23 @@ function Done({ aiReading }: { aiReading: AiReading | null }) {
         <Group title="First reading of your photo">
           <div className="border-b border-separator px-4 py-2.5">
             <p className="text-footnote text-label-2">Water</p>
-            <p className="text-subhead">
+            <p className="pop-in origin-left text-subhead">
               {aiReading.waterPresent ? `About ${rangeWords(aiReading.depthRangeM)}` : "No standing water seen"}
             </p>
           </div>
-          <div className="border-b border-separator px-4 py-2.5">
+          <div className="rise-in border-b border-separator px-4 py-2.5" style={{ "--i": 2 } as CSSProperties}>
             <p className="text-footnote text-label-2">Judged against</p>
             <p className="text-subhead">{aiReading.reference}</p>
           </div>
-          <div className="px-4 py-2.5">
+          <div className="rise-in px-4 py-2.5" style={{ "--i": 3 } as CSSProperties}>
             <p className="text-footnote text-label-2">Confidence</p>
             <p className="text-subhead">{percent(aiReading.confidence)}</p>
           </div>
         </Group>
       )}
-      <p className="px-7 pt-1.5 text-footnote text-label-2">
+      <p className="rise-in px-7 pt-1.5 text-footnote text-label-2" style={{ "--i": 4 } as CSSProperties}>
         This reading is an estimate from one photo. Do not drive or walk through flood water at any depth.
       </p>
-    </>
+    </div>
   );
 }
