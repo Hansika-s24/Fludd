@@ -370,7 +370,7 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [x] F1a Admin sign-in and typed queries; demo admin user created (Hansika's account is in `public.admins`). 27 tests. Commit 734d3ac
 - [x] F0 Health route. Commit 2651065. Five health tests passed. Full web suite: 337 passed, 5 skipped after rebase.
 - [x] F2 Report intake route: metadata stripped, public position snapped, model depth recorded (Milton pump-off peak). Live end to end at 13:25: upload 201 in 1.3 s with a real Gemini reading; stored photo has no EXIF; public position snapped ~38 m to a road; moderate without token 401; approved report appears in the public feed without the exact position, rejected one disappears
-- [ ] F8 Plain form upload works on the live site; Harshith told
+- [ ] F8 Plain form upload works on the live site; Harshith told. At 13:36, fludd.app returned the scaffold's fixed `toy-report` response. Retest after the real reports route is deployed.
 - [x] F3 Gemini provider and photo reading with fixed schema; rate-limit path (manual review when unreadable)
 - [x] F4 Moderation route with append-only log (trigger blocks update/delete even for the service role)
 - [x] F5 Approved reports route and live feed (street-level `public_reports`, realtime)
@@ -505,6 +505,7 @@ Claude appends here, newest last, whenever something on this side affects Harshi
 - 13:17 `GET /api/health` is real in 2651065. It returns `{ status: "ok", dataVersion }` from the configured manifest, or 503 with the agreed error envelope if the manifest is unavailable or invalid. Toy and real fixtures passed. Please confirm the deployed URL before the F8 upload check.
 - 13:17 Typecheck now passes with `next typegen` in the script. Lint exits successfully with one warning in `web/components/stages/during-panel.tsx:65`: the effect dependency list is missing `place`. The contracts' 12:20 stub status also predates the real road graph, validation, Supabase, reports, and better-options work.
 - 13:17 Please add ChatGPT Codex to the README's "How AI was used" section and the MLH submission. Hansika directed it to write and verify the health route and tests.
+- 13:36 Live F8 probe at https://fludd.app: health returned HTTP 200 with `dataVersion: "toy-1"`. The multipart upload sent all five agreed fields and returned HTTP 201 with `id: "toy-report"`, matching the fixed scaffold response in 6ab59b5. Please confirm the URL serving the real reports handler so I can retest before the Shortcut demo.
 
 ---
 
