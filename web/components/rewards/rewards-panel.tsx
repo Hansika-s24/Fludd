@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { CountUp } from "@/components/ui/count-up";
 import { Group } from "@/components/ui/surface";
 import { Icon } from "@/components/stages/shared";
 import { loadParcels } from "@/lib/data";
@@ -76,6 +77,8 @@ export function relativeTime(iso: string, now: number): string {
 }
 
 const count = (n: number) => n.toLocaleString("en-US");
+/** Place in a staggered entrance, read by the motion kit classes. Always set, so nothing inherits a parent's place. */
+const at = (i: number) => ({ "--i": i }) as CSSProperties;
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 const LABELS: Record<ContributionKind, string> = {
@@ -106,17 +109,15 @@ const STYLES = `
 .rw-celebrate { animation: rw-pop 600ms var(--ease-spring) both; }
 .rw-line { animation: rw-fade 300ms ease-out both; }
 .rw-tick { position: absolute; right: 0.25rem; top: -0.25rem; pointer-events: none; animation: rw-float 600ms ease-out forwards; }
-.rw-bar { transition: width 500ms var(--ease-spring); }
-.rw-home { transform-box: fill-box; transform-origin: center; animation: rw-home 320ms ease-out both; }
+.rw-bar { transition: transform 500ms var(--ease-spring); }
+.rw-home { transform-box: fill-box; transform-origin: center; }
 @keyframes rw-pop { from { transform: scale(0.96); } to { transform: none; } }
 @keyframes rw-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes rw-float { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }
-@keyframes rw-home { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .rw-celebrate { animation: rw-fade 300ms ease-out both; }
   .rw-tick { display: none; }
   .rw-bar { transition: none; }
-  .rw-home { animation: none; }
 }
 `;
 
@@ -165,22 +166,33 @@ function useApprovedPlaces(): LngLat[] | null {
 
 /* ---------- the headline: one person, many homes ---------- */
 
+/* The last house starts landing by RING_SPREAD_MS; with the kit's 420 ms landing the whole ring is in by about 900 ms. */
+const RING_SPREAD_MS = 480;
+const HOUSE_GAP_MS = 45;
+
 /** One person in the centre; each filled house around them is one counted home, nearest ring first. */
 function ReachPicture({ homes }: { homes: number }) {
   const shown = Math.min(homes, REACH_CAP);
+  const gap = Math.min(HOUSE_GAP_MS, RING_SPREAD_MS / Math.max(1, shown - 1));
   const mid = REACH_BOX / 2;
   const label =
     homes === 0
       ? "One person in the centre, with the homes a report can reach around them"
       : `You in the centre with ${count(shown)} ${plural(shown, "home", "homes")} around you${homes > REACH_CAP ? `, out of ${count(homes)} counted` : ""}`;
   return (
-    <svg viewBox={`0 0 ${REACH_BOX} ${REACH_BOX}`} role="img" aria-label={label} className="mx-auto mt-4 block w-full max-w-[184px]">
+    <svg
+      viewBox={`0 0 ${REACH_BOX} ${REACH_BOX}`}
+      role="img"
+      aria-label={label}
+      className="mx-auto mt-4 block w-full max-w-[184px]"
+      style={{ "--stagger": `${gap}ms` } as CSSProperties}
+    >
       {reachSlots(homes).map((slot, i) => (
         <g key={i} transform={`translate(${slot.x} ${slot.y})`}>
           <path
             d="M0-4.8 5-.6V4.4H-5V-.6Z"
-            className={slot.filled ? "rw-home fill-tint" : "fill-label-3/25"}
-            style={slot.filled ? { animationDelay: `${i * 14}ms` } : undefined}
+            className={slot.filled ? "rw-home pop-in fill-tint" : "fill-label-3/25"}
+            style={slot.filled ? at(i) : undefined}
           />
         </g>
       ))}
@@ -191,39 +203,66 @@ function ReachPicture({ homes }: { homes: number }) {
   );
 }
 
+/**
+ * The homes figure, counting up from zero when it arrives. The real figure stays in the page, unseen, so it
+ * holds the width and is what a screen reader hears; the counting digits sit over it. CountUp prints no
+ * thousands separator, so a count of 1,000 or more is shown whole instead of counted.
+ */
+function HomesCount({ homes }: { homes: number }) {
+  const [armed, setArmed] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setArmed(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  if (homes >= 1000) return <span className="text-grade font-bold tabular-nums">{count(homes)}</span>;
+  return (
+    <span className="relative inline-block text-grade font-bold tabular-nums">
+      <span className="opacity-0">{count(homes)}</span>
+      <span className="absolute inset-0" aria-hidden>
+        <CountUp value={armed ? homes : 0} />
+      </span>
+    </span>
+  );
+}
+
 const BLOCK = `${REACH_RADIUS_M} m, about one street block,`;
 const SEEN = "Once a person has checked a report, the people living there can see it on the map before they drive into the water.";
 
 function ImpactCard({ impact, uncounted }: { impact: Impact; uncounted: number }) {
   const where = impact.kind === "invite" ? "" : plural(impact.places, "the place", `the ${count(impact.places)} places`);
+  // The card rises in once. When its message changes later (counting, then the count) the new one swaps in.
+  const [firstKind] = useState(impact.kind);
+  const swap = impact.kind === firstKind ? undefined : "swap-in";
   return (
-    <section className="px-4 pt-4" aria-labelledby="rw-impact">
+    <section className="rise-in px-4 pt-4" style={at(0)} aria-labelledby="rw-impact">
       <div className="rounded-[var(--radius-group)] bg-group px-4 pt-4 pb-4">
         <p className="text-footnote font-medium uppercase text-label-2">Your reach</p>
         {impact.kind === "homes" ? (
-          <>
+          <div key="homes" className={swap}>
             <h2 id="rw-impact" className="mt-1">
               <span className="block text-subhead text-label-2">You&apos;ve helped about</span>
               <span className="mt-1 block">
-                <span className="text-grade font-bold tabular-nums">{count(impact.homes)}</span>{" "}
+                <HomesCount homes={impact.homes} />{" "}
                 <span className="text-title font-semibold">{plural(impact.homes, "home", "homes")}</span>
               </span>
             </h2>
             <p className="mt-2 text-subhead text-label-2">
               Homes within {BLOCK} of {where} you reported from. {SEEN}
             </p>
-          </>
+          </div>
         ) : impact.kind === "counting" ? (
-          <>
+          <div key="counting" className={swap}>
             <h2 id="rw-impact" className="mt-1 text-title font-semibold">
               Counting the homes near you
             </h2>
             <p className="mt-2 text-subhead text-label-2" role="status">
               Reading county parcel records for homes within {BLOCK} of {where} you reported from.
             </p>
-          </>
+          </div>
         ) : impact.kind === "places" ? (
-          <>
+          <div key="places" className={swap}>
             <h2 id="rw-impact" className="mt-1 text-title font-semibold">
               You reported from {count(impact.places)} {plural(impact.places, "place", "places")}
             </h2>
@@ -232,9 +271,9 @@ function ImpactCard({ impact, uncounted }: { impact: Impact; uncounted: number }
                 ? "The county parcel records did not load, so the homes nearby cannot be counted right now. Your reports still stand."
                 : `The county parcel records show no homes within ${REACH_RADIUS_M} m of ${plural(impact.places, "it", "them")}. Once a person has checked a report, anyone opening the map nearby still sees it.`}
             </p>
-          </>
+          </div>
         ) : (
-          <>
+          <div key="invite" className={swap}>
             <h2 id="rw-impact" className="mt-1 text-title font-semibold">
               One report reaches a whole block
             </h2>
@@ -242,11 +281,11 @@ function ImpactCard({ impact, uncounted }: { impact: Impact; uncounted: number }
               Send a photo of flooding from Home, under Report what you saw. Fludd then counts the real homes within{" "}
               {BLOCK} of it, from county parcel records. {SEEN}
             </p>
-          </>
+          </div>
         )}
         {impact.kind !== "places" && <ReachPicture homes={impact.kind === "homes" ? impact.homes : 0} />}
         {impact.kind === "homes" && (
-          <p className="mt-3 text-center text-footnote text-label-2">
+          <p className="rise-in mt-3 text-center text-footnote text-label-2" style={at(0)}>
             {impact.homes > REACH_CAP
               ? `You are in the centre. The picture holds ${REACH_CAP} houses; the number above is the full count.`
               : "You are in the centre. Each filled house is one home."}
@@ -285,32 +324,41 @@ function LevelRow({ list }: { list: Contribution[] }) {
 
   return (
     <Group title="Your contribution level">
-      <div key={celebrating ? `up-${index}` : "level"} className={`px-4 py-3 ${celebrating ? "rw-celebrate" : ""}`}>
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 text-tint">
-            <Pelican size={30} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-headline font-semibold">{rank.name}</p>
-            <p className="text-footnote text-label-2">
-              <span className="tabular-nums">{points}</span> {plural(points, "point", "points")}
-              {rank.next ? `, ${rank.next.min - points} more to ${rank.next.name}` : ", the highest level"}
-            </p>
+      {/* Keyed by level: a new level remounts the row, so the celebration and the bar fill play once, at the moment it is reached. */}
+      <div className="rise-in" style={at(1)}>
+        <div key={index} className={`px-4 py-3 ${celebrating ? "rw-celebrate" : ""}`}>
+          <div className="flex items-center gap-3">
+            <span className="shrink-0 text-tint">
+              <Pelican size={30} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-headline font-semibold">{rank.name}</p>
+              <p className="text-footnote text-label-2">
+                <CountUp value={points} /> {plural(points, "point", "points")}
+                {rank.next ? `, ${rank.next.min - points} more to ${rank.next.name}` : ", the highest level"}
+              </p>
+            </div>
           </div>
+          <div
+            className="mt-3 h-1 overflow-hidden rounded-full bg-fill"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(rank.progress * 100)}
+            aria-label={rank.next ? `Progress to ${rank.next.name}` : "Highest level reached"}
+          >
+            {/* The wrapper fills once on arrival; the bar inside slides to each later value. Both move by transform only. */}
+            <div className="grow-x h-full" style={at(3)}>
+              <div
+                className="rw-bar h-full w-full rounded-full bg-tint"
+                style={{ transform: `translateX(${(rank.progress - 1) * 100}%)` }}
+              />
+            </div>
+          </div>
+          <p aria-live="polite" className="text-footnote font-medium text-tint">
+            {celebrating && <span className="rw-line mt-2 block">{`You're now a ${rank.name}.`}</span>}
+          </p>
         </div>
-        <div
-          className="mt-3 h-1 overflow-hidden rounded-full bg-fill"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(rank.progress * 100)}
-          aria-label={rank.next ? `Progress to ${rank.next.name}` : "Highest level reached"}
-        >
-          <div className="rw-bar h-full rounded-full bg-tint" style={{ width: `${rank.progress * 100}%` }} />
-        </div>
-        <p aria-live="polite" className="text-footnote font-medium text-tint">
-          {celebrating && <span className="rw-line mt-2 block">{`You're now a ${rank.name}.`}</span>}
-        </p>
       </div>
     </Group>
   );
@@ -381,7 +429,7 @@ const WAYS: Way[] = [
   },
 ];
 
-function WayRow({ way, list, now, last }: { way: Way; list: Contribution[]; now: number; last: boolean }) {
+function WayRow({ way, list, now, last, order }: { way: Way; list: Contribution[]; now: number; last: boolean; order: number }) {
   const [tick, setTick] = useState<number | null>(null);
   const points = POINTS[way.kind];
   const blocked = blockedReason(list, way.kind, new Date(now));
@@ -393,7 +441,7 @@ function WayRow({ way, list, now, last }: { way: Way; list: Contribution[]; now:
   }
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-separator"}`}>
+    <div className={`rise-in flex items-center gap-3 px-4 py-3 ${last ? "" : "border-b border-separator"}`} style={at(order)}>
       <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-tint text-white" aria-hidden>
         {way.icon}
       </span>
@@ -475,7 +523,7 @@ export function RewardsPanel() {
       <style>{STYLES}</style>
       <ImpactCard impact={impactOf(places.length, helped)} uncounted={uncounted} />
       {community && communityHomes !== null && (
-        <p className="px-7 pt-2 text-footnote text-label-2">
+        <p className="rise-in px-7 pt-2 text-footnote text-label-2" style={at(0)}>
           Neighbours here have sent {count(community.length)} approved {plural(community.length, "report", "reports")}
           {communityHomes > 0 ? ` covering about ${count(communityHomes)} ${plural(communityHomes, "home", "homes")}` : ""}
           . That includes any of yours a person has checked.
@@ -484,12 +532,12 @@ export function RewardsPanel() {
       <LevelRow list={list} />
       <Group title="Ways to help">
         {WAYS.map((w, i) => (
-          <WayRow key={w.kind} way={w} list={list} now={ruleNow} last={i === WAYS.length - 1} />
+          <WayRow key={w.kind} way={w} list={list} now={ruleNow} last={i === WAYS.length - 1} order={i + 2} />
         ))}
       </Group>
       <Group title="What you have done">
         {recent.length === 0 ? (
-          <p className="px-4 py-3 text-subhead text-label-2">Nothing yet. Anything you do from the list above shows here.</p>
+          <p className="rise-in px-4 py-3 text-subhead text-label-2" style={at(7)}>Nothing yet. Anything you do from the list above shows here.</p>
         ) : (
           <ul>
             {recent.map((c, i) => {
@@ -497,7 +545,8 @@ export function RewardsPanel() {
               return (
                 <li
                   key={`${c.at}-${c.kind}`}
-                  className={`flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 ${i === recent.length - 1 ? "" : "border-b border-separator"}`}
+                  className={`rise-in flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 ${i === recent.length - 1 ? "" : "border-b border-separator"}`}
+                  style={at(i)}
                 >
                   <div className="min-w-0">
                     <p className="text-subhead">{LABELS[c.kind]}</p>
@@ -513,7 +562,7 @@ export function RewardsPanel() {
           </ul>
         )}
       </Group>
-      <p className="px-7 pt-3 text-footnote text-label-2">
+      <p className="rise-in px-7 pt-3 text-footnote text-label-2" style={at(8)}>
         Your contributions and their places stay on this device. Home counts come from county parcel records: one
         parcel is one home, vacant lots are left out, and a home near two of your reports counts once. Levels and
         points are for fun and do not affect anyone&apos;s grade.
