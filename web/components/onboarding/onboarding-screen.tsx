@@ -12,6 +12,7 @@ import {
   saveProfile,
   useProfile,
   type DriveHabit,
+  type Vehicle,
   type FloodCover,
   type HomeType,
   type Profile,
@@ -53,6 +54,10 @@ const FLOORS: { key: number; label: string }[] = [
   { key: 2, label: "2nd floor" },
   { key: 3, label: "3rd floor" },
   { key: 4, label: "4th floor or higher" },
+];
+const VEHICLES: { key: Vehicle; label: string; hint: string }[] = [
+  { key: "car", label: "Car or minivan", hint: "Sits low: about 6 in of water can stall it" },
+  { key: "suv", label: "SUV or pickup truck", hint: "Higher: we close roads for it at about 12 in" },
 ];
 const DRIVES: { key: DriveHabit; label: string; hint: string }[] = [
   { key: "daily", label: "Every day", hint: "We'll warn you early, before the roads close" },
@@ -331,9 +336,14 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
         <>
           {heading("How often do you drive?")}
           <Choices {...answer} labelledBy={titleId} options={DRIVES} value={p.drives} onPick={(drives) => save({ drives })} />
+          {/* Ground clearance decides which flooded roads are closed to you, so the routes and "last way out" use it. */}
+          <h2 id={`${titleId}-vehicle`} className="rise-in mt-6 px-1 text-headline font-semibold">What do you drive?</h2>
+          <div className="mt-2">
+            <Choices {...answer} labelledBy={`${titleId}-vehicle`} options={VEHICLES} value={p.vehicle} onPick={(vehicle) => save({ vehicle })} />
+          </div>
         </>
       );
-      footer = continueBtn(p.drives !== null);
+      footer = continueBtn(p.drives !== null && p.vehicle !== null);
       break;
 
     case "flood":

@@ -385,7 +385,7 @@ export function AppShell() {
               {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
               {stage === "during" &&
                 (ok ? (
-                  <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} grade={ok.grade} controls={controls} />
+                  <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} vehicle={profile?.vehicle ?? "car"} grade={ok.grade} controls={controls} />
                 ) : (
                   <Group title="Storm">
                     <StormControls {...controls} />
@@ -421,6 +421,7 @@ export function AppShell() {
               <AskPelican
                 key={`${placeKey}-${scenario}-${pump}-${safeHour}`}
                 from={profile?.car?.position ?? place?.position ?? null}
+                vehicle={profile?.vehicle ?? "car"}
                 scenario={scenario}
                 pump={pump}
                 hour={safeHour}
@@ -438,7 +439,13 @@ export function AppShell() {
             <>
               <Group title="Your places">
                 <ListRow icon={Icon.home} label="Home" value={profile.home?.label.split(",")[0] ?? "Not set"} />
-                <ListRow icon={Icon.car} label="Car" value={profile.car ? profile.car.label : "Not set"} last />
+                <ListRow
+                  icon={Icon.car}
+                  label="Car"
+                  value={profile.car ? profile.car.label : "Not set"}
+                  detail={profile.vehicle === "suv" ? "SUV or pickup: roads close for it at about 12 in" : profile.vehicle === "car" ? "Car: roads close for it at about 6 in" : undefined}
+                  last
+                />
               </Group>
               <Group title="Insurance">
                 <ListRow

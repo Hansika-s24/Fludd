@@ -23,10 +23,12 @@ interface Live {
 
 /** During a flood: what's at the door now, when to move the car, whether help can reach you, alerts. */
 export function DuringPanel({
-  place, car, grade, controls,
+  place, car, vehicle = "car", grade, controls,
 }: {
   place: Place;
   car: Place | null;
+  /** The resident's vehicle class: an SUV or pickup gets through deeper water than a car. */
+  vehicle?: "car" | "suv";
   grade: Grade;
   controls: StormControlsProps;
 }) {
@@ -53,16 +55,16 @@ export function DuringPanel({
       .then((d) => !stale && setLive((l) => ({ ...l, depthM: d.kind === "ok" ? d.depthM : null })))
       .catch(() => undefined);
     Promise.all([
-      latestDeparture((car ?? place).position, scenario, pump),
+      latestDeparture((car ?? place).position, scenario, pump, vehicle),
       rescueReach(place.position, "fire_engine", scenario, pump, hour),
-      cutoffTime(place.position, "car", scenario, pump),
+      cutoffTime(place.position, vehicle, scenario, pump),
     ])
       .then(([move, rescue, cutoff]) => !stale && setLive((l) => ({ ...l, move, rescue, cutoff })))
       .catch(() => !stale && setRoutingError(true));
     return () => {
       stale = true;
     };
-  }, [place.position, car, scenario, pump, hour]);
+  }, [place.position, car, vehicle, scenario, pump, hour]);
 
   const at = (h: number) => (hourZero ? aboutTime(hourZero, h) : `hour ${h}`);
   const { move, rescue, cutoff } = live;
@@ -116,7 +118,7 @@ export function DuringPanel({
             <ListRow
               icon={Icon.road}
               tone={!cutoff || cutoff.kind !== "ok" ? "tint" : cutoff.lastHour === null ? "safe" : cutoff.lastHour < hour ? "late" : "warn"}
-              label="Last way out by car"
+              label={vehicle === "suv" ? "Last way out by SUV or pickup" : "Last way out by car"}
               value={
                 !cutoff ? Thinking
                   : cutoff.kind !== "ok" ? "Road model not available here yet"

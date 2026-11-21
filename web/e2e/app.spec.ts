@@ -34,6 +34,7 @@ test("first run: onboarding leads to a graded home", async ({ page }) => {
   await page.getByRole("option", { name: "4202 E Fowler Ave, Tampa" }).click();
   await page.getByRole("button", { name: "I park at home" }).click();
   await page.getByRole("radio", { name: /Every day/ }).click();
+  await page.getByRole("radio", { name: /SUV or pickup/ }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("radio", { name: "No", exact: true }).click();
   await page.getByRole("button", { name: "Continue" }).click();
@@ -44,6 +45,9 @@ test("first run: onboarding leads to a graded home", async ({ page }) => {
   await page.getByRole("button", { name: "Show me my home" }).click();
   await expect(sheet(page).getByText("Flood grade")).toBeAttached();
   await expect(page.getByRole("tab", { name: /Plan a move/ })).toHaveAttribute("aria-selected", "true");
+  // The vehicle chosen in setup drives the storm answers.
+  await page.getByRole("tab", { name: /Storm mode/ }).click();
+  await expect(sheet(page).getByText("Last way out by SUV or pickup")).toBeVisible();
 });
 
 test("onboarding refuses a home outside the model area", async ({ page }) => {
@@ -115,7 +119,7 @@ test("no tab bar: the map and one sheet", async ({ page }) => {
   await openAsResident(page);
   await expect(page.getByRole("tablist", { name: "Sections" })).toHaveCount(0);
   await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
-  await expect(page.getByRole("main").getByText("Fludd", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Fludd", { exact: true }).filter({ visible: true }).first()).toBeVisible();
 });
 
 test("the reports route validates uploads", async ({ request }) => {

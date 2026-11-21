@@ -64,9 +64,11 @@ function errorText(body: unknown): string {
 }
 
 export function AskPelican({
-  from, scenario, pump, hour, hourZero, onRoute,
+  from, vehicle: ownVehicle = "car", scenario, pump, hour, hourZero, onRoute,
 }: {
   from: LngLat | null;
+  /** What the resident drives (from setup); walking requests still route on foot. */
+  vehicle?: "car" | "suv";
   scenario: Scenario;
   pump: PumpState;
   hour: number;
@@ -108,7 +110,7 @@ export function AskPelican({
       };
     }
 
-    const vehicle = intent.vehicle === "foot" ? "foot" : "car";
+    const vehicle = intent.vehicle === "foot" ? "foot" : ownVehicle;
     const results = await Promise.all(
       targets.map(async (t) => {
         try {

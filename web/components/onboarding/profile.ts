@@ -8,6 +8,8 @@ import type { LngLat } from "@/lib/types";
  * are sensitive, so they are never sent to our server or stored in Supabase.
  */
 export type DriveHabit = "daily" | "weekly" | "rarely" | "no_car";
+/** What they drive, as the road model's vehicle classes: a car stalls in about 6 in of water, an SUV or pickup in about 12 in. */
+export type Vehicle = "car" | "suv";
 export type Tenure = "own" | "rent";
 export type HomeType = "house" | "apartment" | "condo" | "townhouse" | "mobile_home";
 export type FloodCover = "nfip" | "private" | "none" | "unsure";
@@ -36,6 +38,7 @@ export interface Profile {
   home: { label: string; position: LngLat } | null;
   car: { label: string; position: LngLat } | null;
   drives: DriveHabit | null;
+  vehicle: Vehicle | null;
   housing: Housing;
   insurance: Insurance;
   camera: Camera;
@@ -48,6 +51,7 @@ export const EMPTY_PROFILE: Profile = {
   home: null,
   car: null,
   drives: null,
+  vehicle: null,
   housing: { tenure: null, type: null, floor: null },
   insurance: { flood: null, contents: null, carrier: "", policyNumber: "", renewal: "" },
   camera: { optIn: false, snapshotUrl: "" },
