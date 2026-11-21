@@ -41,6 +41,15 @@ DEPTH_DURATION_IN: dict[str, dict[int, float]] = {
 }
 RAIN_HOURS = 24  # design storms rain for 24 h, then drain until HOURS ends
 
+# Low and high variants for the grade range: NOAA Atlas 14 90% confidence interval of the
+# 24-hour depth (research 04 section 5.1). The whole storm is scaled by bound / central.
+RAIN_INTERVAL_24H_IN: dict[str, tuple[float, float]] = {
+    "10yr": (5.69, 7.72),
+    "25yr": (7.13, 10.6),
+    "100yr": (9.33, 15.5),
+    "500yr": (12.2, 23.6),
+}
+
 # Milton replay. 10.7 in is the county-reported University Area total (research 01 3.2,
 # 04 2.1); the North Tampa figure was 13.8 in. Worst rain 8 pm to midnight Oct 9.
 MILTON_TOTAL_IN = 10.7

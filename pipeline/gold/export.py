@@ -83,7 +83,7 @@ def bowls_json(tree: BowlTree, grid: Grid, pump_nodes: list[int]) -> None:
 
 def levels_json(tree: BowlTree, levels: NDArray[np.float64], scenario: str, pump: str, suffix: str = "") -> None:
     floor = tree.min_m[:, None]
-    series = np.maximum(np.round(levels, 3), np.round(floor, 3))
+    series = np.maximum(np.round(levels, 2), np.ceil(floor * 100) / 100)
     data = {
         "scenario": scenario,
         "pump": pump,
@@ -218,6 +218,51 @@ def validation(tree: BowlTree, grid: Grid, milton_off: NDArray[np.float64], milt
     del order
 
 
+def parcels_json(grid: Grid, levels: dict[str, NDArray[np.float64]]) -> int:
+    """Per-home depths and evidence flags for "better options nearby" (see gold/parcels.py)."""
+    from scipy.spatial import cKDTree
+
+    from gold.parcels import load_parcels, peak_building_depth
+
+    homes = load_parcels()
+    width = grid.ground_m.shape[1]
+    keep, centres = [], []
+    for h in homes:
+        rc = grid.cell_of(*h["position"])
+        if rc is not None:
+            keep.append(h)
+            centres.append(rc)
+    centres_rc = np.array(centres, dtype=np.int64)
+    bowl_id = np.asarray(Image.open(GOLD / "bowls.png").convert("RGB")).astype(np.int64)
+    bowl_id = bowl_id[..., 0] + bowl_id[..., 1] * 256
+    del width
+
+    depths = {key: peak_building_depth(centres_rc, bowl_id, grid.ground_m, lv, config.BUILDING_RING_CELLS) for key, lv in levels.items()}
+
+    def feats(name: str) -> list[dict[str, Any]]:
+        return json.loads((config.BRONZE_DIR / f"{name}.geojson").read_text())["features"]
+
+    zones = feats("fema_zones")
+    sfha = _rasterize(grid, [f["geometry"] for f in zones if f["properties"].get("SFHA_TF") == "T"])
+    shaded = _rasterize(grid, [f["geometry"] for f in zones if "0.2 PCT" in str(f["properties"].get("ZONE_SUBTY") or "")])
+    to_m = np.array([grid.cell_y_m, grid.cell_x_m])
+    milton = [grid.cell_of(*f["geometry"]["coordinates"][:2]) for f in feats("milton_flood_points")]
+    tree = cKDTree(np.array([m for m in milton if m is not None], dtype=float) * to_m)
+    dist, _ = tree.query(centres_rc.astype(float) * to_m)
+
+    out = []
+    for k, h in enumerate(keep):
+        r, c = centres_rc[k]
+        h = dict(h)
+        h["peakDepthM"] = {key: round(float(d[k]), 3) for key, d in depths.items()}
+        h["femaHighRisk"] = bool(sfha[r, c])
+        h["femaShadedX"] = bool(shaded[r, c])
+        h["miltonPointWithin100m"] = bool(dist[k] <= config.MILTON_NEARBY_M)
+        out.append(h)
+    _write_json(GOLD / "parcels.json", out)
+    return len(out)
+
+
 def manifest(grid: Grid, ground_range: tuple[float, float]) -> None:
     bronze = json.loads((config.BRONZE_DIR / "manifest.json").read_text())
     height, width = grid.ground_m.shape
@@ -249,14 +294,23 @@ def run() -> None:
     bowls_png(tree, grid.ground_m.shape)
     bowls_json(tree, grid, pump_nodes)
     milton: dict[str, NDArray[np.float64]] = {}
+    all_levels: dict[str, NDArray[np.float64]] = {}
     for scenario in config.SCENARIOS:
         for pump in config.PUMP_STATES:
             result = run_scenario(tree, regions, scenario, pump, pump_nodes)
             levels_json(tree, result.levels_m, scenario, pump)
+            all_levels[f"{scenario}-{pump}"] = result.levels_m
             if scenario == "milton":
                 milton[pump] = result.levels_m
             print(f"   {scenario}-pump-{pump}: off map {result.off_map_m3:,.0f} m3, pumped {result.pumped_m3:,.0f} m3")
     validation(tree, grid, milton["off"], milton["on"])
+    for scenario, (low_in, high_in) in config.RAIN_INTERVAL_24H_IN.items():
+        central = config.DEPTH_DURATION_IN[scenario][24]
+        for variant, bound in (("low", low_in), ("high", high_in)):
+            result = run_scenario(tree, regions, scenario, "on", pump_nodes, rain_scale=bound / central)
+            levels_json(tree, result.levels_m, scenario, "on", suffix=f"-{variant}")
+            all_levels[f"{scenario}-{variant}-on"] = result.levels_m
+    print(f"   low/high variants written (pump on); {parcels_json(grid, all_levels)} homes in parcels.json")
     counts = layers()
     manifest(grid, lo_hi)
     print(f"   {tree.n} bowls; layers {counts}")
