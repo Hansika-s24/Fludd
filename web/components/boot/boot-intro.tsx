@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
   type CSSProperties,
 } from "react";
+import { signalBootDone } from "./boot-signal";
 import "./boot-intro.css";
 
 const wordmarkFont = Fraunces({
@@ -69,8 +70,15 @@ export function BootIntro() {
       // Storage can be unavailable (private mode). The intro then simply shows again next load.
     }
     setPhase("leaving");
+    // The app starts its entrance as the intro zooms away, so the two overlap instead of queueing.
+    signalBootDone();
     window.setTimeout(() => setPhase("done"), FADE_MS);
   }, []);
+
+  // Not shown at all (already seen this session, or reduced motion): the app can arrive now.
+  useEffect(() => {
+    if (mode === "skip") signalBootDone();
+  }, [mode]);
 
   useEffect(() => {
     if (mode !== "desktop" && mode !== "phone") return;
