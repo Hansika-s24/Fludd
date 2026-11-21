@@ -14,6 +14,7 @@ We used Claude Code throughout, and we are stating it plainly because the rules 
 
 - **Before the event:** research and planning only, with Claude Code. The notes are in `prep/`. They contain no code, no design assets and no prepared data.
 - **During the event:** Claude Code generated code under our direction. We chose the approach, the grading rules, the thresholds and what to cut. This section will list which folders were generated and what we wrote or changed by hand before we submit.
+- **Boot animation:** designed with an AI design tool, then built and rendered in Blender by Claude Code from a script (`design/boot/build_boot.py`), under our direction.
 - **Inside the product:** the Google Gemini API reads resident flood photos and phrases guidance. The grade, map, storm timeline and routing work without it.
 
 ## Frameworks and libraries

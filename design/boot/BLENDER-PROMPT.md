@@ -6,8 +6,6 @@ Paste everything below the line into the Claude session that has Blender connect
 
 Build Fludd's boot animation in Blender and wire it into the app. You have the Blender tools; Blender is open with the MCP add-on connected. Work in `C:\Users\hanst\claude skills\fludd.app`.
 
-**Time-box: 75 minutes. Feature freeze is 16:30.** If you do not have a clean render by the 60-minute mark, stop and tell me; the fallback is to ship the CSS version of this same animation, which already exists as a design.
-
 ## What you are recreating
 
 Two 2D designs of the same 4.9-second intro, one for desktop and one for iPhone. Read both before you touch Blender:
