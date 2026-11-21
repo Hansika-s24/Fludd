@@ -1,10 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { LngLat } from "@/lib/types";
 
 /**
  * Ways a person helped their neighbourhood, kept on this device only (localStorage).
  * Points are for fun: they never reach the server and never touch anyone's grade.
+ * A contribution that happened somewhere keeps that place, so the Rewards tab can count the homes near it.
  */
 export type ContributionKind = "report" | "camera" | "inlet" | "checkin" | "prepared" | "onboarded";
 
@@ -12,6 +14,8 @@ export interface Contribution {
   kind: ContributionKind;
   /** ISO timestamp */
   at: string;
+  /** Where it happened, when it happened somewhere: a report's position, a flood camera's home. Device-only. */
+  position?: LngLat;
 }
 
 export const POINTS: Record<ContributionKind, number> = {
@@ -81,9 +85,12 @@ export function addContribution(
   list: readonly Contribution[],
   kind: ContributionKind,
   now: Date,
+  position?: LngLat | null,
 ): { list: Contribution[]; added: boolean; points: number } {
   if (blockedReason(list, kind, now)) return { list: [...list], added: false, points: 0 };
-  return { list: [...list, { kind, at: now.toISOString() }], added: true, points: POINTS[kind] };
+  const entry: Contribution = { kind, at: now.toISOString() };
+  if (position) entry.position = [position[0], position[1]];
+  return { list: [...list, entry], added: true, points: POINTS[kind] };
 }
 
 const KEY = "fludd-contributions-v1";
@@ -91,26 +98,47 @@ const EMPTY: Contribution[] = [];
 const listeners = new Set<() => void>();
 let cache: Contribution[] | null = null;
 
-function isContribution(x: unknown): x is Contribution {
-  if (typeof x !== "object" || x === null) return false;
-  const c = x as { kind?: unknown; at?: unknown };
-  return typeof c.kind === "string" && c.kind in POINTS && typeof c.at === "string";
+function isLngLat(x: unknown): x is LngLat {
+  return (
+    Array.isArray(x) && x.length === 2 &&
+    typeof x[0] === "number" && typeof x[1] === "number" &&
+    Math.abs(x[0]) <= 180 && Math.abs(x[1]) <= 90
+  );
+}
+
+/** What was saved, read back safely: unknown kinds are dropped, a broken place is dropped but its record kept. */
+export function parseStored(value: unknown): Contribution[] {
+  if (!Array.isArray(value)) return [];
+  const list: Contribution[] = [];
+  for (const x of value as unknown[]) {
+    if (typeof x !== "object" || x === null) continue;
+    const c = x as { kind?: unknown; at?: unknown; position?: unknown };
+    if (typeof c.kind !== "string" || !(c.kind in POINTS) || typeof c.at !== "string") continue;
+    const entry: Contribution = { kind: c.kind as ContributionKind, at: c.at };
+    if (isLngLat(c.position)) entry.position = [c.position[0], c.position[1]];
+    list.push(entry);
+  }
+  return list;
 }
 
 function read(): Contribution[] {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    cache = Array.isArray(parsed) ? parsed.filter(isContribution) : EMPTY;
+    cache = raw ? parseStored(JSON.parse(raw) as unknown) : EMPTY;
   } catch {
     cache = EMPTY; // storage blocked: points live in memory for this visit
   }
   return cache;
 }
 
-export function recordContribution(kind: ContributionKind, now: Date = new Date()): { added: boolean; points: number } {
-  const result = addContribution(read(), kind, now);
+/** `position` is where it happened, for the kinds that happen somewhere; leave it out otherwise. */
+export function recordContribution(
+  kind: ContributionKind,
+  position?: LngLat | null,
+  now: Date = new Date(),
+): { added: boolean; points: number } {
+  const result = addContribution(read(), kind, now, position);
   if (!result.added) return { added: false, points: 0 };
   cache = result.list;
   try {

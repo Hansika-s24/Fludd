@@ -102,7 +102,7 @@ export function FloodCamera({ home }: { home: LngLat | null }) {
       const res = await fetch("/api/reports", { method: "POST", body: form });
       const body = (await res.json().catch(() => null)) as { aiReading?: AiReading | null; error?: { message?: string } } | null;
       if (!res.ok) throw new Error(body?.error?.message ?? `The picture could not be sent (${res.status}).`);
-      recordContribution("camera");
+      recordContribution("camera", home);
       setPhase({ kind: "result", reading: body?.aiReading ?? null, at: new Date() });
     } catch (e) {
       setPhase({ kind: "error", message: e instanceof Error ? e.message : "The picture could not be sent." });

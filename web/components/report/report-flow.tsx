@@ -93,7 +93,7 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
     setPhase({ kind: "uploading" });
     try {
       const answer = await sendReport(photo, position);
-      recordContribution("report");
+      recordContribution("report", [position.coords.longitude, position.coords.latitude]);
       setPhase({ kind: "done", aiReading: answer.aiReading });
     } catch (err) {
       setPhase({ kind: "error", message: err instanceof Error ? err.message : "The report could not be sent." });
