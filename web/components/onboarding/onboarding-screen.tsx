@@ -147,12 +147,12 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
       ref={headingRef}
       tabIndex={-1}
       style={at(1)}
-      className={`${entrance} origin-left text-[2rem] font-bold leading-[1.12] tracking-[-0.025em] text-balance outline-none`}
+      className={`${entrance} origin-center text-center text-[2rem] font-bold leading-[1.12] tracking-[-0.025em] text-balance outline-none`}
     >
       {text}
     </h1>
   );
-  const lede = (text: ReactNode) => <p style={at(2)} className="rise-in mt-3 text-body text-label-2 text-pretty">{text}</p>;
+  const lede = (text: ReactNode) => <p style={at(2)} className="rise-in mx-auto mt-3 max-w-[34ch] text-center text-body text-label-2 text-balance">{text}</p>;
   /** The answer block shakes once when Continue is pressed while it is still switched off. */
   const answer = { nudging, onNudgeEnd: () => setNudging(false) };
 
@@ -167,15 +167,15 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
   switch (current) {
     case "welcome":
       body = (
-        <div className="flex flex-1 flex-col justify-center pb-16">
-          <div style={at(0)} className="rise-in mb-6 -ml-2 flex self-start">
+        <div className="flex flex-1 flex-col items-center justify-center pb-16 text-center">
+          <div style={at(0)} className="rise-in mb-6 flex">
             <StepIllustration step="welcome" />
           </div>
           <p translate="no" style={at(1)} className={`rise-in ${WORDMARK_CLASS} text-[3.5rem] leading-none tracking-[-0.03em]`}>Fludd</p>
           <h1 id={titleId} style={at(2)} className="rise-in mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
             Know what the water will do before it does.
           </h1>
-          <p style={at(3)} className="rise-in mt-3 text-body text-label-2">A few quick questions make your flood report about your home. Everything stays on this device.</p>
+          <p style={at(3)} className="rise-in mt-3 max-w-[34ch] text-body text-label-2 text-balance">A few quick questions make your flood report about your home. Everything stays on this device.</p>
         </div>
       );
       footer = (
@@ -451,7 +451,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
         <main key={current} className={`flex flex-1 flex-col ${dir === "forward" ? "ob-forward" : "ob-back"}`}>
           <div className={`flex flex-1 flex-col ${current === "welcome" ? "" : "pt-10"}`}>
             {current !== "welcome" && (
-              <div style={at(0)} className="rise-in mb-5 -ml-2 flex self-start">
+              <div style={at(0)} className="rise-in mb-5 flex self-center">
                 <StepIllustration step={current} size={132} />
               </div>
             )}
