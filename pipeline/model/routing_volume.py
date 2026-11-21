@@ -34,7 +34,12 @@ EPS = 1e-9
 
 @dataclass
 class Pump:
-    node: int  # leaf bowl the pump's catchment drains into
+    """A pump station serving one or more bowls (its basin, reached through pipes).
+
+    Each hour it removes up to its rate, taking first from the lake holding the most water.
+    """
+
+    nodes: list[int]
     rate_m3_per_hour: float
 
 
@@ -90,12 +95,17 @@ class WaterState:
         self.totals.runoff_in_m3 += float(runoff_m3_per_leaf.sum())
 
         for pump in pumps:
-            if pump.rate_m3_per_hour <= 0:
+            budget = pump.rate_m3_per_hour
+            if budget <= 0:
                 continue
-            lake = self.lake_of(pump.node)
-            out = min(self.water_m3[lake], pump.rate_m3_per_hour)
-            self.water_m3[lake] -= out
-            self.totals.pumped_m3 += out
+            lakes = sorted({self.lake_of(n) for n in pump.nodes}, key=lambda i: -self.water_m3[i])
+            for lake in lakes:
+                if budget <= 0:
+                    break
+                out = min(self.water_m3[lake], budget)
+                self.water_m3[lake] -= out
+                budget -= out
+                self.totals.pumped_m3 += out
 
         work = [i for i in range(tree.n) if self.is_lake(i)]
         while work:

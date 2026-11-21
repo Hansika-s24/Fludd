@@ -43,9 +43,10 @@ def test_pump_off_is_never_drier_than_pump_on() -> None:
     ground[0, :] = ground[-1, :] = ground[:, 0] = ground[:, -1] = 5.0
     tree = find_bowls(ground, 3.0, min_depth_m=0.05, min_cells=2)
     regions = Regions(tree, ground)
-    pump_node = int(np.flatnonzero(tree.child0 < 0)[0])
-    on = scenarios.run_scenario(tree, regions, "100yr", "on", pump_node)
-    off = scenarios.run_scenario(tree, regions, "100yr", "off", pump_node)
+    pump_nodes = [int(i) for i in np.flatnonzero(tree.child0 < 0)]
+    on = scenarios.run_scenario(tree, regions, "100yr", "on", pump_nodes)
+    off = scenarios.run_scenario(tree, regions, "100yr", "off", pump_nodes)
+    assert on.pumped_m3 > 0
     assert np.all(off.levels_m >= on.levels_m - 1e-9)
     for result in (on, off):
         assert result.held_m3 + result.off_map_m3 + result.pumped_m3 == pytest.approx(result.runoff_in_m3, rel=1e-9)

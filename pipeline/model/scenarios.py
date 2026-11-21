@@ -78,6 +78,12 @@ def pump_rate(scenario: str, pump: str, hour: int) -> float:
     return 0.0
 
 
+def basin_nodes(tree: BowlTree, inside_cell: "NDArray[np.bool_]") -> list[int]:
+    """Leaf bowls whose lowest point lies inside the pump's watershed (mask over cells)."""
+    leaves = np.flatnonzero(tree.child0 < 0)
+    return [int(i) for i in leaves if inside_cell[tree.min_cell[i]]]
+
+
 def pump_node_for_cell(tree: BowlTree, cell: int) -> int | None:
     """The bowl a pump drains: the lowest leaf of the whole top-level basin it sits in.
 
@@ -111,7 +117,7 @@ def run_scenario(
     regions: Regions,
     scenario: str,
     pump: str,
-    pump_node: int | None,
+    pump_nodes: list[int],
     curve_number: float = config.CURVE_NUMBER,
     rain_scale: float = 1.0,
 ) -> ScenarioResult:
@@ -129,7 +135,7 @@ def run_scenario(
     state = WaterState(tree)
     levels = np.zeros((tree.n, hours), dtype=np.float64)
     for hour in range(hours):
-        pumps = [] if pump_node is None else [Pump(pump_node, pump_rate(scenario, pump, hour))]
+        pumps = [Pump(pump_nodes, pump_rate(scenario, pump, hour))] if pump_nodes else []
         state.step(area_per_leaf * effective_m[hour], pumps)
         levels[:, hour] = bowl_levels(state, regions)
 

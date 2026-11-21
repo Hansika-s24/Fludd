@@ -76,7 +76,7 @@ def test_volume_conserved_over_random_storms() -> None:
     assert tree.n > 3
     state = WaterState(tree)
     leaves = np.flatnonzero(tree.child0 < 0)
-    pumps = [Pump(node=int(leaves[0]), rate_m3_per_hour=5.0)]
+    pumps = [Pump(nodes=[int(leaves[0]), int(leaves[-1])], rate_m3_per_hour=5.0)]
     for _ in range(24):
         runoff = np.zeros(tree.n)
         runoff[leaves] = rng.uniform(0, 20, size=leaves.size)
@@ -92,8 +92,8 @@ def test_pump_at_zero_changes_the_result() -> None:
     a, _, _ = ids(tree)
     on, off = WaterState(tree), WaterState(tree)  # type: ignore[arg-type]
     for _ in range(3):
-        pour(on, a, 3.0, [Pump(node=a, rate_m3_per_hour=1.0)])
-        pour(off, a, 3.0, [Pump(node=a, rate_m3_per_hour=0.0)])
+        pour(on, a, 3.0, [Pump(nodes=[a], rate_m3_per_hour=1.0)])
+        pour(off, a, 3.0, [Pump(nodes=[a], rate_m3_per_hour=0.0)])
     assert off.water_m3[a] > on.water_m3[a]
     assert on.totals.pumped_m3 == pytest.approx(3.0)
     assert off.totals.pumped_m3 == 0.0

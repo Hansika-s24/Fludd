@@ -24,9 +24,11 @@ STORM_TOTALS_IN: dict[str, float] = {
 # Scenario names and time steps, as agreed in docs/contracts.md (2026-11-21).
 SCENARIOS: tuple[str, ...] = ("10yr", "25yr", "100yr", "500yr", "milton")
 PUMP_STATES: tuple[str, ...] = ("on", "off")
-# Design storms: 24 h of rain plus 12 h to drain. Milton: 48 h from 2024-10-09 12:00 EDT,
-# covering the Duck Pond outage (about 03:00 Oct 10 to 10:00 Oct 11).
-HOURS: dict[str, int] = {"10yr": 36, "25yr": 36, "100yr": 36, "500yr": 36, "milton": 48}
+# 48 hourly steps for every scenario (the contract has one `hours` for all). Design storms:
+# 24 h of rain then 24 h draining, clock from DESIGN_HOUR_ZERO. Milton: from 2024-10-09 12:00
+# EDT, covering the Duck Pond outage (about 03:00 Oct 10 to 10:00 Oct 11).
+HOURS: dict[str, int] = {"10yr": 48, "25yr": 48, "100yr": 48, "500yr": 48, "milton": 48}
+DESIGN_HOUR_ZERO = "2026-11-21T08:00:00-05:00"
 MILTON_HOUR_ZERO = "2024-10-09T12:00:00-04:00"
 
 # Rainfall depth (inches) by duration (hours) at USF, NOAA Atlas 14, from

@@ -19,6 +19,8 @@ LAYERS: dict[str, str] = {
     "city_inlets": f"{CITY}/5",
     "city_pump_stations": f"{CITY}/7",
     "city_open_drains": f"{CITY}/8",
+    # County watershed boundaries: Duck Pond (5,700 acres) is the pump station's basin.
+    "county_watersheds": f"{COUNTY}/DSD_Viewer_Services/DSD_Flood_Hazard_Layers/MapServer/1",
 }
 
 
