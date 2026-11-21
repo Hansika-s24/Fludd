@@ -178,3 +178,64 @@ body {
   .tab-enter { animation: tab-fade 180ms ease both; }
   @keyframes tab-fade { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Motion kit. One set of entrances and feedback for every widget, so the app moves as one thing.
+   Rules: only transform and opacity move. Things that simply appear use the calm curve (no
+   overshoot). Bounce (--ease-spring) is kept for an outcome the person caused: a result landing,
+   a badge earned. Stagger siblings with style="--i: n". Nothing here blocks input.
+   --------------------------------------------------------------------------------------------- */
+:root {
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-calm: 380ms;
+  --stagger: 45ms;
+}
+
+/* A block arrives: fades up a few pixels. */
+.rise-in { animation: rise-in var(--dur-calm) var(--ease-calm) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* A result, badge or chip lands, with a light bounce. */
+.pop-in { animation: pop-in 420ms var(--ease-spring) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.86); } }
+
+/* Content that replaces other content in the same place. */
+.swap-in { animation: swap-in 240ms ease-out both; }
+@keyframes swap-in { from { opacity: 0; transform: scale(0.98); } }
+
+/* A bar or meter fills from its start edge, or grows up from its base. */
+.grow-x { transform-origin: left center; animation: grow-x 520ms var(--ease-calm) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+@keyframes grow-x { from { transform: scaleX(0); } }
+.grow-y { transform-origin: center bottom; animation: grow-y 520ms var(--ease-calm) both; animation-delay: calc(var(--i, 0) * 30ms); }
+@keyframes grow-y { from { transform: scaleY(0); } }
+
+/* An SVG line draws itself. The element needs pathLength="1". */
+.draw-on { stroke-dasharray: 1; animation: draw-on 700ms var(--ease-calm) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+@keyframes draw-on { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+/* Waiting on the network: a soft sweep across a placeholder block. */
+.shimmer {
+  background: linear-gradient(100deg, var(--color-fill) 30%, oklch(1 0 0 / 0.75) 50%, var(--color-fill) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* "Thinking": three dots. Markup: <span class="typing"><i></i><i></i><i></i></span> */
+.typing { display: inline-flex; gap: 4px; align-items: center; }
+.typing i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; opacity: 0.35; animation: typing 1s ease-in-out infinite; }
+.typing i:nth-child(2) { animation-delay: 150ms; }
+.typing i:nth-child(3) { animation-delay: 300ms; }
+@keyframes typing { 30% { opacity: 1; transform: translateY(-3px); } 60% { opacity: 0.35; transform: none; } }
+
+/* Something was refused: one short sideways nudge. */
+.nudge { animation: nudge 320ms ease-out; }
+@keyframes nudge { 20% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 80% { transform: translateX(-2px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .pop-in, .swap-in { animation: motion-fade 180ms ease both; animation-delay: 0ms; }
+  .grow-x, .grow-y, .draw-on, .nudge { animation: none; }
+  .shimmer { animation: none; }
+  .typing i { animation: none; opacity: 0.6; }
+  @keyframes motion-fade { from { opacity: 0; } }
+}
