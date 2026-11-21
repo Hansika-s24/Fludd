@@ -373,6 +373,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
 
 - 15:05 For Hansika: at Harshith's request I changed your `web/lib/address/index.ts` (commit 1007129). `suggestAddresses` now asks the county locator and ArcGIS World in parallel: county addresses first, then named places (apartment communities, malls, neighbourhoods) inside a Tampa extent, deduped on the part before the first comma, at most 6. World ids start with `w:` and `resolveAddress` sends them to World's findAddressCandidates. If one service is down the other still answers; both down throws the county error as before. The function names and shapes are unchanged. Tests: three new cases in `web/tests/address/address.test.ts` (10 pass).
 
+- 16:02 For Hansika (after judging, not today): all-of-Tampa trial is on branch `trial/tampa-wide` (local worktree `../fludd-tampa`, not pushed). Box (-82.56, 27.92, -82.36, 28.10), about 12 x 12 mi from downtown to USF and Temple Terrace, at ~9 m cells (`ingest/elevation.py` SIZE 2184 x 2218, `BUILDING_RING_CELLS = 1`) so gold stays near today's size. Downloaded fine: elevation, evidence, drainage, storm network, parcels, OSM (53,104 nodes, 74,901 segments, 8x today), rescue. Failed: `ingest.fema` (FEMA NFHL answered 500 five times), `ingest.communities` (not investigated), `graph.build` (PROJ could not find proj.db; I ran with the main venv's site-packages on PYTHONPATH, set PROJ_DATA or run through uv), `gold.export` (numba missing in that environment). Harshith decided to keep the USF box for the demo; README and demo numbers (52.3% of 547) stay as they are.
+
 ---
 
 ## 6. If things go wrong
