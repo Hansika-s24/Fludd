@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { StepIllustration } from "@/components/illustrations";
 import { AddressSearch } from "@/components/report-card/address-search";
+import { TourButton } from "./tour-button";
 import { LogoMark, WORDMARK_CLASS } from "@/components/ui/logo";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -187,6 +188,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
             >
               <LogoMark size={112} />
             </div>
+            <TourButton />
             <svg className="absolute inset-x-0 -bottom-px h-12 w-full" viewBox="0 0 400 48" preserveAspectRatio="none" aria-hidden>
               <path d="M0 22 C60 6 120 6 180 20 S300 40 400 16 V48 H0 Z" fill="#5b8fd6" opacity="0.55" />
               <path d="M0 30 C70 16 140 18 200 30 S320 46 400 26 V48 H0 Z" fill="oklch(0.975 0.004 260)" />
