@@ -148,3 +148,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .switch::after { transition: none; }
 }
+
+/* Home and car pins on the map: small solid discs, readable over water. */
+.map-pin {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: white;
+  color: var(--color-label);
+  font-size: 15px;
+  box-shadow: 0 2px 8px oklch(0.2 0.02 260 / 0.3);
+  border: 2px solid var(--color-tint);
+}
+
+/* Onboarding steps slide in from the right, cross-fade with reduced motion. */
+.onboarding-step { animation: step-in var(--spring-response) var(--ease-spring) both; }
+@keyframes step-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-step { animation: fade-in 200ms ease both; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+}

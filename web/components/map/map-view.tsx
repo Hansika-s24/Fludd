@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
+import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
 import { loadGold, loadLevels } from "@/lib/data";
 import type { GoldData, Hour, LngLat, PumpState, Scenario } from "@/lib/types";
 
@@ -59,16 +59,21 @@ export interface MapViewProps {
   pump: PumpState;
   hour: Hour;
   focus: LngLat | null;
+  /** The user's saved home and car, drawn as pins. */
+  pins: { home: LngLat | null; car: LngLat | null };
+  /** false while the intro plays: the map waits zoomed out, then flies in when this turns true. */
+  arrived: boolean;
   onError: (message: string) => void;
 }
 
-export function MapView({ scenario, pump, hour, focus, onError }: MapViewProps) {
+export function MapView({ scenario, pump, hour, focus, pins, arrived, onError }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const gold = useRef<GoldData | null>(null);
   const marker = useRef<Marker | null>(null);
   const ready = useRef<Promise<void> | null>(null);
+  const pinMarkers = useRef<Marker[]>([]);
 
   // Map, basemap quieting and the water source: once.
   useEffect(() => {
@@ -77,9 +82,15 @@ export function MapView({ scenario, pump, hour, focus, onError }: MapViewProps) 
       container: container.current,
       style: STYLE_URL,
       center: USF_CENTER,
-      zoom: 14,
+      zoom: 11.6,
+      pitch: 0,
       attributionControl: { compact: true },
     });
+    // Current location: a live blue dot with accuracy circle; follows the user until they pan.
+    m.addControl(
+      new GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: true, showAccuracyCircle: true }),
+      "top-right",
+    );
     map.current = m;
     const c = document.createElement("canvas");
     canvas.current = c;
@@ -135,6 +146,38 @@ export function MapView({ scenario, pump, hour, focus, onError }: MapViewProps) 
       stale = true;
     };
   }, [scenario, pump, hour, onError]);
+
+  // First impression: fly in from the wide view once the intro hands over (skipped when an address is focused).
+  useEffect(() => {
+    const m = map.current;
+    if (!arrived || !m || focus) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const narrow = window.matchMedia("(max-width: 767px)").matches;
+    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: window.innerHeight * 0.46 } : { top: 0, right: 0, bottom: 0, left: 396 };
+    m.flyTo({ center: USF_CENTER, zoom: 14.2, pitch: 40, bearing: -12, padding, duration: 2600, curve: 1.2, essential: false, animate: !reduce });
+    // focus is read, not watched: an address picked later flies on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrived]);
+
+  // Home and car pins.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    for (const p of pinMarkers.current) p.remove();
+    pinMarkers.current = [];
+    const add = (pos: LngLat | null, label: string, svg: string) => {
+      if (!pos) return;
+      const el = document.createElement("div");
+      el.className = "map-pin";
+      el.setAttribute("role", "img");
+      el.setAttribute("aria-label", label);
+      el.innerHTML = svg; // static markup from this file, no user text
+      pinMarkers.current.push(new Marker({ element: el }).setLngLat(pos).addTo(m));
+    };
+    const stroke = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
+    add(pins.home, "Your home", `<svg ${stroke}><path d="m3 11 9-7 9 7M5 10v10h14V10"/></svg>`);
+    add(pins.car, "Your car", `<svg ${stroke}><path d="M5 17h14v-5l-2-5H7l-2 5v5Z"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/></svg>`);
+  }, [pins.home, pins.car]);
 
   // The searched address.
   useEffect(() => {
