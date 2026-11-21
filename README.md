@@ -28,13 +28,13 @@ Type any address near USF and get a flood report card: a letter grade, where the
   - **Before:** grade, flood history nearby, drainage network, steps that fit your home (own or rent, floor) and similar homes nearby with a better grade. For an address you do not live at yet, a checklist for buying, renting or building there, made from the same report.
   - **During:** water at the door hour by hour, move-your-car time, fire truck reach, last way out, live National Weather Service alerts, and "Ask Pelican" for a trip that avoids roads the model closes.
   - **After:** what Milton did at the address, what the pumps changed, and resident photo reports checked by a person before they appear.
-- **Guided demos** (`/demo`): three short walks on the real map and model. Neighbours' reports landing on the map and set against the model (the reports are simulated and labelled so on screen); two real addresses compared for someone moving or building; a spare phone at a parking spot used as a water gauge (the camera readings are simulated and labelled). Model values in the demos are read from the model at run time.
+- **Guided demos** (`/demo`): three short walks on the real map and model. Neighbours' reports landing on the map and set against the model (the reports are simulated and labelled so on screen); two real addresses compared for someone moving or building; a camera at a parking spot used as a water gauge (the camera readings are simulated and labelled). Model values in the demos are read from the model at run time.
 - **Cameras you already own:** besides a spare phone, a CCTV or IP camera can be the gauge. A short script on the home network takes one still and posts it to the same report route (`docs/camera-bridge.md`). Cloud-only doorbells (Ring, Nest) are not supported.
 - **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server. Reports carry no identity and photos are stripped of metadata; see `docs/privacy.md`.
 
 ## Data sources
 
-All fetched on 2026-11-21, no keys required. Full list with filters and counts in `web/public/data/manifest.json`.
+Map and model data were fetched on 2026-11-21, with no keys required. Weather, alerts, search and food distributions are asked for live. Full list with filters and counts in `web/public/data/manifest.json`.
 
 | Data | Source |
 |---|---|
@@ -48,9 +48,11 @@ All fetched on 2026-11-21, no keys required. Full list with filters and counts i
 | Fire stations, hospitals | Hillsborough County |
 | Roads; places for Ask Pelican | OpenStreetMap via Overpass |
 | Community names for search (52 apartment communities, halls and neighbourhoods) | OpenStreetMap via Overpass |
-| Places for Ask Pelican when Overpass is busy | Esri ArcGIS World Geocoder (category search, keyless) |
+| Named places in search, the address of a tapped building, and places for Ask Pelican when Overpass is busy | Esri ArcGIS World Geocoder (keyless) |
 | Address search | Hillsborough County address locator |
 | Weather alerts | National Weather Service API |
+| Weather now, rain in the next 12 hours, air quality | Open-Meteo forecast and air-quality APIs (keyless) |
+| Food distributions | Web pages found by Gemini with Google Search grounding, shown with their sources; nothing is shown when the search is unavailable |
 | Basemap | OpenFreeMap "liberty" (OpenStreetMap data) |
 
 ## Frameworks and libraries
@@ -74,20 +76,21 @@ We used AI throughout and say so plainly, because the rules require it and becau
   - **Design direction:** the map is the content, one surface, one tint colour.
   - **Onboarding and privacy:** what onboarding asks; keeping personal data on the device.
   - **Ask Pelican's safety design:** the language model only reads the request and never invents routes or times.
-  - **Features:** the optional camera opt-in and the boot animation's story.
+  - **Features:** the optional camera opt-in, and that a camera someone already owns should work, not only a spare phone; the boot animation's story, and that it is drawn live rather than played as a video; storms named in plain words instead of return periods; rewards shown as homes a person's reports reach; the buying, renting or building checklist; the three guided demos and what each must show.
 
 **What AI generated.** Claude Code wrote most of the code under our direction, and we reviewed, ran and corrected it:
 - **Directed by Hansika:** `pipeline/`, `web/lib/`, `web/app/api/`, `supabase/`.
 - **Directed by Harshith:** `web/app/` pages, `web/components/`, `docs/`, `design/`, `.github/` and the root files.
-- **Finished by Harshith's sessions:** when Hansika's session hit its usage limit, they finished `/api/weather`, `/api/health`, `/api/pelican` and the storm-pipe layer.
+- **Written by Harshith's sessions inside Hansika's folders:** when Hansika's session hit its usage limit, they finished `/api/weather`, `/api/health`, `/api/pelican` and the storm-pipe layer. Later, at Harshith's request, they added named-place search and reverse lookup in `web/lib/address`, the weather brief (`web/lib/forecast`, `/api/brief`), the food finder (`web/lib/food`, `/api/food-campaigns`), an optional vehicle on the latest-departure search, and the community-name list (`pipeline/ingest/communities.py`). Hansika reviewed these when she came back.
 
-**Before the event (before 11:00).** Research and planning only, with Claude Code: the notes in `prep/` (plan, research, team guides) and the public Claude Code skills in `.claude/`. No code, no design assets and no data were prepared before 11:00.
+**Before the event (before 11:00).** Research and planning only, with Claude Code: the notes in `prep/` (plan, research, team guides) and the public Claude Code skills in `.claude/`. No code, no design assets and no data were prepared before 11:00. One thing to disclose: an intermediate rendered intro, made and removed during the event, was built with the paper-cut tools from Harshith's own earlier video project and carried that project's paper-grain texture. It is in the git history only. The intro that ships is new code with a grain texture generated today.
 
 **Boot animation.** Designed with an AI design tool. The final paper-cut version was written by Claude Code and is drawn live in the browser (`web/components/boot/boot-film.tsx`), under our direction. Earlier rendered versions (Blender, `design/boot/build_boot.py`, then a Remotion film) were replaced because a phone can refuse to autoplay video.
 
 **Inside the product.**
-- **Gemini's jobs:** it reads resident flood photos (water present, depth range, reference object), writes plain-language guidance and remedies from our numbers, and turns an "Ask Pelican" request into a destination type.
-- **Guards:** every Gemini answer is checked so it cannot add numbers we did not give it. With Gemini off, the app falls back to fixed text and still works: the grade, map, storm timeline and routing never need it.
+- **Gemini's jobs:** it reads resident flood photos (water present, depth range, reference object), writes plain-language guidance and remedies from our numbers, turns an "Ask Pelican" request into a destination type, and searches the web for food distributions (Google Search grounding), listing only what it found with the source of each.
+- **Guards:** every Gemini answer is checked so it cannot add numbers we did not give it. With Gemini off, the app falls back to fixed text and still works: the grade, map, storm timeline and routing never need it. When the food search is unavailable (it was over its quota during judging day), the panel says so and points to 211; it never shows made-up events.
+- **Not Gemini:** the weather brief, the buying, renting or building checklist and the guided demos are written from fixed rules and our own numbers, with no language model.
 
 ## Tradeoffs we chose
 
@@ -115,8 +118,8 @@ Set `NEXT_PUBLIC_DATA_SET=real` to use the real data in `web/public/data/` (the 
 ## Tests
 
 ```bash
-cd web && npm run lint && npm run typecheck && npm test     # 300+ tests
-cd pipeline && uv run pytest -q                              # 65 tests
+cd web && npm run lint && npm run typecheck && npm test     # 450+ tests
+cd pipeline && uv run pytest -q                              # 70 tests
 ```
 
 CI runs lint, typecheck, both test suites and a secret scan on every push.

@@ -21,6 +21,16 @@ Updated from `prep/PLAN.md` section 13 for what actually shipped: onboarding, th
 | 2:45 | Harshith | "Every report, inlet cleared and check-in earns points." | Phone: **Rewards** shortcut: rank card (Puddle Spotter > Rain Watcher > Storm Scout > Pelican > Harbor Keeper). |
 | 2:55 | Harshith | "Fludd is for renters choosing where to live, and for everyone on storm day. It never tells you a flooded road is safe." | Stop. |
 
+## Guided demos (if a judge wants to click through alone, or the live walk runs out of time)
+
+`https://fludd.app/demo` has three short walks with Back and Next. Each runs on the real map and model; anything made up is tagged on screen in orange.
+
+| Page | One line to say | The moment to land |
+|---|---|---|
+| `/demo/1` Neighbours report | "This is the map with people on it." | Step 3: each resident reading next to what the model said there, then "3 of 5 reports with water are deeper than the model". Step 4: three reports past the car limit, 185 homes within 150 m. The reports are simulated; the model numbers are read live. |
+| `/demo/2` Moving or building | "Two homes on the same street, both Zone X on the official map." | Step 2: 1415 E 139th Ave grades A, 1519 E 139th Ave grades F. Step 4: similar homes nearby with a better grade. Nothing here is simulated. |
+| `/demo/3` Your camera is a gauge | "A camera you already own reads the water at your own kerb." | Step 3: the camera's readings against the model's line for that spot. Step 5: a spare phone today, or CCTV through `docs/camera-bridge.md`. The camera readings are simulated. |
+
 ## If something breaks
 
 - **Intro video stalls**: tap anywhere; the app takes over after 6 s anyway.
