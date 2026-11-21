@@ -64,7 +64,7 @@ export function AddressSearch({ onPick, floating = false }: { onPick: (match: Ad
         if (s) void pick(s);
       }}
     >
-      <label htmlFor={`${listId}-input`} className="sr-only">Search for a place or address</label>
+      <label htmlFor={`${listId}-input`} className="sr-only">Search an address, place or ZIP code</label>
       <input
         id={`${listId}-input`}
         type="search"
@@ -75,7 +75,7 @@ export function AddressSearch({ onPick, floating = false }: { onPick: (match: Ad
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
         autoComplete="off"
         enterKeyHint="search"
-        placeholder="Search for a place or address"
+        placeholder="Search an address, place or ZIP"
         value={text}
         onChange={(e) => {
           setText(e.target.value);
