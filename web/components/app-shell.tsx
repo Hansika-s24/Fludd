@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { onBootDone } from "@/components/boot/boot-signal";
 import { MapView } from "@/components/map/map-view";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
@@ -10,6 +11,7 @@ import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import type { Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
+import { Greeting } from "@/components/ui/greeting";
 import { Group, Surface } from "@/components/ui/surface";
 import { loadGold } from "@/lib/data";
 import { gradeFor } from "@/lib/grade";
@@ -44,13 +46,13 @@ export function AppShell() {
     loadGold().then((g) => setManifest(g.manifest), (e: unknown) => onError(e instanceof Error ? e.message : "The flood data failed to load"));
   }, [onError]);
 
-  // The intro hands over with an event; never wait longer than the fallback.
+  // The intro hands over (or was never shown); never wait longer than the fallback.
   useEffect(() => {
     const go = () => setArrived(true);
-    window.addEventListener("fludd:boot-done", go);
+    const off = onBootDone(go);
     const t = setTimeout(go, INTRO_FALLBACK_MS);
     return () => {
-      window.removeEventListener("fludd:boot-done", go);
+      off();
       clearTimeout(t);
     };
   }, []);
@@ -101,13 +103,11 @@ export function AppShell() {
         arrived={arrived}
         onError={onError}
       />
-      <Surface className={arrived ? "surface-arrive" : "opacity-0"}>
-        <header className="px-5 pt-3 md:pt-2">
-          <h1 className="text-title font-bold">Fludd</h1>
-          <p className="mt-0.5 text-subhead text-label-2">
-            {profile?.home ? `Watching ${profile.home.label.split(",")[0]}` : "What the flood map doesn't tell you"}
-          </p>
-        </header>
+      <Surface className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
+        <Greeting
+          homeLabel={profile?.home?.label.split(",")[0] ?? null}
+          homeLetter={!searched && current?.grade.kind === "ok" ? current.grade.letter : null}
+        />
 
         {onboarding && profile ? (
           <Onboarding profile={profile} />
