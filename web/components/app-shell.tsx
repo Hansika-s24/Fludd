@@ -235,7 +235,7 @@ export function AppShell() {
   };
 
   // Maps-style: a search field with your avatar, round shortcuts under it; a section opens as a card with a close button.
-  const header =
+  const section =
     tab === "home" ? (
       <>
         <div className="flex items-start gap-2 px-4">
@@ -265,12 +265,21 @@ export function AppShell() {
         </button>
       </div>
     );
+  // Wide screens: the brand sits at the top of the sidebar. Phones keep it as a chip on the map.
+  const header = (
+    <>
+      <p translate="no" className="hidden px-5 pb-1 pt-2 md:block">
+        <Logo size={26} />
+      </p>
+      {section}
+    </>
+  );
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
       <p
         translate="no"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-9 items-center rounded-full pl-1.5 pr-3 md:left-[412px]"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-9 items-center rounded-full pl-1.5 pr-3 md:hidden"
       >
         <Logo size={22} />
       </p>
@@ -278,7 +287,7 @@ export function AppShell() {
       <div
         aria-label="Floodwater depth: 6 inches to over 4 feet"
         role="img"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+3.4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px]"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+3.4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px] md:top-4"
       >
         <p className="text-[0.6875rem] font-semibold text-label-2">Floodwater</p>
         <div className="mt-1 flex h-2 w-28 overflow-hidden rounded-full">
