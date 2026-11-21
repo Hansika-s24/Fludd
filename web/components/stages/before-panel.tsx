@@ -11,6 +11,26 @@ import { Icon, ListRow, useRemedies, type Place } from "./shared";
 
 const HISTORY_RADIUS_M = 400;
 
+interface Drainage {
+  nearestPipe: { distanceM: number; diameterIn: number | null; kind: string } | null;
+  inlets150: number;
+  pump: { name: string; distanceM: number } | null;
+}
+
+/** Nearest vertex distance: fine for "how far is the nearest pipe" at this scale. */
+function nearestOnLines(p: [number, number], fc: GeoJSON.FeatureCollection) {
+  let best: { distanceM: number; props: Record<string, unknown> } | null = null;
+  for (const f of fc.features) {
+    const g = f.geometry;
+    const lines = g?.type === "LineString" ? [g.coordinates] : g?.type === "MultiLineString" ? g.coordinates : [];
+    for (const line of lines) for (const c of line) {
+      const d = distanceM(p, [c[0], c[1]]);
+      if (!best || d < best.distanceM) best = { distanceM: d, props: (f.properties ?? {}) as Record<string, unknown> };
+    }
+  }
+  return best;
+}
+
 interface History {
   milton: number;
   knownFlooding: number;
@@ -36,6 +56,7 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
   const [history, setHistory] = useState<History | null>(null);
   const [options, setOptions] = useState<BetterOption[] | null>(null);
   const [depth100, setDepth100] = useState<number | null>(null);
+  const [drainage, setDrainage] = useState<Drainage | null>(null);
   const remedies = useRemedies(grade, depth100);
 
   useEffect(() => {
@@ -52,6 +73,25 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
         });
       })
       .catch(() => !stale && setHistory({ milton: 0, knownFlooding: 0, nearestMiltonM: null }));
+    Promise.all([loadLayer("storm-pipes"), loadLayer("drains"), loadLayer("pump-stations")])
+      .then(([pipes, drains, pumps]) => {
+        if (stale) return;
+        const pipe = nearestOnLines(place.position, pipes);
+        const inlets = pointsOf(drains).filter((q) => distanceM(place.position, q) <= 150).length;
+        let pump: Drainage["pump"] = null;
+        for (const f of pumps.features) {
+          if (f.geometry?.type !== "Point") continue;
+          const d = distanceM(place.position, [f.geometry.coordinates[0], f.geometry.coordinates[1]]);
+          const name = String((f.properties as Record<string, unknown> | null)?.SITE_NAME ?? "Pump station").trim();
+          if (!pump || d < pump.distanceM) pump = { name, distanceM: d };
+        }
+        setDrainage({
+          nearestPipe: pipe ? { distanceM: pipe.distanceM, diameterIn: typeof pipe.props.diameterIn === "number" ? pipe.props.diameterIn : null, kind: String(pipe.props.kind ?? "pipe") } : null,
+          inlets150: inlets,
+          pump,
+        });
+      })
+      .catch(() => undefined);
     findBetterOptions(place.position).then((o) => !stale && setOptions(o), () => !stale && setOptions([]));
     Promise.all([loadGold(), loadLevels("100yr", "on")])
       .then(([g, l]) => {
@@ -88,6 +128,35 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
           </>
         ) : (
           <p className="px-4 py-3 text-subhead text-label-2">Checking past floods…</p>
+        )}
+      </Group>
+
+      <Group title="Drainage near you">
+        {drainage ? (
+          <>
+            <ListRow
+              icon={Icon.road}
+              label="Nearest storm pipe"
+              value={drainage.nearestPipe ? `${miles(drainage.nearestPipe.distanceM)} away` : "None mapped nearby"}
+              detail={drainage.nearestPipe ? `${drainage.nearestPipe.kind === "channel" ? "Open channel" : drainage.nearestPipe.kind === "culvert" ? "Culvert" : "Underground pipe"}${drainage.nearestPipe.diameterIn ? `, ${drainage.nearestPipe.diameterIn} in across` : ""}` : undefined}
+            />
+            <ListRow
+              icon={Icon.door}
+              tone={drainage.inlets150 === 0 ? "warn" : "tint"}
+              label="Street inlets within 150 m"
+              value={drainage.inlets150 === 0 ? "None mapped" : `${drainage.inlets150}`}
+              detail="Keep them clear of leaves before a storm. Turn the drainage layer on to see the network."
+            />
+            <ListRow
+              icon={Icon.truck}
+              label="Nearest pump station"
+              value={drainage.pump ? `${drainage.pump.name.toLowerCase().replace(/\w/g, (c) => c.toUpperCase())}` : "None mapped"}
+              detail={drainage.pump ? `${miles(drainage.pump.distanceM)} away. If it loses power, nearby low ground fills faster.` : undefined}
+              last
+            />
+          </>
+        ) : (
+          <p className="px-4 py-3 text-subhead text-label-2">Mapping the drains around you…</p>
         )}
       </Group>
 
