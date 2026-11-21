@@ -348,12 +348,16 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     marker.current?.remove();
     marker.current = null;
     if (!focus) return;
-    marker.current = new Marker({ color: "#0a6cff" }).setLngLat(focus).addTo(m);
+    // The home already has its own pin; only a searched or tapped place gets the blue one.
+    const isHome = pins.home !== null && pins.home[0] === focus[0] && pins.home[1] === focus[1];
+    if (!isHome) marker.current = new Marker({ color: "#0a6cff" }).setLngLat(focus).addTo(m);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Keep the address clear of the surface: the sheet covers the bottom 46% on phones, the sidebar 396 px on desktop.
     const narrow = window.matchMedia("(max-width: 767px)").matches;
     const padding = narrow ? { top: 0, right: 0, left: 0, bottom: 260 } : { top: 0, right: 0, bottom: 0, left: 396 };
     m.flyTo({ center: focus, zoom: 16.5, padding, essential: false, animate: !reduce });
+    // pins.home is read, not watched: moving the home pin alone should not fly the camera.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
 
   // maplibre-gl.css sets the map element to position: relative, so the wrapper does the positioning.

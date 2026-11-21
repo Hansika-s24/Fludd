@@ -274,7 +274,7 @@ export function AppShell() {
         scenario={scenario}
         pump={pump}
         hour={safeHour}
-        focus={searched?.position ?? null}
+        focus={searched?.position ?? profile?.home?.position ?? null}
         pins={{ home: profile?.home?.position ?? null, car: profile?.car?.position ?? null }}
         arrived={arrived}
         overlays={drainage ? DRAINAGE : []}
