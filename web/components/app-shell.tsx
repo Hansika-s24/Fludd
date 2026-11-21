@@ -196,6 +196,15 @@ export function AppShell() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
+      <p
+        translate="no"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-11 items-center gap-1.5 rounded-full pl-2.5 pr-4 text-[1.25rem] font-bold tracking-[-0.03em] text-tint md:left-[412px]"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M12 2.5c3.6 4.3 6.5 8 6.5 11.5a6.5 6.5 0 0 1-13 0c0-3.5 2.9-7.2 6.5-11.5Z" />
+        </svg>
+        Fludd
+      </p>
       {/* First open: full-screen onboarding, after the intro has handed over so it never sits under the video. */}
       {arrived && onboarding && (
         <OnboardingScreen
@@ -220,10 +229,10 @@ export function AppShell() {
         type="button"
         aria-pressed={drainage}
         onClick={() => setDrainage((d) => !d)}
-        className={`material-glass pressable fixed right-3 top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 h-11 rounded-[var(--radius-control)] px-3.5 text-subhead font-medium
-          ${drainage ? "text-tint" : "text-label"}`}
+        className={`pressable fixed right-3 top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 h-11 rounded-full px-4 text-subhead font-semibold
+          ${drainage ? "bg-tint text-white" : "material-glass text-label"}`}
       >
-        Drainage {drainage ? "on" : "off"}
+        Drainage
       </button>
 
       <Sheet header={header} scrollKey={tab} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
@@ -318,7 +327,13 @@ export function AppShell() {
             </>
           )}
 
-          <p className="px-7 pt-4 text-footnote text-label-3">{SAFETY_FOOTNOTE}</p>
+          <details className="group px-5 pt-5 text-footnote text-label-2">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+              <span>Screening estimate. Never drive or walk into floodwater.</span>
+              <span className="shrink-0 font-medium text-tint group-open:hidden">About</span>
+            </summary>
+            <p className="max-w-[65ch] text-pretty pb-2 text-label-3">{SAFETY_FOOTNOTE}</p>
+          </details>
         </div>
       </Sheet>
     </main>

@@ -38,6 +38,7 @@ export function Sheet({
   }, [scrollKey]);
   const [vh, setVh] = useState(800);
   const [inset, setInset] = useState(0);
+  const [insetTop, setInsetTop] = useState(0);
   const y = useMotionValue(0);
   const drag = useRef<{ startY: number; startOffset: number; samples: { y: number; t: number }[] } | null>(null);
 
@@ -47,8 +48,10 @@ export function Sheet({
       // env() is CSS-only: read the home-indicator inset off a probe.
       const probe = document.createElement("div");
       probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+      probe.style.paddingTop = "env(safe-area-inset-top)";
       document.body.appendChild(probe);
       setInset(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
+      setInsetTop(parseFloat(getComputedStyle(probe).paddingTop) || 0);
       probe.remove();
     };
     set();
@@ -56,7 +59,8 @@ export function Sheet({
     return () => window.removeEventListener("resize", set);
   }, []);
 
-  const height = Math.round(vh * 0.9);
+  // Full stops below the map buttons (wordmark, Drainage), so the sheet never runs under them.
+  const height = vh - insetTop - 110;
   // Offsets from the top of the sheet's travel: full = 0, half, peek.
   const peek = PEEK_PX + inset;
   const snaps = [0, height - Math.round(vh * 0.5), height - peek];

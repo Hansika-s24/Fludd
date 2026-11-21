@@ -21,8 +21,8 @@ export function Surface({ children, className = "" }: { children: ReactNode; cla
 /** A grouped list section: near-solid on the material, never another translucent layer. */
 export function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <section className="px-4 pt-4">
-      {title && <h2 className="px-3 pb-1.5 text-footnote font-medium uppercase text-label-2">{title}</h2>}
+    <section className="px-4 pt-5">
+      {title && <h2 className="text-balance px-1 pb-2 text-headline font-semibold text-label">{title}</h2>}
       <div className="rounded-[var(--radius-group)] bg-group">{children}</div>
     </section>
   );
