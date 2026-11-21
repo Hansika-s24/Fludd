@@ -21,6 +21,18 @@ STORM_TOTALS_IN: dict[str, float] = {
     "500yr": 17.2,
 }
 
+# Scenario names and time steps, as agreed in docs/contracts.md (2026-11-21).
+SCENARIOS: tuple[str, ...] = ("10yr", "25yr", "100yr", "500yr", "milton")
+PUMP_STATES: tuple[str, ...] = ("on", "off")
+# Design storms: 24 h of rain plus 12 h to drain. Milton: 48 h from 2024-10-09 12:00 EDT,
+# covering the Duck Pond outage (about 03:00 Oct 10 to 10:00 Oct 11).
+HOURS: dict[str, int] = {"10yr": 36, "25yr": 36, "100yr": 36, "500yr": 36, "milton": 48}
+MILTON_HOUR_ZERO = "2024-10-09T12:00:00-04:00"
+
+# Grade geometry, as agreed in docs/contracts.md.
+BUILDING_RING_CELLS = 3  # radius around the address point, ~9 m at 3 m cells
+MILTON_NEARBY_M = 100.0  # a Milton flood point this close caps the grade at C
+
 # Depth in metres at which a road closes for each vehicle class. Source: PLAN.md section 5.
 VEHICLE_LIMITS_M: dict[str, float] = {
     "foot": 0.30,
