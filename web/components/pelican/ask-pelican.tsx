@@ -231,15 +231,20 @@ export function AskPelican({
 
 function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes" }>; onRoute: (line: LngLat[]) => void }) {
   const { best, others, mode, when } = reply;
+  // The route the person picked (best by default); "Open in Maps" hands over this one.
+  const [chosen, setChosen] = useState<Option>(best);
+  const pick = (o: Option) => {
+    setChosen(o);
+    onRoute(o.line);
+  };
   return (
     <>
       <p className="rise-in" style={at(0)}>
-        <button type="button" onClick={() => onRoute(best.line)} className="pressable text-left font-semibold">
+        <button type="button" onClick={() => pick(best)} className="pressable text-left font-semibold">
           {best.name}
         </button>
         , about {mins(best.minutes)} min {mode}, on roads the model keeps open at {when}.
       </p>
-      <OpenInMaps line={best.line} vehicle={mode === "on foot" ? "foot" : "car"} />
       {others.length > 0 && (
         <div className="rise-in mt-2 overflow-hidden rounded-control bg-group" style={at(1)}>
           <p className="px-3 pt-2 text-footnote text-label-2">Other open routes</p>
@@ -247,7 +252,7 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
             <button
               key={`${o.name}-${i}`}
               type="button"
-              onClick={() => onRoute(o.line)}
+              onClick={() => pick(o)}
               className={`rise-in pressable flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left active:bg-fill ${i < others.length - 1 ? "border-b border-separator" : ""}`}
               style={at(i + 2)}
             >
@@ -257,6 +262,7 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
           ))}
         </div>
       )}
+      <OpenInMaps key={chosen.name + chosen.minutes} to={chosen.name} line={chosen.line} vehicle={mode === "on foot" ? "foot" : "car"} />
       {/* The warning arrives with the route, never after it. */}
       <p className="rise-in mt-1.5 text-footnote text-label-2" style={at(0)}>
         {SAFETY_LINE}

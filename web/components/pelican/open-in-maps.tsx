@@ -6,11 +6,12 @@
 import { mapsHandoff } from "@/lib/routing/handoff";
 import type { LngLat, VehicleClass } from "@/lib/types";
 
-export function OpenInMaps({ line, vehicle }: { line: LngLat[]; vehicle: VehicleClass }) {
+export function OpenInMaps({ to, line, vehicle }: { to: string; line: LngLat[]; vehicle: VehicleClass }) {
   const links = mapsHandoff(line, vehicle);
   if (!links) return null;
   return (
     <div className="mt-2 flex flex-col gap-1.5">
+      <p className="text-footnote text-label-2">Take this route to {to}</p>
       <div className="flex flex-wrap gap-2">
         <a
           href={links.google}
