@@ -170,3 +170,11 @@ body {
   .onboarding-step { animation: fade-in 200ms ease both; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* Tab switch: the new panel rises in; cross-fade only with reduced motion. */
+.tab-enter { animation: tab-in 260ms var(--ease-spring) both; }
+@keyframes tab-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter { animation: tab-fade 180ms ease both; }
+  @keyframes tab-fade { from { opacity: 0; } to { opacity: 1; } }
+}

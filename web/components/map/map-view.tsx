@@ -157,7 +157,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     if (!arrived || !m || focus) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const narrow = window.matchMedia("(max-width: 767px)").matches;
-    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: window.innerHeight * 0.46 } : { top: 0, right: 0, bottom: 0, left: 396 };
+    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: 260 } : { top: 0, right: 0, bottom: 0, left: 396 };
     const fly = () =>
       m.flyTo({ center: USF_CENTER, zoom: 14.2, pitch: 40, bearing: -12, padding, duration: 2600, curve: 1.2, essential: false, animate: !reduce });
     // With the intro already seen, the hand-over comes before the style loads; a flyTo then is dropped.
@@ -258,7 +258,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Keep the address clear of the surface: the sheet covers the bottom 46% on phones, the sidebar 396 px on desktop.
     const narrow = window.matchMedia("(max-width: 767px)").matches;
-    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: window.innerHeight * 0.46 } : { top: 0, right: 0, bottom: 0, left: 396 };
+    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: 260 } : { top: 0, right: 0, bottom: 0, left: 396 };
     m.flyTo({ center: focus, zoom: 16.5, padding, essential: false, animate: !reduce });
   }, [focus]);
 

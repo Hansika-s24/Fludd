@@ -4,18 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { MapView } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
-import { AskPelican } from "@/components/pelican/ask-pelican";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
+import { AskPelican } from "@/components/pelican/ask-pelican";
 import { AddressSearch } from "@/components/report-card/address-search";
 import { ValidationPanel } from "@/components/report-card/validation-panel";
 import { AfterPanel } from "@/components/stages/after-panel";
 import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
-import type { Place } from "@/components/stages/shared";
-import { StageControl, type Stage } from "@/components/stages/stage-control";
+import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { Greeting } from "@/components/ui/greeting";
-import { Group, Surface } from "@/components/ui/surface";
+import { Sheet, useNarrow } from "@/components/ui/sheet";
+import { Group } from "@/components/ui/surface";
+import { TabBar, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
 import { gradeFor } from "@/lib/grade";
 import type { AddressMatch, GradeResult, Hour, LayerName, LngLat, Manifest, PumpState, Scenario } from "@/lib/types";
@@ -33,11 +34,21 @@ const DRAINAGE: LayerName[] = ["storm-pipes", "ponds", "drains", "outfalls", "pu
 /** Longest the map waits for the boot intro before flying in anyway. */
 const INTRO_FALLBACK_MS = 6000;
 
+const COVER_WORDS: Record<string, string> = {
+  nfip: "Flood insurance through the NFIP",
+  private: "A private flood policy",
+  none: "No flood insurance",
+  unsure: "Not sure about flood insurance",
+};
+
+const TITLES: Record<Tab, string> = { home: "Home", live: "Live", ask: "Ask Pelican", rewards: "Rewards", you: "You" };
+
 type Graded = { place: Place; grade: GradeResult };
 
 export function AppShell() {
   const profile = useProfile();
-  const [stage, setStage] = useState<Stage>("before");
+  const narrow = useNarrow();
+  const [tab, setTab] = useState<Tab>("home");
   const [scenario, setScenario] = useState<Scenario>("100yr");
   const [pump, setPump] = useState<PumpState>("on");
   const [hour, setHour] = useState<Hour>(14);
@@ -95,6 +106,7 @@ export function AppShell() {
   const safeHour = Math.min(hour, hours - 1);
   const hourZero = manifest?.hourZeroByScenario?.[scenario] ?? manifest?.hourZero ?? null;
   const current = graded && place && graded.place.position.join(",") === placeKey ? graded : null;
+  const ok = current?.grade.kind === "ok" ? { place: current.place, grade: current.grade } : null;
   const onboarding = profile !== null && !profile.done;
   const controls = {
     scenario, pump, hour: safeHour, hours, hourZero,
@@ -103,6 +115,60 @@ export function AppShell() {
     onPump: (p: PumpState) => { setPump(p); setRoute(null); },
     onHour: (h: Hour) => { setHour(h); setRoute(null); },
   };
+
+  const placeState = (
+    <>
+      {error && (
+        <Group>
+          <p role="alert" className="px-4 py-3 text-subhead">{error}</p>
+        </Group>
+      )}
+      {!place && (
+        <Group>
+          <div className="px-4 py-5 text-center">
+            <p className="text-headline font-semibold">No address yet</p>
+            <p className="mt-1 text-subhead text-label-2">Search for one, or set up your home.</p>
+            {profile && !profile.home && (
+              <button type="button" onClick={() => saveProfile({ done: false })} className="mt-3 min-h-11 text-subhead font-medium text-tint">
+                Set up your home
+              </button>
+            )}
+          </div>
+        </Group>
+      )}
+      {place && !current && (
+        <Group>
+          <p className="px-4 py-5 text-center text-subhead text-label-2">Checking {place.label.split(",")[0]}…</p>
+        </Group>
+      )}
+      {current?.grade.kind === "outside" && (
+        <Group>
+          <div className="px-4 py-4">
+            <p className="text-headline font-semibold">Outside the area we cover</p>
+            <p className="mt-1 text-subhead text-label-2">
+              {current.place.label} is outside the area around USF that the model covers, so it gets no grade.
+            </p>
+          </div>
+        </Group>
+      )}
+    </>
+  );
+
+  const header = (
+    <>
+      {!narrow && <TabBar tab={tab} onChange={setTab} narrow={false} />}
+      {tab === "home" ? (
+        <>
+          <Greeting homeLabel={profile?.home?.label.split(",")[0] ?? null} homeLetter={!searched && ok ? ok.grade.letter : null} />
+          <div className="px-4 pb-2">
+            <AddressSearch onPick={onPick} />
+          </div>
+        </>
+      ) : (
+        <h1 className="px-5 pb-2 pt-3 text-title font-bold">{TITLES[tab]}</h1>
+      )}
+    </>
+  );
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
@@ -128,119 +194,104 @@ export function AppShell() {
       >
         Drainage {drainage ? "on" : "off"}
       </button>
-      <Surface className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
-        <Greeting
-          homeLabel={profile?.home?.label.split(",")[0] ?? null}
-          homeLetter={!searched && current?.grade.kind === "ok" ? current.grade.letter : null}
-        />
 
-        {(
-          <>
-            <div className="px-4">
-              <AddressSearch onPick={onPick} />
-            </div>
-            <StageControl stage={stage} onChange={setStage} />
-
-            {error && (
-              <Group>
-                <p role="alert" className="px-4 py-3 text-subhead">{error}</p>
-              </Group>
-            )}
-
-            <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-${stage}`} aria-live="polite">
-              {!place && (
-                <Group>
-                  <div className="px-4 py-5 text-center">
-                    <p className="text-headline font-semibold">No address yet</p>
-                    <p className="mt-1 text-subhead text-label-2">
-                      Search for one to see its flood grade, where the water goes and when to move your car.
-                    </p>
-                    {profile && !profile.home && (
-                      <button
-                        type="button"
-                        onClick={() => saveProfile({ done: false })}
-                        className="mt-3 min-h-11 text-subhead font-medium text-tint"
-                      >
-                        Add your home
-                      </button>
-                    )}
-                  </div>
-                </Group>
+      <Sheet header={header} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
+        <div key={tab} id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="tab-enter" aria-live="polite">
+          {tab === "home" && (
+            <>
+              {placeState}
+              {ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
+              {ok && (
+                <AfterPanel
+                  key={`after-${placeKey}`}
+                  place={ok.place}
+                  grade={ok.grade}
+                  onReplay={() => {
+                    controls.onScenario("milton");
+                    setPump("on");
+                    setHour(24);
+                    setTab("live");
+                  }}
+                />
               )}
-              {!place && stage === "during" && (
+              <ValidationPanel />
+              {searched && profile?.home && (
+                <div className="px-5 pt-3">
+                  <button type="button" onClick={() => setSearched(null)} className="min-h-11 text-subhead font-medium text-tint">
+                    Back to your home
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {tab === "live" && (
+            <>
+              {placeState}
+              {ok ? (
+                <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} grade={ok.grade} controls={controls} />
+              ) : (
                 <Group title="Storm">
                   <StormControls {...controls} />
                 </Group>
               )}
-              {place && !current && (
-                <Group>
-                  <p className="px-4 py-5 text-center text-subhead text-label-2">Grading {place.label}…</p>
-                </Group>
-              )}
-              {current?.grade.kind === "outside" && (
-                <Group>
-                  <div className="px-4 py-4">
-                    <p className="text-headline font-semibold">Outside the validated area</p>
-                    <p className="mt-1 text-subhead text-label-2">
-                      {current.place.label} is outside the area around USF that the model covers, so it gets no grade.
-                    </p>
-                  </div>
-                </Group>
-              )}
-              {current?.grade.kind === "ok" && stage === "before" && (
-                <BeforePanel key={placeKey} place={current.place} grade={current.grade} onPick={(p) => setSearched(p)} />
-              )}
-              {stage === "before" && <ValidationPanel />}
-              {current?.grade.kind === "ok" && stage === "during" && (
-                <DuringPanel key={placeKey} place={current.place} car={profile?.car ?? null} grade={current.grade} controls={controls} />
-              )}
-              {stage === "during" && (
-                <Group title="Ask Pelican">
-                  <AskPelican
-                    key={`${placeKey}-${scenario}-${pump}-${safeHour}`}
-                    from={profile?.car?.position ?? place?.position ?? null}
-                    scenario={scenario}
-                    pump={pump}
-                    hour={safeHour}
-                    hourZero={hourZero}
-                    onRoute={setRoute}
-                  />
-                </Group>
-              )}
-              {current?.grade.kind === "ok" && stage === "after" && (
-                <AfterPanel
-                  key={placeKey}
-                  place={current.place}
-                  grade={current.grade}
-                  onReplay={() => {
-                    setScenario("milton");
-                    setPump("on");
-                    setHour(24);
-                    setStage("during");
-                  }}
+            </>
+          )}
+
+          {tab === "ask" && (
+            <Group>
+              <AskPelican
+                key={`${placeKey}-${scenario}-${pump}-${safeHour}`}
+                from={profile?.car?.position ?? place?.position ?? null}
+                scenario={scenario}
+                pump={pump}
+                hour={safeHour}
+                hourZero={hourZero}
+                onRoute={setRoute}
+              />
+            </Group>
+          )}
+
+          {tab === "rewards" && (
+            <Group>
+              <p className="px-4 py-5 text-center text-subhead text-label-2">Rewards are on their way.</p>
+            </Group>
+          )}
+
+          {tab === "you" && profile && (
+            <>
+              <Group title="Your places">
+                <ListRow icon={Icon.home} label="Home" value={profile.home?.label.split(",")[0] ?? "Not set"} />
+                <ListRow icon={Icon.car} label="Car" value={profile.car ? profile.car.label : "Not set"} last />
+              </Group>
+              <Group title="Insurance">
+                <ListRow
+                  icon={Icon.wrench}
+                  label="Flood cover"
+                  value={profile.insurance.flood ? COVER_WORDS[profile.insurance.flood] : "Not answered"}
+                  detail={
+                    [profile.insurance.carrier, profile.insurance.policyNumber && `Policy ${profile.insurance.policyNumber}`, profile.insurance.renewal && `Renews ${profile.insurance.renewal}`]
+                      .filter(Boolean)
+                      .join(" · ") || undefined
+                  }
+                  last
                 />
-              )}
-            </div>
-
-            {searched && profile?.home && (
-              <div className="px-5 pt-3">
-                <button type="button" onClick={() => setSearched(null)} className="min-h-11 text-subhead font-medium text-tint">
-                  Back to your home
+              </Group>
+              <div className="space-y-1 px-5 pt-3">
+                <button type="button" onClick={() => saveProfile({ done: false })} className="block min-h-11 text-subhead font-medium text-tint">
+                  Redo setup
+                </button>
+                <button type="button" onClick={forgetProfile} className="block min-h-11 text-subhead text-late">
+                  Forget my home, car and insurance on this device
                 </button>
               </div>
-            )}
+            </>
+          )}
 
-            <p className="px-7 pt-3 text-footnote text-label-3">{SAFETY_FOOTNOTE}</p>
-            {profile?.done && (
-              <div className="px-7 pt-1">
-                <button type="button" onClick={forgetProfile} className="min-h-11 text-footnote text-label-2 underline">
-                  Forget my home and car on this device
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </Surface>
+          <p className="px-7 pt-4 text-footnote text-label-3">{SAFETY_FOOTNOTE}</p>
+        </div>
+      </Sheet>
+      {narrow && <TabBar tab={tab} onChange={setTab} narrow />}
     </main>
   );
 }
