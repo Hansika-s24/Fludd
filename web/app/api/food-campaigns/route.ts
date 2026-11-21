@@ -16,8 +16,10 @@ export async function GET() {
   await connection();
   if (cache && Date.now() - cache.at < CACHE_MS) return Response.json(cache.body);
   const cfg = serverConfig();
-  if (!cfg.geminiApiKey) return apiError(503, "not_configured", "The search agent is not set up on this server");
-  const ai = new GoogleGenAI({ apiKey: cfg.geminiApiKey });
+  // Search grounding has its own, smaller quota: prefer the second key when one is set (added in Vercel as "Gemini_api_key_2").
+  const apiKey = process.env.Gemini_api_key_2 || process.env.GEMINI_API_KEY_2 || cfg.geminiApiKey;
+  if (!apiKey) return apiError(503, "not_configured", "The search agent is not set up on this server");
+  const ai = new GoogleGenAI({ apiKey });
   const ask = async (prompt: string): Promise<SearchAnswer> => {
     let last: unknown = null;
     for (const model of [cfg.geminiModel, cfg.geminiFallbackModel]) {
