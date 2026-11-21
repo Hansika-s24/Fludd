@@ -1,6 +1,6 @@
 // Address and place search: the Hillsborough County address locator, plus ArcGIS World for named places. fetch mocked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveAddress, suggestAddresses } from "@/lib/address";
+import { resolveAddress, reverseGeocode, suggestAddresses } from "@/lib/address";
 import { clearDataCache } from "@/lib/data";
 import { diskFetch } from "../data/fixture-fetch";
 
@@ -133,5 +133,20 @@ describe("resolveAddress", () => {
   it("returns null when there is no candidate", async () => {
     mockCounty(() => ({ candidates: [] }));
     expect(await resolveAddress("KEY9|Nowhere")).toBeNull();
+  });
+});
+
+describe("reverseGeocode", () => {
+  it("asks ArcGIS World for the street address at a point", async () => {
+    mockCounty(() => ({}), 200, () => ({ address: { Match_addr: "4202 E Fowler Ave, Tampa, Florida, 33620" } }));
+    expect(await reverseGeocode([-82.4139, 28.0619])).toBe("4202 E Fowler Ave, Tampa, Florida, 33620");
+    const url = new URL(worldCalls[0]);
+    expect(`${url.origin}${url.pathname}`).toBe(`${WORLD}/reverseGeocode`);
+    expect(url.searchParams.get("location")).toBe("-82.4139,28.0619");
+  });
+
+  it("returns null where there is no address", async () => {
+    mockCounty(() => ({}), 200, () => ({}));
+    expect(await reverseGeocode([-82.4, 28.0])).toBeNull();
   });
 });

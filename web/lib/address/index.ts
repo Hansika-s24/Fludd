@@ -102,3 +102,13 @@ export async function resolveAddress(suggestionId: string): Promise<AddressMatch
   const position: LngLat = [best.location.x, best.location.y];
   return { label: best.address, position, inside: insideBox(gold.manifest, position) };
 }
+
+/** The street address at a point (a building tapped on the map), from ArcGIS World. null when there is none. */
+export async function reverseGeocode([lng, lat]: LngLat): Promise<string | null> {
+  const url = new URL(`${WORLD}/reverseGeocode`);
+  url.searchParams.set("location", `${lng},${lat}`);
+  url.searchParams.set("featureTypes", "PointAddress,StreetAddress");
+  url.searchParams.set("f", "json");
+  const body = await callLocator<{ address?: { Match_addr?: string }; error?: { message?: string } }>("address lookup", url);
+  return body.address?.Match_addr ?? null;
+}
