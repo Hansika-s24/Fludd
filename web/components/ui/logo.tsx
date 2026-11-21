@@ -42,3 +42,18 @@ export function Logo({ size = 28, className = "" }: { size?: number; className?:
     </span>
   );
 }
+
+/** The logo's pelican on its own, for the Ask Pelican button. Same paths as LogoMark. */
+export function PelicanMark({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="84 22 102 50" aria-hidden>
+      <path d="M102 56 L88 64 L104 63 Z" fill="#5a4e44" />
+      <ellipse cx="124" cy="57" rx="22" ry="12" fill="#5a4e44" />
+      <path d="M108 56 C118 48 132 48 142 55" fill="none" stroke="#e4d8bf" strokeWidth="3" strokeLinecap="round" />
+      <path d="M138 52 C142 48 142 43 145 38" fill="none" stroke="#5a4e44" strokeWidth="8" strokeLinecap="round" />
+      <circle cx="146" cy="36" r="7" fill="#5a4e44" />
+      <path d="M151 33 L182 44 L176 48 L150 40 Z" fill="#e8964a" stroke="#e8964a" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="147" cy="34" r="1.6" fill="#fbfaf6" />
+    </svg>
+  );
+}

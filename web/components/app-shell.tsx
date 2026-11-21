@@ -18,9 +18,14 @@ import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
-import { SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
-import { Logo } from "@/components/ui/logo";
+import { PEEK_PX, SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
+import { Logo, PelicanMark } from "@/components/ui/logo";
+import { STORM_WORDS } from "@/components/ui/storm-words";
+import { clockLabel } from "@/components/map/storm-controls";
+import { depthAtBuilding } from "@/lib/data";
 import { WeatherCard } from "@/components/weather/weather-card";
+import { HelpPanel } from "@/components/help/help-panel";
+import { WeeklyHighlight } from "@/components/help/weekly-highlight";
 import { Group } from "@/components/ui/surface";
 import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
@@ -51,7 +56,7 @@ const COVER_WORDS: Record<string, string> = {
   unsure: "Not sure about flood insurance",
 };
 
-const TITLES: Record<Tab, string> = { home: "Home", live: "Live", ask: "Ask Pelican", rewards: "Rewards", you: "You" };
+const TITLES: Record<Tab, string> = { home: "Home", live: "Live", ask: "Ask Pelican", help: "Food & help", rewards: "Your impact", you: "You" };
 
 type Graded = { place: Place; grade: GradeResult };
 
@@ -126,6 +131,23 @@ export function AppShell() {
     ]);
     setSearched({ label: label ?? "Selected building", position });
   }
+
+  // The live meter: water at the place on the card for the storm and hour on the map.
+  const [meter, setMeter] = useState<{ key: string; depthM: number | null } | null>(null);
+  const meterKey = place ? `${placeKey}|${scenario}|${pump}|${hour}` : null;
+  useEffect(() => {
+    if (!place || !arrived || !meterKey) return;
+    let stale = false;
+    depthAtBuilding(place.position, scenario, pump, hour).then(
+      (r) => !stale && setMeter({ key: meterKey, depthM: r.kind === "ok" ? r.depthM : null }),
+      () => !stale && setMeter({ key: meterKey, depthM: null }),
+    );
+    return () => {
+      stale = true;
+    };
+    // meterKey stands for place, scenario, pump and hour.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meterKey, arrived]);
 
   const hours = manifest?.hours ?? 48;
   const safeHour = Math.min(hour, hours - 1);
@@ -243,15 +265,15 @@ export function AppShell() {
     <main className="relative h-dvh w-full overflow-hidden">
       <p
         translate="no"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-11 items-center rounded-full pl-2 pr-4 md:left-[412px]"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-9 items-center rounded-full pl-1.5 pr-3 md:left-[412px]"
       >
-        <Logo size={30} />
+        <Logo size={22} />
       </p>
       {/* Key for the floodwater colours: shallow to deep. Lakes stay the basemap's pale blue. */}
       <div
         aria-label="Floodwater depth: 6 inches to over 4 feet"
         role="img"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px]"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+3.4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px]"
       >
         <p className="text-[0.6875rem] font-semibold text-label-2">Floodwater</p>
         <div className="mt-1 flex h-2 w-28 overflow-hidden rounded-full">
@@ -296,6 +318,40 @@ export function AppShell() {
         Drainage
       </button>
 
+      {/* Always on the map, above the resting sheet: the live flood meter (left) and Ask Pelican (right). */}
+      {place && (
+        <button
+          type="button"
+          onClick={() => open("live")}
+          aria-label="Flood meter: open the storm"
+          className="material-glass pressable fixed bottom-[calc(var(--peek)+env(safe-area-inset-bottom)+0.75rem)] left-3 z-10 flex items-center gap-2.5 rounded-[1rem] py-2 pl-2 pr-3 text-left md:bottom-4 md:left-[412px]"
+          style={{ ["--peek" as string]: `${PEEK_PX}px` }}
+        >
+          <MeterBar depthM={meter?.key === meterKey ? meter.depthM : null} />
+          <span>
+            <span className="block text-[0.6875rem] font-semibold text-label-2">{place === profile?.home ? "Water at home" : "Water here"}</span>
+            <span className="block text-headline font-semibold tabular-nums">
+              {meter?.key === meterKey && meter.depthM !== null ? meterWords(meter.depthM) : "…"}
+            </span>
+            <span className="block text-[0.6875rem] text-label-2">
+              {STORM_WORDS[scenario].short}
+              {hourZero ? ` · ${clockLabel(hourZero, safeHour)}` : ""}
+            </span>
+          </span>
+        </button>
+      )}
+      {/* Pelican floats over everything, sheet included, so it is always one tap away (hidden while it is open). */}
+      <button
+        type="button"
+        hidden={tab === "ask"}
+        onClick={() => open("ask")}
+        aria-label="Ask Pelican"
+        className="pressable fixed bottom-[calc(var(--peek)+env(safe-area-inset-bottom)+0.75rem)] right-3 z-30 grid size-14 place-items-center rounded-full bg-[#fbfaf6] shadow-[0_6px_20px_rgb(0_0_0/0.18)] ring-1 ring-black/5 md:bottom-4 md:right-4"
+        style={{ ["--peek" as string]: `${PEEK_PX}px` }}
+      >
+        <PelicanMark size={40} />
+      </button>
+
       <Sheet header={header} scrollKey={`${tab}-${stage}`} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
         <div key={tab} id="tab-panel" role="region" aria-label={TITLES[tab]} className="tab-enter" aria-live="polite">
           {tab === "home" && (
@@ -303,6 +359,7 @@ export function AppShell() {
               <StageControl stage={stage} onChange={pickStage} />
               {placeState}
               {stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
+              {stage === "before" && <WeeklyHighlight onOpen={() => open("rewards")} />}
               {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
               {stage === "during" &&
                 (ok ? (
@@ -352,6 +409,8 @@ export function AppShell() {
 
           {tab === "rewards" && <RewardsPanel />}
 
+          {tab === "help" && <HelpPanel position={place?.position ?? USF_AREA} />}
+
           {tab === "you" && profile && (
             <>
               <Group title="Your places">
@@ -395,5 +454,28 @@ export function AppShell() {
         </div>
       </Sheet>
     </main>
+  );
+}
+
+/** Depth for the meter: "Dry", "7 in", "1.5 ft". */
+function meterWords(m: number): string {
+  if (m < 0.02) return "Dry";
+  const inches = m * 39.37;
+  return inches < 12 ? `${Math.max(1, Math.round(inches))} in` : `${Math.round((inches / 12) * 2) / 2} ft`;
+}
+
+/** A small gauge: fills to 4 ft, coloured by the floodwater ramp. */
+function MeterBar({ depthM }: { depthM: number | null }) {
+  const d = depthM ?? 0;
+  const k = RAMP.findIndex(([max]) => d < max);
+  const [, r, g, b] = RAMP[k < 0 ? RAMP.length - 1 : k];
+  const fill = d < 0.02 ? 0 : Math.min(1, Math.max(0.08, d / 1.22));
+  return (
+    <span className="relative block h-11 w-3 overflow-hidden rounded-full bg-fill" aria-hidden>
+      <span
+        className="absolute inset-x-0 bottom-0 rounded-full transition-[height] duration-500 ease-out"
+        style={{ height: `${fill * 100}%`, background: `rgb(${r} ${g} ${b})` }}
+      />
+    </span>
   );
 }
