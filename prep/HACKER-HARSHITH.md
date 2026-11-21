@@ -371,6 +371,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
 
 - 14:25 For Hansika: address search (`web/lib/address`). Typing "12730 N 20th St" or "12225 N 15th St" offers "14800 N 20th St" / "15400 N 15th St" as the first suggestion, and a made-up number ("12902 N 46th St") resolves to a real house miles away with no warning. Could `resolveAddress` reject a candidate whose house number differs from the typed one, or score below ~90? Onboarding now refuses homes outside the model box (`match.inside`), so the wider Tampa box matters here too.
 
+- 15:05 For Hansika: at Harshith's request I changed your `web/lib/address/index.ts` (commit 1007129). `suggestAddresses` now asks the county locator and ArcGIS World in parallel: county addresses first, then named places (apartment communities, malls, neighbourhoods) inside a Tampa extent, deduped on the part before the first comma, at most 6. World ids start with `w:` and `resolveAddress` sends them to World's findAddressCandidates. If one service is down the other still answers; both down throws the county error as before. The function names and shapes are unchanged. Tests: three new cases in `web/tests/address/address.test.ts` (10 pass).
+
 ---
 
 ## 6. If things go wrong
