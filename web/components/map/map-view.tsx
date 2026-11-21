@@ -154,7 +154,11 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, onError }:
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const narrow = window.matchMedia("(max-width: 767px)").matches;
     const padding = narrow ? { top: 0, right: 0, left: 0, bottom: window.innerHeight * 0.46 } : { top: 0, right: 0, bottom: 0, left: 396 };
-    m.flyTo({ center: USF_CENTER, zoom: 14.2, pitch: 40, bearing: -12, padding, duration: 2600, curve: 1.2, essential: false, animate: !reduce });
+    const fly = () =>
+      m.flyTo({ center: USF_CENTER, zoom: 14.2, pitch: 40, bearing: -12, padding, duration: 2600, curve: 1.2, essential: false, animate: !reduce });
+    // With the intro already seen, the hand-over comes before the style loads; a flyTo then is dropped.
+    if (m.loaded()) fly();
+    else m.once("load", fly);
     // focus is read, not watched: an address picked later flies on its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrived]);

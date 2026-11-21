@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { MapView } from "@/components/map/map-view";
+import { StormControls } from "@/components/map/storm-controls";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
 import { AddressSearch } from "@/components/report-card/address-search";
@@ -142,6 +143,11 @@ export function AppShell() {
                       </button>
                     )}
                   </div>
+                </Group>
+              )}
+              {!place && stage === "during" && (
+                <Group title="Storm">
+                  <StormControls {...controls} />
                 </Group>
               )}
               {place && !current && (
