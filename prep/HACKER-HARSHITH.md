@@ -321,15 +321,15 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 
 **Lane D: map and design**
 - [x] D1 Design direction as tokens; one screen shown at two widths. Tokens in `web/app/globals.css`; map + sidebar/sheet checked at 1440 and 393 wide. MapLibre worker is copied to `public/` by predev/prebuild (bundler breaks its relative URL). Basemap is busy (bus stops, POIs): quiet it in D2
-- [ ] D2 App shell and basemap; deployed
-- [ ] D3 Water layer on the toy fixture (12:00), then on real files
+- [x] D2 App shell and basemap; deployed. Basemap quieted (POI and transit hidden). Deploy pending: Vercel is not Git-connected and needs `NEXT_PUBLIC_DATA_SET=real`
+- [x] D3 Water layer on the toy fixture (12:00), then on real files. Real data at 12:38 (`e657c8f`). CPU canvas pass per hour; WebGL surface still to do
 - [ ] D4 Timeline, storm selector, pump switch
 - [ ] D5 Markers
 - [ ] D6 iPhone: bottom sheet, Home Screen app, safe areas; checked on the device
 - [ ] D7 Loading, empty, error states; reduced motion and reduced transparency
 
 **Lane E: interface half**
-- [ ] E3 Address search box; "outside validated area"
+- [x] E3 Address search box; "outside validated area". County locator suggestions, keyboard and Enter; "Outside the validated area" card (`6418faf`)
 - [ ] E4 Card: grade, range, reasons, "official map says / we found", depth by storm
 - [ ] E4a Validation panel
 - [ ] E5 Guidance cards on real routing results; fixed safety footnote
