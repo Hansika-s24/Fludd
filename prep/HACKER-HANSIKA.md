@@ -321,8 +321,8 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [ ] S5 Scaffold pulled (11:20); stubs and placeholder routes located
 
 **Lane A: data**
-- [ ] A1 Elevation downloaded; source, date, resolution, licence in manifest
-- [ ] A2 FEMA, roads, drainage, stations, hospitals, Milton points, parcels downloaded; counts checked
+- [x] A1 Elevation downloaded; source, date, resolution, licence in manifest. 3DEP 2011 lidar, 2146 x 2125 px at 3.06 m, EPSG:26917, 2.94 to 27.09 m, 0 gaps
+- [ ] A2 FEMA, roads, drainage, stations, hospitals, Milton points, parcels downloaded; counts checked. Done, counts match research 03: FEMA zones 90, Milton flood points 547, known-flooding parcels 1,016, police street-flooding 159, county pumps 5, catch basins 1,325, channels 621, ponds 106, city detention 37, inlets 1,110, city pump/lift stations 4, open drains 258, parcels 16,808 (owner fields excluded). Not yet: roads, fire stations, hospitals (routing is "if time" under the buyer focus), NFIP claims. Raw files in `pipeline/data/bronze/` (49 MB, not in git); manifest there lists each URL, filter, count and time
 - [ ] A3 Clipped, reprojected, validated; quarantine folder in use
 - [ ] A4 Layers and manifest exported; fixture and real export pass the same contract test
 
