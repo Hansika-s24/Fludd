@@ -330,8 +330,8 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
         </LogoSheet>
       </div>
 
-      {/* paper grain, re-seated 15 times a second like film grain */}
-      <div className="boot-grain" style={{ backgroundPosition: `${Math.round(rand(`g${Math.floor(f / 2)}`) * 160)}px ${Math.round(rand(`h${Math.floor(f / 2)}`) * 160)}px` }} />
+      {/* paper grain: held still, because moving it repaints the whole screen and costs frames */}
+      <div className="boot-grain" />
     </>
   );
 }
