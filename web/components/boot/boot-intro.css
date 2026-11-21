@@ -16,6 +16,14 @@
   opacity: 0;
   pointer-events: none;
 }
+/* Leaving: the camera pushes through the logo while the layer fades, so the app reads as "inside". */
+.boot-stage {
+  transition: transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), filter 450ms ease-in;
+}
+.boot-leaving .boot-stage {
+  transform: scale(1.14);
+  filter: blur(6px);
+}
 
 .boot-stage {
   position: relative;
@@ -172,5 +180,11 @@
 @media (prefers-reduced-motion: reduce) {
   .boot-layer {
     transition-duration: 200ms;
+  }
+  .boot-stage,
+  .boot-leaving .boot-stage {
+    transition: none;
+    transform: none;
+    filter: none;
   }
 }
