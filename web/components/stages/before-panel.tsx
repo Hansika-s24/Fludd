@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useProfile } from "@/components/onboarding/profile";
 import { GradeCard } from "@/components/report-card/grade-card";
+import { SituationAdvice } from "@/components/stages/situation-advice";
 import { Group } from "@/components/ui/surface";
 import { loadGold, loadLayer, loadLevels, peakBuildingDepth } from "@/lib/data";
 import { distanceM } from "@/lib/grade";
@@ -58,6 +60,7 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
   const [depth100, setDepth100] = useState<number | null>(null);
   const [drainage, setDrainage] = useState<Drainage | null>(null);
   const remedies = useRemedies(grade, depth100);
+  const profile = useProfile();
 
   useEffect(() => {
     let stale = false;
@@ -159,6 +162,8 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
           <p className="px-4 py-3 text-subhead text-label-2">Mapping the drains around you…</p>
         )}
       </Group>
+
+      {profile?.done && <SituationAdvice profile={profile} letter={grade.letter} />}
 
       <Group title="Make it safer">
         {remedies === null && <p className="px-4 py-3 text-subhead text-label-2">Working out what helps here…</p>}

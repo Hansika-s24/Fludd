@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { MapView } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
-import { Onboarding } from "@/components/onboarding/onboarding";
+import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
 import { AddressSearch } from "@/components/report-card/address-search";
 import { ValidationPanel } from "@/components/report-card/validation-panel";
@@ -101,6 +101,8 @@ export function AppShell() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
+      {/* First open: full-screen onboarding, after the intro has handed over so it never sits under the video. */}
+      {arrived && onboarding && <OnboardingScreen onFinish={() => setSearched(null)} />}
       <MapView
         scenario={scenario}
         pump={pump}
@@ -127,9 +129,7 @@ export function AppShell() {
           homeLetter={!searched && current?.grade.kind === "ok" ? current.grade.letter : null}
         />
 
-        {onboarding && profile ? (
-          <Onboarding profile={profile} />
-        ) : (
+        {(
           <>
             <div className="px-4">
               <AddressSearch onPick={onPick} />
