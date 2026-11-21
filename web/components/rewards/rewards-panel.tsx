@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { Group } from "@/components/ui/surface";
 import { Icon } from "@/components/stages/shared";
+import { loadParcels } from "@/lib/data";
+import type { LngLat } from "@/lib/types";
 import {
   POINTS,
   RANKS,
@@ -15,8 +17,21 @@ import {
   type Contribution,
   type ContributionKind,
 } from "./contributions";
+import {
+  REACH_BOX,
+  REACH_CAP,
+  REACH_RADIUS_M,
+  approvedPlaces,
+  countHomes,
+  homesFrom,
+  impactOf,
+  placesOf,
+  reachSlots,
+  type Home,
+  type Impact,
+} from "./impact";
 
-/* The last rank this device has seen, so a rank-up celebrates exactly once. */
+/* The last level this device has seen, so moving up a level is marked exactly once. */
 const SEEN_KEY = "fludd-rank-seen-v1";
 const seenListeners = new Set<() => void>();
 let seenCache: number | null | undefined;
@@ -60,6 +75,9 @@ export function relativeTime(iso: string, now: number): string {
   return `${Math.floor(s / 86_400)} d ago`;
 }
 
+const count = (n: number) => n.toLocaleString("en-US");
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
 const LABELS: Record<ContributionKind, string> = {
   report: "Sent a flood photo",
   camera: "Shared a camera during storms",
@@ -85,30 +103,169 @@ function Pelican({ size = 44 }: { size?: number }) {
 }
 
 const STYLES = `
-.rw-card { position: relative; overflow: hidden; }
 .rw-celebrate { animation: rw-pop 600ms var(--ease-spring) both; }
-.rw-celebrate::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(105deg, transparent 30%, oklch(1 0 0 / 0.75) 50%, transparent 70%);
-  transform: translateX(-100%);
-  animation: rw-shimmer 1100ms 150ms ease-in-out both;
-}
 .rw-line { animation: rw-fade 300ms ease-out both; }
 .rw-tick { position: absolute; right: 0.25rem; top: -0.25rem; pointer-events: none; animation: rw-float 600ms ease-out forwards; }
 .rw-bar { transition: width 500ms var(--ease-spring); }
+.rw-home { transform-box: fill-box; transform-origin: center; animation: rw-home 320ms ease-out both; }
 @keyframes rw-pop { from { transform: scale(0.96); } to { transform: none; } }
-@keyframes rw-shimmer { to { transform: translateX(100%); } }
 @keyframes rw-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes rw-float { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }
+@keyframes rw-home { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .rw-celebrate { animation: rw-fade 300ms ease-out both; }
-  .rw-celebrate::after { display: none; }
   .rw-tick { display: none; }
   .rw-bar { transition: none; }
+  .rw-home { animation: none; }
 }
 `;
 
-function RankCard({ list }: { list: Contribution[] }) {
+/* ---------- real data: county homes, and the approved report feed ---------- */
+
+type HomesState = Home[] | "loading" | "unavailable";
+
+/** Homes from the county parcel file, loaded only once there is a place to count around. */
+function useHomes(needed: boolean): HomesState {
+  const [state, setState] = useState<Home[] | "unavailable" | null>(null);
+  useEffect(() => {
+    if (!needed) return;
+    let stale = false;
+    loadParcels().then(
+      (parcels) => {
+        if (!stale) setState(homesFrom(parcels));
+      },
+      () => {
+        if (!stale) setState("unavailable");
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [needed]);
+  return state ?? "loading";
+}
+
+/** Street-level positions of approved reports; null while loading, on an error, or when reports are not set up. */
+function useApprovedPlaces(): LngLat[] | null {
+  const [places, setPlaces] = useState<LngLat[] | null>(null);
+  useEffect(() => {
+    let stale = false;
+    fetch("/api/reports?status=approved")
+      .then((res) => (res.ok ? (res.json() as Promise<unknown>) : null))
+      .then((body) => {
+        if (!stale) setPlaces(approvedPlaces(body));
+      })
+      .catch(() => undefined); // offline: the community line simply stays hidden
+    return () => {
+      stale = true;
+    };
+  }, []);
+  return places;
+}
+
+/* ---------- the headline: one person, many homes ---------- */
+
+/** One person in the centre; each filled house around them is one counted home, nearest ring first. */
+function ReachPicture({ homes }: { homes: number }) {
+  const shown = Math.min(homes, REACH_CAP);
+  const mid = REACH_BOX / 2;
+  const label =
+    homes === 0
+      ? "One person in the centre, with the homes a report can reach around them"
+      : `You in the centre with ${count(shown)} ${plural(shown, "home", "homes")} around you${homes > REACH_CAP ? `, out of ${count(homes)} counted` : ""}`;
+  return (
+    <svg viewBox={`0 0 ${REACH_BOX} ${REACH_BOX}`} role="img" aria-label={label} className="mx-auto mt-4 block w-full max-w-[184px]">
+      {reachSlots(homes).map((slot, i) => (
+        <g key={i} transform={`translate(${slot.x} ${slot.y})`}>
+          <path
+            d="M0-4.8 5-.6V4.4H-5V-.6Z"
+            className={slot.filled ? "rw-home fill-tint" : "fill-label-3/25"}
+            style={slot.filled ? { animationDelay: `${i * 14}ms` } : undefined}
+          />
+        </g>
+      ))}
+      <circle cx={mid} cy={mid} r="13" className="fill-tint" />
+      <circle cx={mid} cy={mid - 4} r="3.6" fill="white" />
+      <path d={`M${mid - 7} ${mid + 7.5}a7 6 0 0 1 14 0Z`} fill="white" />
+    </svg>
+  );
+}
+
+const BLOCK = `${REACH_RADIUS_M} m, about one street block,`;
+const SEEN = "Once a person has checked a report, the people living there can see it on the map before they drive into the water.";
+
+function ImpactCard({ impact, uncounted }: { impact: Impact; uncounted: number }) {
+  const where = impact.kind === "invite" ? "" : plural(impact.places, "the place", `the ${count(impact.places)} places`);
+  return (
+    <section className="px-4 pt-4" aria-labelledby="rw-impact">
+      <div className="rounded-[var(--radius-group)] bg-group px-4 pt-4 pb-4">
+        <p className="text-footnote font-medium uppercase text-label-2">Your reach</p>
+        {impact.kind === "homes" ? (
+          <>
+            <h2 id="rw-impact" className="mt-1">
+              <span className="block text-subhead text-label-2">You&apos;ve helped about</span>
+              <span className="mt-1 block">
+                <span className="text-grade font-bold tabular-nums">{count(impact.homes)}</span>{" "}
+                <span className="text-title font-semibold">{plural(impact.homes, "home", "homes")}</span>
+              </span>
+            </h2>
+            <p className="mt-2 text-subhead text-label-2">
+              Homes within {BLOCK} of {where} you reported from. {SEEN}
+            </p>
+          </>
+        ) : impact.kind === "counting" ? (
+          <>
+            <h2 id="rw-impact" className="mt-1 text-title font-semibold">
+              Counting the homes near you
+            </h2>
+            <p className="mt-2 text-subhead text-label-2" role="status">
+              Reading county parcel records for homes within {BLOCK} of {where} you reported from.
+            </p>
+          </>
+        ) : impact.kind === "places" ? (
+          <>
+            <h2 id="rw-impact" className="mt-1 text-title font-semibold">
+              You reported from {count(impact.places)} {plural(impact.places, "place", "places")}
+            </h2>
+            <p className="mt-2 text-subhead text-label-2">
+              {impact.why === "no-records"
+                ? "The county parcel records did not load, so the homes nearby cannot be counted right now. Your reports still stand."
+                : `The county parcel records show no homes within ${REACH_RADIUS_M} m of ${plural(impact.places, "it", "them")}. Once a person has checked a report, anyone opening the map nearby still sees it.`}
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 id="rw-impact" className="mt-1 text-title font-semibold">
+              One report reaches a whole block
+            </h2>
+            <p className="mt-2 text-subhead text-label-2">
+              Send a photo of flooding from Home, under Report what you saw. Fludd then counts the real homes within{" "}
+              {BLOCK} of it, from county parcel records. {SEEN}
+            </p>
+          </>
+        )}
+        {impact.kind !== "places" && <ReachPicture homes={impact.kind === "homes" ? impact.homes : 0} />}
+        {impact.kind === "homes" && (
+          <p className="mt-3 text-center text-footnote text-label-2">
+            {impact.homes > REACH_CAP
+              ? `You are in the centre. The picture holds ${REACH_CAP} houses; the number above is the full count.`
+              : "You are in the centre. Each filled house is one home."}
+          </p>
+        )}
+        {uncounted > 0 && (
+          <p className="mt-3 text-footnote text-label-2">
+            {count(uncounted)} earlier {plural(uncounted, "report was", "reports were")} saved without a place, so{" "}
+            {plural(uncounted, "it is", "they are")} not in this count.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- levels and points: kept, but under the headline and smaller ---------- */
+
+function LevelRow({ list }: { list: Contribution[] }) {
   const points = totalPoints(list);
   const rank = rankFor(points);
   const index = rankIndex(rank.name);
@@ -117,7 +274,7 @@ function RankCard({ list }: { list: Contribution[] }) {
 
   useEffect(() => {
     if (seen === null) {
-      saveSeen(index); // first visit: remember quietly, nothing to celebrate yet
+      saveSeen(index); // first visit: remember quietly, nothing to mark yet
     } else if (index < seen) {
       saveSeen(index);
     } else if (celebrating) {
@@ -127,41 +284,35 @@ function RankCard({ list }: { list: Contribution[] }) {
   }, [seen, index, celebrating]);
 
   return (
-    <section className="px-4 pt-4">
-      <div
-        key={celebrating ? `up-${index}` : "card"}
-        className={`rw-card rounded-[var(--radius-group)] bg-group px-4 pt-4 pb-4 ${celebrating ? "rw-celebrate" : ""}`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-footnote font-medium uppercase text-label-2">Your rank</p>
-            <p className="mt-1 text-title font-semibold">{rank.name}</p>
-            <p className="mt-1 text-subhead text-label-2">
-              <span className="font-semibold text-label tabular-nums">{points}</span> {points === 1 ? "point" : "points"}
+    <Group title="Your contribution level">
+      <div key={celebrating ? `up-${index}` : "level"} className={`px-4 py-3 ${celebrating ? "rw-celebrate" : ""}`}>
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 text-tint">
+            <Pelican size={30} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-headline font-semibold">{rank.name}</p>
+            <p className="text-footnote text-label-2">
+              <span className="tabular-nums">{points}</span> {plural(points, "point", "points")}
+              {rank.next ? `, ${rank.next.min - points} more to ${rank.next.name}` : ", the highest level"}
             </p>
           </div>
-          <span className="text-tint">
-            <Pelican />
-          </span>
         </div>
         <div
-          className="mt-4 h-1 overflow-hidden rounded-full bg-fill"
+          className="mt-3 h-1 overflow-hidden rounded-full bg-fill"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(rank.progress * 100)}
-          aria-label={rank.next ? `Progress to ${rank.next.name}` : "Top rank reached"}
+          aria-label={rank.next ? `Progress to ${rank.next.name}` : "Highest level reached"}
         >
           <div className="rw-bar h-full rounded-full bg-tint" style={{ width: `${rank.progress * 100}%` }} />
         </div>
-        <p className="mt-2 text-footnote text-label-2">
-          {rank.next ? `${rank.next.min - points} points to ${rank.next.name}` : "You have reached the top rank."}
-        </p>
-        <p aria-live="polite" className="text-subhead font-medium text-tint">
+        <p aria-live="polite" className="text-footnote font-medium text-tint">
           {celebrating && <span className="rw-line mt-2 block">{`You're now a ${rank.name}.`}</span>}
         </p>
       </div>
-    </section>
+    </Group>
   );
 }
 
@@ -291,43 +442,81 @@ function useNow(): number {
   return useSyncExternalStore(subscribeNow, readNow, () => 0);
 }
 
-/** Ranks and points for helping the neighbourhood during floods. Device-only, never shown to anyone else. */
+/**
+ * How one person's contributions reach the homes around them, with levels and points underneath.
+ * Contributions stay on this device. The only things fetched are the county parcel file and the public feed
+ * of approved reports; nothing about this person is sent.
+ */
 export function RewardsPanel() {
   const list = useContributions();
   const now = useNow();
+  const places = useMemo(() => placesOf(list ?? []), [list]);
+  const community = useApprovedPlaces();
+  const homes = useHomes(places.length > 0 || (community !== null && community.length > 0));
+  const helped = useMemo(() => (typeof homes === "string" ? homes : countHomes(places, homes)), [places, homes]);
+  const communityHomes = useMemo(
+    () => (community && community.length > 0 && typeof homes !== "string" ? countHomes(community, homes) : null),
+    [community, homes],
+  );
+  const recent = useMemo(() => [...(list ?? [])].reverse().slice(0, 8), [list]);
+  /** Homes each recent contribution reaches on its own; null with no place or before the records load. */
+  const recentHomes = useMemo(
+    () => recent.map((c) => (c.position && typeof homes !== "string" ? countHomes([c.position], homes) : null)),
+    [recent, homes],
+  );
+
   if (!list) return <div className="min-h-40" aria-busy />;
-  const recent = [...list].reverse().slice(0, 8);
   // `now` refreshes every 30 s; a row tapped just now must count as today straight away.
   const ruleNow = Math.max(now, list.length ? Date.parse(list[list.length - 1].at) : 0);
+  const uncounted = list.filter((c) => (c.kind === "report" || c.kind === "camera") && !c.position).length;
 
   return (
     <div className="pb-4">
       <style>{STYLES}</style>
-      <RankCard list={list} />
+      <ImpactCard impact={impactOf(places.length, helped)} uncounted={uncounted} />
+      {community && communityHomes !== null && (
+        <p className="px-7 pt-2 text-footnote text-label-2">
+          Neighbours here have sent {count(community.length)} approved {plural(community.length, "report", "reports")}
+          {communityHomes > 0 ? ` covering about ${count(communityHomes)} ${plural(communityHomes, "home", "homes")}` : ""}
+          . That includes any of yours a person has checked.
+        </p>
+      )}
+      <LevelRow list={list} />
       <Group title="Ways to help">
         {WAYS.map((w, i) => (
           <WayRow key={w.kind} way={w} list={list} now={ruleNow} last={i === WAYS.length - 1} />
         ))}
       </Group>
-      <Group title="Your history">
+      <Group title="What you have done">
         {recent.length === 0 ? (
-          <p className="px-4 py-3 text-subhead text-label-2">Nothing yet. Each way to help above adds to your rank.</p>
+          <p className="px-4 py-3 text-subhead text-label-2">Nothing yet. Anything you do from the list above shows here.</p>
         ) : (
           <ul>
-            {recent.map((c, i) => (
-              <li key={`${c.at}-${c.kind}`} className={`flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 ${i === recent.length - 1 ? "" : "border-b border-separator"}`}>
-                <div className="min-w-0">
-                  <p className="text-subhead">{LABELS[c.kind]}</p>
-                  <p className="text-footnote text-label-2">{relativeTime(c.at, Math.max(now, ruleNow))}</p>
-                </div>
-                <span className="shrink-0 text-subhead font-semibold tabular-nums text-label-2">+{POINTS[c.kind]}</span>
-              </li>
-            ))}
+            {recent.map((c, i) => {
+              const near = recentHomes[i];
+              return (
+                <li
+                  key={`${c.at}-${c.kind}`}
+                  className={`flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 ${i === recent.length - 1 ? "" : "border-b border-separator"}`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-subhead">{LABELS[c.kind]}</p>
+                    <p className="text-footnote text-label-2">
+                      {relativeTime(c.at, ruleNow)}
+                      {near ? `, about ${count(near)} ${plural(near, "home", "homes")} within ${REACH_RADIUS_M} m` : ""}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-footnote tabular-nums text-label-2">+{POINTS[c.kind]}</span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Group>
       <p className="px-7 pt-3 text-footnote text-label-2">
-        Points stay on this device. Ranks are for fun and do not affect anyone&apos;s grade.
+        Your contributions and their places stay on this device. Home counts come from county parcel records: one
+        parcel is one home, vacant lots are left out, and a home near two of your reports counts once. Levels and
+        points are for fun and do not affect anyone&apos;s grade.
       </p>
     </div>
   );
