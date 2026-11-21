@@ -22,7 +22,7 @@ export function DemoShell({
   simulated,
   children,
 }: {
-  number: 1 | 2 | 3;
+  number: 1 | 2 | 3 | 4;
   title: string;
   steps: DemoStep[];
   step: number;
@@ -42,7 +42,7 @@ export function DemoShell({
           All demos
         </Link>
         <p className="material-glass flex h-9 items-center rounded-full px-3 text-footnote font-semibold">
-          Demo {number} of 3 · {title}
+          Demo {number} of 4 · {title}
         </p>
         {simulated && (
           <p className="flex h-9 items-center rounded-full bg-warn px-3 text-footnote font-semibold text-white" role="note">

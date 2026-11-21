@@ -4,7 +4,7 @@ import { Logo } from "@/components/ui/logo";
 
 export const metadata: Metadata = {
   title: "Fludd demos",
-  description: "Three short guided walks through Fludd on the real map and the real model.",
+  description: "Four short guided walks through Fludd on the real map and the real model.",
 };
 
 const DEMOS = [
@@ -26,6 +26,12 @@ const DEMOS = [
     line: "A camera you already have, or a spare phone, pointed at your parking spot reads the water at your own kerb and sets it against the model.",
     note: "Simulated camera on the real model",
   },
+  {
+    href: "/demo/4",
+    title: "Food after the flood",
+    line: "A restaurant with meals it cannot sell and a street that cannot cook: see a food offer go up, and neighbours claim it without giving a name.",
+    note: "Simulated offers on the real map",
+  },
 ] as const;
 
 export default function DemoIndex() {
@@ -34,7 +40,7 @@ export default function DemoIndex() {
       <Logo size={30} />
       <h1 className="mt-6 text-balance text-title font-bold">See Fludd with people on it</h1>
       <p className="mt-2 text-subhead text-label-2">
-        Three short guided walks. Each runs on the real map and the real flood model; anything made up for the walk is labelled on screen.
+        Four short guided walks. Each runs on the real map and the real flood model; anything made up for the walk is labelled on screen.
       </p>
       <ol className="mt-6 space-y-3">
         {DEMOS.map((d, i) => (
