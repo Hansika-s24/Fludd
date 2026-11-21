@@ -43,7 +43,7 @@ test("first run: onboarding leads to a graded home", async ({ page }) => {
   await expect(page.getByRole("dialog").getByText("4202 E Fowler Ave, Tampa, 33620")).toBeVisible();
   await page.getByRole("button", { name: "Show me my home" }).click();
   await expect(sheet(page).getByText("Flood grade")).toBeAttached();
-  await expect(page.getByRole("tab", { name: "Before" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: /Plan a move/ })).toHaveAttribute("aria-selected", "true");
 });
 
 test("onboarding refuses a home outside the model area", async ({ page }) => {
@@ -61,20 +61,20 @@ test("onboarding refuses a home outside the model area", async ({ page }) => {
 
 test("one address before, during and after a flood", async ({ page }) => {
   await openAsResident(page);
-  await page.getByRole("tab", { name: "During" }).click();
+  await page.getByRole("tab", { name: /Storm mode/ }).click();
   await expect(sheet(page).getByText("Move your car by")).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Storm" })).toBeVisible();
-  await page.getByRole("tab", { name: "After" }).click();
+  await page.getByRole("tab", { name: /After a flood/ }).click();
   await expect(sheet(page).getByText("What Hurricane Milton did here")).toBeVisible();
   await page.getByRole("button", { name: "Replay Milton on the map" }).click();
-  await expect(page.getByRole("tab", { name: "During" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: /Storm mode/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("radio", { name: "Milton" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("shortcuts open each section and close back to home", async ({ page }) => {
   await openAsResident(page);
   await page.getByRole("button", { name: "Live" }).click();
-  await expect(page.getByRole("tab", { name: "During" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: /Storm mode/ })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Food & help" }).click();
   await expect(page.getByRole("heading", { name: "Food & help" })).toBeVisible();
   await expect(sheet(page).getByText("211", { exact: true })).toBeVisible();
@@ -86,7 +86,7 @@ test("shortcuts open each section and close back to home", async ({ page }) => {
   await page.getByRole("button", { name: "You", exact: true }).click();
   await expect(sheet(page).getByText("4202 E Fowler Ave")).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByRole("tab", { name: "Before" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Plan a move/ })).toBeVisible();
 });
 
 test("every section keeps the floodwater warning", async ({ page }) => {

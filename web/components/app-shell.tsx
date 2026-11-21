@@ -18,6 +18,7 @@ import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
+import { motion, useReducedMotion } from "motion/react";
 import { PEEK_PX, SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
 import { Logo, PelicanMark } from "@/components/ui/logo";
 import { STORM_WORDS } from "@/components/ui/storm-words";
@@ -43,6 +44,9 @@ type ManifestWithClocks = Manifest & { hourZeroByScenario?: Partial<Record<Scena
 /** Drainage network layers shown by the map's Drainage button. */
 const DRAINAGE: LayerName[] = ["storm-pipes", "ponds", "drains", "outfalls", "pump-stations"];
 
+/** Where each stage card sits across the row: the reveal circle grows from there. */
+const STAGE_X: Record<Stage, string> = { before: "17%", during: "50%", after: "83%" };
+
 /** Weather for the USF area until an address is chosen. */
 const USF_AREA: LngLat = [-82.4139, 28.0587];
 
@@ -64,6 +68,7 @@ export function AppShell() {
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("home");
   const [stage, setStage] = useState<Stage>("before");
+  const reduceMotion = useReducedMotion();
   const [scenario, setScenario] = useState<Scenario>("100yr");
   const [pump, setPump] = useState<PumpState>("on");
   const [hour, setHour] = useState<Hour>(14);
@@ -357,6 +362,14 @@ export function AppShell() {
           {tab === "home" && (
             <>
               <StageControl stage={stage} onChange={pickStage} />
+              {/* Switching stage: the new content opens in a circle from the card that was tapped. */}
+              <motion.div
+                key={stage}
+                id="stage-panel"
+                initial={reduceMotion ? false : { clipPath: `circle(0% at ${STAGE_X[stage]} 0%)` }}
+                animate={{ clipPath: `circle(150% at ${STAGE_X[stage]} 0%)` }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              >
               {placeState}
               {stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
               {stage === "before" && <WeeklyHighlight onOpen={() => open("rewards")} />}
@@ -383,6 +396,7 @@ export function AppShell() {
                 />
               )}
               {stage === "before" && <ValidationPanel />}
+              </motion.div>
               {searched && profile?.home && (
                 <div className="px-5 pt-3">
                   <button type="button" onClick={() => setSearched(null)} className="min-h-11 text-subhead font-medium text-tint">
