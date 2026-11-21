@@ -223,6 +223,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
             <AddressSearch
               onPick={(match, err) => {
                 if (err || !match) return setError(err ?? "We couldn't find that address. Try the street number and name.");
+                if (!match.inside) return setError(`${match.label.split(",")[0]} is outside the area around USF we cover. Try an address closer to campus.`);
                 next(save({ home: { label: match.label, position: match.position } }));
               }}
             />
@@ -327,34 +328,22 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     case "camera":
       body = (
         <>
-          {heading("Have an outdoor camera?")}
+          {heading("Have a spare phone?")}
           {lede(
-            "Completely optional. During a flood, Fludd can look at one still image from your camera once an hour to estimate how deep the water is near your home. A person never sees it unless you send a report.",
+            "Completely optional. Prop an old phone in a window facing the street and Fludd can check how deep the water is during a storm, one still photo at a time. Nothing is recorded, and you set it up later under You.",
           )}
           <div className="mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
             <label className="flex min-h-14 items-center justify-between gap-4 px-4 py-2">
-              <span className="text-body">Use my camera during a flood</span>
+              <span className="text-body">I&apos;d like a flood camera</span>
               <input
                 type="checkbox"
                 role="switch"
                 className="switch"
                 checked={p.camera.optIn}
                 aria-checked={p.camera.optIn}
-                onChange={(e) => save({ camera: { ...p.camera, optIn: e.target.checked } })}
+                onChange={(e) => save({ camera: { optIn: e.target.checked, snapshotUrl: "" } })}
               />
             </label>
-            {p.camera.optIn && (
-              <div className="border-t border-separator">
-                <Field
-                  label="Snapshot link"
-                  hint="Your camera's snapshot link, from its app settings"
-                  type="url"
-                  value={p.camera.snapshotUrl}
-                  onChange={(snapshotUrl) => save({ camera: { ...p.camera, snapshotUrl } })}
-                  last
-                />
-              </div>
-            )}
           </div>
         </>
       );

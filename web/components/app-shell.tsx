@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
+import { FloodCamera } from "@/components/camera/flood-camera";
 import { MapView } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
@@ -281,6 +282,9 @@ export function AppShell() {
                   }
                   last
                 />
+              </Group>
+              <Group title="Flood camera">
+                <FloodCamera home={profile.home?.position ?? null} />
               </Group>
               <div className="space-y-1 px-5 pt-3">
                 <button type="button" onClick={() => saveProfile({ done: false })} className="block min-h-11 text-subhead font-medium text-tint">
