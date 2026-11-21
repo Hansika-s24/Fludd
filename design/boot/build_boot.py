@@ -29,14 +29,15 @@ LAST = 148  # 4.9 s
 # Design pixel coordinates, taken from the 2D boards. ppm = design pixels per metre (logo is 2 m wide).
 LAYOUT = {
     "desktop": dict(w=1440, h=900, ppm=160.0, logo=(720, 320), drop=(720, 148), fall=282, ring=(720, 458),
-                    handoff=(160, 18), res=(1440, 900), streaks=56, rain_w=1800),
+                    handoff=(160, 18), res=(1440, 900), streaks=110, rain_w=1800),
     "phone": dict(w=390, h=844, ppm=120.0, logo=(195, 260), drop=(195, 124), fall=211, ring=(195, 363),
-                  handoff=(75, 456), res=(780, 1688), streaks=44, rain_w=760),
+                  handoff=(75, 456), res=(780, 1688), streaks=80, rain_w=760),
 }[VARIANT]
 PPM = LAYOUT["ppm"]
 
 BG, WATER, DEEP, HILITE, FOAM = "#f2f1ec", "#5b8fd6", "#23467f", "#9cc7ea", "#fbfaf6"
 BODY, STRIPE, BEAK, INK = "#5a4e44", "#e4d8bf", "#e8964a", "#1c1d21"
+STORM, STORM_LIT = "#0f1a2e", "#34588f"  # night sky before the drop lands, and the first light after it
 
 
 def frame_at(seconds: float) -> int:
@@ -214,26 +215,43 @@ nt.links.new(page.outputs[0], mix.inputs[2])
 nt.links.new(mix.outputs[0], out_node.inputs["Surface"])
 
 sun_data = bpy.data.lights.new("Key", "SUN")
-sun_data.energy = 2.9
+sun_data.energy = 1.0
 sun_data.angle = math.radians(14)
 sun = bpy.data.objects.new("Key", sun_data)
 scene.collection.objects.link(sun)
+rim_data = bpy.data.lights.new("Rim", "SUN")
+rim_data.energy = 1.1
+rim_data.color = (0.62, 0.78, 1.0)
+rim_data.angle = math.radians(20)
+rim = bpy.data.objects.new("Rim", rim_data)
+scene.collection.objects.link(rim)
+rim.rotation_euler = Vector((-0.75, 0.35, -0.55)).normalized().to_track_quat("-Z", "Y").to_euler()
 sun.rotation_euler = Vector((0.68, -0.6, -0.46)).normalized().to_track_quat("-Z", "Y").to_euler()
 
 cam_data = bpy.data.cameras.new("Cam")
-cam_data.type = "ORTHO"
-cam_data.ortho_scale = max(LAYOUT["w"], LAYOUT["h"]) / PPM
+LENS = 85.0
+cam_data.type = "PERSP"
+cam_data.lens = LENS
+cam_data.sensor_fit = "AUTO"
+cam_data.clip_end = 400
 cam = bpy.data.objects.new("Cam", cam_data)
 scene.collection.objects.link(cam)
 cx, cy = world(LAYOUT["w"] / 2, LAYOUT["h"] / 2)
-cam.location = (cx, cy, 20)
+# Distance at which the lens frames exactly what the flat design shows (larger side = max(w, h) / PPM metres).
+DIST = (max(LAYOUT["w"], LAYOUT["h"]) / PPM) * LENS / 36.0
+cam.location = (cx, cy, DIST)
 scene.camera = cam
 
 M = dict(
-    water=material("Water", WATER, 0.3), deep=material("WaterDeep", DEEP, 0.34), hilite=material("Highlight", HILITE, 0.4),
+    water=material("Water", WATER, 0.16), deep=material("WaterDeep", DEEP, 0.2), hilite=material("Highlight", HILITE, 0.4),
     foam=material("Foam", FOAM, 0.5), body=material("PelicanBody", BODY, 0.7), stripe=material("WingStripe", STRIPE, 0.7),
-    beak=material("Beak", BEAK, 0.55), rain=material("Rain", WATER, 0.4, blended=True), ring=material("Splash", WATER, 0.4, blended=True),
+    beak=material("Beak", BEAK, 0.55), rain=material("Rain", HILITE, 0.4, blended=True), ring=material("Splash", WATER, 0.4, blended=True),
 )
+
+_rain_bsdf = M["rain"].node_tree.nodes["Principled BSDF"]
+if "Emission Color" in _rain_bsdf.inputs:
+    _rain_bsdf.inputs["Emission Color"].default_value = lin(HILITE)
+    _rain_bsdf.inputs["Emission Strength"].default_value = 1.6
 
 # ------------------------------------------------------------------ logo from the SVG
 parts = import_svg(os.path.join(REF, "fludd-logo.svg"))
@@ -317,7 +335,7 @@ direction = Vector((-math.sin(tilt), -math.cos(tilt), 0))
 travel = 1100 / PPM
 rain = empty("Rain", (*world(LAYOUT["w"] / 2, 150), -1.0))
 for i in range(LAYOUT["streaks"]):
-    length = random.uniform(26, 42) / PPM
+    length = random.uniform(40, 78) / PPM
     bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=1.6 / PPM, depth=length)
     s = bpy.context.active_object
     s.name = f"Streak{i:02d}"
@@ -402,10 +420,10 @@ ring_alpha.default_value = 0.0
 ring_alpha.keyframe_insert("default_value", frame=f_ring1)
 ring.scale = (0, 0, 0)
 key(ring, "scale", f_ring1 + 1, "CONSTANT")
-for i in range(7):  # a short crown of droplets
-    ang = math.radians(20 + i * 23.3)
+for i in range(15):  # a crown of droplets
+    ang = math.radians(14 + i * 10.9)
     d = sphere(f"Crown{i}", (rx, ry, 0.55), random.uniform(3.0, 5.5) / PPM, M["water"])
-    reach, height = random.uniform(40, 75) / PPM, random.uniform(45, 85) / PPM
+    reach, height = random.uniform(50, 150) / PPM, random.uniform(55, 170) / PPM
     d.scale = (0, 0, 0)
     key(d, "scale", f_ring0 - 1, "CONSTANT")
     d.scale = (1, 1, 1)
@@ -426,6 +444,8 @@ wave_rig.scale = (0, 0, 0)
 key(wave_rig, "scale", f_rise0 - 1, "CONSTANT")
 wave_rig.scale = (0.5, 0.02, 1)
 key(wave_rig, "scale", f_rise0, "QUART", "EASE_OUT")
+wave_rig.scale = (1.05, 1.15, 1)
+key(wave_rig, "scale", f_rise1 - 7, "SINE", "EASE_IN_OUT")
 wave_rig.scale = (1, 1, 1)
 key(wave_rig, "scale", f_rise1, "SINE", "EASE_IN_OUT")
 for i, bead in enumerate(beads):
@@ -444,7 +464,7 @@ pel_rig.scale = (0.82, 0.82, 0.82)
 pel_rig.location = rest + Vector((22.5 * u, 25 * u, 0))
 pel_rig.rotation_euler = (0, 0, math.radians(-10))
 key(pel_rig, "scale", f_land0, "CUBIC", "EASE_OUT")
-key(pel_rig, "location", f_land0, "QUART", "EASE_OUT")
+key(pel_rig, "location", f_land0, "BACK", "EASE_OUT")
 key(pel_rig, "rotation_euler", f_land0, "CUBIC", "EASE_OUT")
 pel_rig.location = rest
 pel_rig.scale = (1.07, 0.9, 1)  # squash on touchdown
@@ -477,9 +497,45 @@ eye.scale = (eye_scale[0], eye_scale[1] * 0.12, eye_scale[2])
 key(eye, "scale", blink + 2)
 eye.scale = eye_scale
 key(eye, "scale", blink + 5)
-key(cam_data, "ortho_scale", frame_at(2.2), "SINE", "EASE_IN_OUT")
-cam_data.ortho_scale *= 0.98
-key(cam_data, "ortho_scale", f_hold1)
+# ---- camera: drifts in through the rain, swings low past the impact, then settles square-on for the text
+def cam_key(frame, dx, dy, dz, interp="SINE", easing="EASE_IN_OUT"):
+    """Place the camera and aim it at the frame centre with the page's up as its up, so it never rolls."""
+    from mathutils import Matrix
+    pos = Vector((cx + dx * DIST, cy + dy * DIST, DIST * dz))
+    forward = (Vector((cx, cy, 0)) - pos).normalized()
+    up = Vector((0, 1, 0))
+    up = (up - up.dot(forward) * forward).normalized()
+    right = up.cross(-forward).normalized()
+    cam.location = pos
+    cam.rotation_euler = Matrix((right, up, -forward)).transposed().to_euler()
+    key(cam, "location", frame, interp, easing)
+    key(cam, "rotation_euler", frame, interp, easing)
+
+cam_key(1, 0.10, 0.06, 1.16)
+cam_key(f_hit, -0.06, -0.02, 1.0, "QUART", "EASE_OUT")
+cam_key(f_rise0 + 6, -0.30, -0.16, 0.86, "SINE", "EASE_IN_OUT")
+cam_key(frame_at(2.2), 0.0, 0.0, 1.0)
+cam_key(f_hold1, 0.0, 0.0, 0.975, "LINEAR", "AUTO")
+
+# ---- sky: night storm, a flash as the drop lands, then it clears to the app's page colour
+sky_colour, fill_strength = page.inputs["Color"], fill.inputs["Strength"]
+
+
+def sky(frame, hex_colour, ambient, sun_energy):
+    sky_colour.default_value = lin(hex_colour)
+    sky_colour.keyframe_insert("default_value", frame=frame)
+    fill_strength.default_value = ambient
+    fill_strength.keyframe_insert("default_value", frame=frame)
+    sun_data.energy = sun_energy
+    sun_data.keyframe_insert("energy", frame=frame)
+
+
+sky(1, STORM, 0.14, 1.0)
+sky(f_hit - 1, STORM, 0.14, 1.0)
+sky(f_hit + 1, "#ffffff", 1.0, 7.0)   # lightning
+sky(f_hit + 4, STORM_LIT, 0.26, 2.2)
+sky(frame_at(2.0), BG, 0.36, 2.9)
+sky(LAST, BG, 0.36, 2.9)
 
 # ------------------------------------------------------------------ handoff (4.30 to 4.80 s)
 f_out0, f_out1 = frame_at(4.30), frame_at(4.80)
@@ -499,7 +555,7 @@ apply_interpolation()
 os.makedirs(OUT, exist_ok=True)
 if MODE == "stills":
     scene.render.resolution_percentage = 50
-    for f in (6, 14, 24, 32, 36, 38, 40, 46, 56, 62, 67, 90, 105, 131, 138, 144):
+    for f in (4, 14, 24, 32, 36, 37, 38, 40, 44, 50, 56, 62, 67, 105, 138, 144):
         scene.frame_set(f)
         scene.render.filepath = os.path.join(OUT, f"{VARIANT}_f{f:03d}.png")
         bpy.ops.render.render(write_still=True)
