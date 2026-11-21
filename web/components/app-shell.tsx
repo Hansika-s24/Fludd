@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { FloodCamera } from "@/components/camera/flood-camera";
 import { EmptyAddressIllustration } from "@/components/illustrations";
-import { MapView } from "@/components/map/map-view";
+import { MapView, RAMP } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
@@ -23,6 +23,7 @@ import { Logo } from "@/components/ui/logo";
 import { Group } from "@/components/ui/surface";
 import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
+import { reverseGeocode } from "@/lib/address";
 import { gradeFor } from "@/lib/grade";
 import type { AddressMatch, GradeResult, Hour, LayerName, LngLat, Manifest, PumpState, Scenario } from "@/lib/types";
 
@@ -105,6 +106,19 @@ export function AppShell() {
     if (!match) return setError("We couldn't find that address. Try the street number and name.");
     setSearched({ label: match.label, position: match.position });
     setRoute(null);
+  }
+
+  // A tap on the map: that building becomes the place on the card, named by its street address when there is one.
+  async function selectSpot(position: LngLat) {
+    setError(null);
+    setRoute(null);
+    setTab("home");
+    window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    const label = await Promise.race([
+      reverseGeocode(position).catch(() => null),
+      new Promise<null>((r) => setTimeout(() => r(null), 1500)),
+    ]);
+    setSearched({ label: label ?? "Selected building", position });
   }
 
   const hours = manifest?.hours ?? 48;
@@ -227,6 +241,24 @@ export function AppShell() {
       >
         <Logo size={30} />
       </p>
+      {/* Key for the floodwater colours: shallow to deep. Lakes stay the basemap's pale blue. */}
+      <div
+        aria-label="Floodwater depth: 6 inches to over 4 feet"
+        role="img"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px]"
+      >
+        <p className="text-[0.6875rem] font-semibold text-label-2">Floodwater</p>
+        <div className="mt-1 flex h-2 w-28 overflow-hidden rounded-full">
+          {[1, 2, 3, 4, 5].map((k) => (
+            <span key={k} className="flex-1" style={{ background: `rgb(${RAMP[k - 1].slice(1).join(" ")})` }} />
+          ))}
+        </div>
+        <div className="mt-0.5 flex w-28 justify-between text-[0.625rem] tabular-nums text-label-2">
+          <span>6 in</span>
+          <span>2 ft</span>
+          <span>4 ft+</span>
+        </div>
+      </div>
       {/* First open: full-screen onboarding, after the intro has handed over so it never sits under the video. */}
       {arrived && onboarding && (
         <OnboardingScreen
@@ -245,6 +277,7 @@ export function AppShell() {
         arrived={arrived}
         overlays={drainage ? DRAINAGE : []}
         route={route}
+        onSelect={selectSpot}
         onError={onError}
       />
       <button

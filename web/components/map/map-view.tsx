@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource, type ExpressionSpecification } from "maplibre-gl";
-import { loadGold, loadLayer, loadLevels } from "@/lib/data";
-import type { GoldData, Hour, LayerName, LngLat, PumpState, Scenario } from "@/lib/types";
+import { GeolocateControl, Map as MapLibreMap, Marker, Popup, setWorkerUrl, type CanvasSource, type ExpressionSpecification, type PointLike } from "maplibre-gl";
+import { cellIndex, depthAtCell, loadGold, loadLayer, loadLevels } from "@/lib/data";
+import type { GoldData, Hour, LayerName, Levels, LngLat, PumpState, Scenario } from "@/lib/types";
+import { STORM_WORDS } from "@/components/ui/storm-words";
 import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
@@ -12,15 +13,28 @@ setWorkerUrl("/maplibre-gl-worker.mjs");
 const USF_CENTER: [number, number] = [-82.4139, 28.0587];
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
-// Water ramp, sRGB versions of --color-water-1..5 in globals.css. Band edges: 6 in, 1 ft, 2 ft, 4 ft.
-const RAMP: [maxDepthM: number, r: number, g: number, b: number][] = [
-  [0.15, 169, 211, 242],
-  [0.3, 116, 174, 230],
-  [0.61, 63, 134, 208],
-  [1.22, 42, 95, 174],
-  [Infinity, 31, 63, 125],
+// Floodwater ramp. Band edges: 6 in, 1 ft, 2 ft, 4 ft. The map key in app-shell reads the same table.
+// Cyan to violet on purpose: the basemap draws lakes and ponds in pale blue, and floodwater must never read as a lake.
+export const RAMP: [maxDepthM: number, r: number, g: number, b: number][] = [
+  [0.15, 94, 214, 222],
+  [0.3, 33, 172, 204],
+  [0.61, 25, 118, 196],
+  [1.22, 52, 64, 176],
+  [Infinity, 88, 34, 140],
 ];
 const MIN_SHOWN_M = 0.02;
+
+/** The depth callout's HTML. Styled inline: the Popup lives outside React and the app's class names. */
+function callout(title: string, detail: string): string {
+  return `<div style="font:500 13px/1.35 var(--font-sans);color:#1d1f24"><div style="font-weight:600;font-size:15px">${title}</div><div style="color:#646a73">${detail}</div></div>`;
+}
+
+/** "about 7 in", "about 1.5 ft": depth the way people say it. */
+function depthWords(m: number): string {
+  const inches = m * 39.37;
+  if (inches < 12) return `About ${Math.max(1, Math.round(inches))} in`;
+  return `About ${Math.round((inches / 12) * 2) / 2} ft`;
+}
 const ALPHA = 190;
 
 /**
@@ -68,10 +82,12 @@ export interface MapViewProps {
   overlays: LayerName[];
   /** A suggested route to draw in the tint colour, or null. */
   route: LngLat[] | null;
+  /** A tap or click on the map: grade that spot (a building, usually). */
+  onSelect?: (position: LngLat) => void;
   onError: (message: string) => void;
 }
 
-export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onError }: MapViewProps) {
+export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onSelect, onError }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -79,6 +95,12 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
   const marker = useRef<Marker | null>(null);
   const ready = useRef<Promise<void> | null>(null);
   const pinMarkers = useRef<Marker[]>([]);
+  // What the water layer shows right now, for the depth readout under the pointer.
+  const shown = useRef<{ levels: Levels; hour: Hour; scenario: Scenario } | null>(null);
+  const select = useRef(onSelect);
+  useEffect(() => {
+    select.current = onSelect;
+  }, [onSelect]);
 
   // Map, basemap quieting and the water source: once.
   useEffect(() => {
@@ -100,6 +122,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     const c = document.createElement("canvas");
     canvas.current = c;
     let disposed = false;
+    let breathe = 0;
 
     ready.current = Promise.all([
       new Promise<void>((resolve) => m.once("load", () => resolve())),
@@ -125,14 +148,55 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
       m.addSource("flood-water", { type: "canvas", canvas: c, animate: false, coordinates: [[w, n], [e, n], [e, s], [w, s]] });
       const firstLabel = m.getStyle().layers.find((l) => l.type === "symbol")?.id;
       m.addLayer(
-        { id: "flood-water", type: "raster", source: "flood-water", paint: { "raster-resampling": "nearest", "raster-fade-duration": 0 } },
+        { id: "flood-water", type: "raster", source: "flood-water", paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 0.85 } },
         firstLabel,
       );
+      // Floodwater breathes slowly so it reads as moving water, unlike the still lakes. 8 updates a second is enough.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const t0 = performance.now();
+        breathe = window.setInterval(() => {
+          if (!m.getLayer("flood-water")) return;
+          m.setPaintProperty("flood-water", "raster-opacity", 0.8 + 0.12 * Math.sin((performance.now() - t0) / 700));
+        }, 125);
+      }
+    });
+
+    // Depth under the pointer (mouse) and on tap; a tap also picks the spot.
+    const popup = new Popup({ closeButton: false, closeOnClick: false, className: "fludd-popup", offset: 12, maxWidth: "240px" });
+    const lakeLayers = () => m.getStyle().layers.filter((l) => l.type === "fill" && /^water/.test(l.id)).map((l) => l.id);
+    const describe = (lngLat: { lng: number; lat: number }, point: PointLike): string | null => {
+      const g = gold.current, now = shown.current;
+      if (!g || !now) return null;
+      const i = cellIndex(g.manifest, [lngLat.lng, lngLat.lat]);
+      const d = i === null ? 0 : depthAtCell(g, now.levels, i, now.hour);
+      const storm = STORM_WORDS[now.scenario].name;
+      if (d >= MIN_SHOWN_M) return callout(`${depthWords(d)} of floodwater`, `${storm}, this hour`);
+      if (m.queryRenderedFeatures(point, { layers: lakeLayers() }).length) return callout("Pond or lake", "Normal water, there in dry weather too");
+      return null;
+    };
+    const hoverable = window.matchMedia("(hover: hover)").matches;
+    let frame = 0;
+    if (hoverable) {
+      m.on("mousemove", (e) => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => {
+          const html = describe(e.lngLat, e.point);
+          if (html) popup.setLngLat(e.lngLat).setHTML(html).addTo(m);
+          else popup.remove();
+        });
+      });
+      m.on("mouseout", () => popup.remove());
+    }
+    m.on("click", (e) => {
+      const html = describe(e.lngLat, e.point);
+      if (html) popup.setLngLat(e.lngLat).setHTML(html).addTo(m);
+      select.current?.([e.lngLat.lng, e.lngLat.lat]);
     });
     ready.current.catch((e: unknown) => onError(e instanceof Error ? e.message : "The flood data failed to load"));
 
     return () => {
       disposed = true;
+      window.clearInterval(breathe);
       m.remove();
       map.current = null;
     };
@@ -147,6 +211,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
       const m = map.current, c = canvas.current, g = gold.current;
       if (stale || !m || !c || !g) return;
       paintWater(c, g, levels.levels, hour);
+      shown.current = { levels, hour, scenario };
       const src = m.getSource<CanvasSource>("flood-water");
       // A non-animated canvas source re-uploads on play(); pause right after so it stays still.
       src?.play();
