@@ -1,4 +1,5 @@
 import { Group } from "@/components/ui/surface";
+import { mapVerdictTitle, plainStorms } from "@/components/report-card/plain-words";
 import { STORM_WORDS } from "@/components/ui/storm-words";
 import { SCENARIOS, type DepthBand, type Grade, type Letter } from "@/lib/types";
 
@@ -34,13 +35,13 @@ export function GradeCard({ label, grade }: { label: string; grade: Grade }) {
           </div>
         </div>
         {grade.action && (
-          <p className="border-t border-separator px-4 py-3 text-subhead">{grade.action}</p>
+          <p className="border-t border-separator px-4 py-3 text-subhead">{plainStorms(grade.action)}</p>
         )}
       </Group>
 
-      <Group title="What the flood map doesn't tell you">
+      <Group title={mapVerdictTitle(grade)}>
         <Row label="Official map says" value={grade.officialMapSays} />
-        <Row label="We found" value={grade.weFound} last />
+        <Row label="We found" value={plainStorms(grade.weFound)} last />
       </Group>
 
       <Group title="Water at the door">
@@ -61,7 +62,7 @@ export function GradeCard({ label, grade }: { label: string; grade: Grade }) {
       <Group title="Why">
         {grade.reasons.map((r, i) => (
           <p key={i} className={`px-4 py-2.5 text-subhead ${i < grade.reasons.length - 1 ? "border-b border-separator" : ""}`}>
-            {r.text}
+            {plainStorms(r.text)}
           </p>
         ))}
       </Group>
