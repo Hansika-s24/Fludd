@@ -115,5 +115,8 @@ CI runs lint, typecheck, both test suites and a secret scan on every push.
 - `web/`: the Next.js app. `lib/` holds the logic, `components/` the display, `app/api/` the server routes.
 - `supabase/`: reports table, private photo storage, access rules.
 - `docs/contracts.md`: the boundary between the logic and the interface.
+- `docs/privacy.md`: what is collected, how reports stay anonymous, GDPR-style rights, and rules for public-safety cameras.
+- `docs/shortcut.md`: the "Report flooding" and "Flood brief" iPhone Shortcuts, and Home Screen widget options.
+- `docs/demo-script.md`: the 3-minute judging walkthrough.
 - `prep/`: planning and research notes written before the event. They contain no code.
 - `design/boot/`: the boot animation's references and the earlier Blender build. The shipped intro is `web/components/boot/`.
