@@ -180,7 +180,7 @@ export function AskPelican({
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={300}
-          placeholder="Ask Pelican: where do you need to go?"
+          placeholder="Where do you need to go?"
           className="h-11 min-w-0 flex-1 rounded-control bg-fill px-3 text-body text-label placeholder:text-label-3 outline-none focus-visible:ring-2 focus-visible:ring-tint"
           autoComplete="off"
           enterKeyHint="go"
