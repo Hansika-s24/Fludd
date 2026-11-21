@@ -53,7 +53,7 @@ All fetched on 2026-11-21, no keys required. Full list with filters and counts i
 
 We used AI throughout and say so plainly, because the rules require it and because it is true.
 
-**Tools.** Claude Code (Anthropic) for planning, research and code generation, including several Claude Code agents working in parallel on separate folders. Google Gemini inside the product.
+**Tools.** Claude Code (Anthropic) for planning, research and code generation, including several Claude Code agents working in parallel on separate folders. ChatGPT Codex (OpenAI), used by Hansika for code generation on her side of the project. Google Gemini inside the product.
 
 **What we decided ourselves.**
 - **Both of us:** the idea, the product framing, what to cut, and the before, during and after structure.
