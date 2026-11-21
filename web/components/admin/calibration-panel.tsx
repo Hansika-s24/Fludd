@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+import { CountUp } from "@/components/ui/count-up";
 import { Group } from "@/components/ui/surface";
 import { centimetres, depthWords, inches } from "@/components/report/depth-words";
 import type { Calibration } from "@/lib/types";
@@ -7,7 +9,7 @@ export function CalibrationPanel({ calibration, error }: { calibration: Calibrat
   if (error) {
     return (
       <Group title="Calibration">
-        <p role="alert" className="px-4 py-3 text-subhead text-late">
+        <p role="alert" className="nudge px-4 py-3 text-subhead text-late">
           {error}
         </p>
       </Group>
@@ -16,7 +18,14 @@ export function CalibrationPanel({ calibration, error }: { calibration: Calibrat
   if (!calibration) {
     return (
       <Group title="Calibration">
-        <p className="px-4 py-3 text-subhead text-label-2">Loading</p>
+        <p className="px-4 py-3 text-subhead text-label-2">
+          Loading
+          <span className="typing ml-2 align-middle" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </p>
       </Group>
     );
   }
@@ -25,18 +34,18 @@ export function CalibrationPanel({ calibration, error }: { calibration: Calibrat
   return (
     <>
       <Group title="Calibration">
-        <div className="px-4 py-4">
+        <div className="rise-in px-4 py-4">
           <p className="text-footnote text-label-2">Mean absolute error, model vs confirmed</p>
           {pairs.length === 0 ? (
             <p className="pt-1 text-subhead text-label-2">No approved reports with a model depth yet.</p>
           ) : (
             <>
               <p className="pt-1 text-grade font-bold tabular-nums">
-                {inches(meanAbsErrorM)}
+                <CountUp value={inches(meanAbsErrorM)} />
                 <span className="pl-1 text-title font-semibold"> in</span>
               </p>
               <p className="pt-1 text-subhead text-label-2">
-                {centimetres(meanAbsErrorM)} cm, over {pairs.length} approved {pairs.length === 1 ? "report" : "reports"}
+                <CountUp value={centimetres(meanAbsErrorM)} /> cm, over <CountUp value={pairs.length} /> approved {pairs.length === 1 ? "report" : "reports"}
               </p>
             </>
           )}
@@ -45,7 +54,7 @@ export function CalibrationPanel({ calibration, error }: { calibration: Calibrat
 
       {pairs.length > 0 && (
         <Group title="Model vs confirmed">
-          <div className="flex min-h-11 items-center gap-3 border-b border-separator px-4 text-footnote text-label-2">
+          <div className="rise-in flex min-h-11 items-center gap-3 border-b border-separator px-4 text-footnote text-label-2">
             <span className="flex-1">Model</span>
             <span className="flex-1">Confirmed</span>
             <span className="w-20 text-right">Off by</span>
@@ -53,7 +62,8 @@ export function CalibrationPanel({ calibration, error }: { calibration: Calibrat
           {pairs.map((p, i) => (
             <div
               key={i}
-              className={`flex min-h-11 items-center gap-3 px-4 text-subhead tabular-nums ${i < pairs.length - 1 ? "border-b border-separator" : ""}`}
+              className={`rise-in flex min-h-11 items-center gap-3 px-4 text-subhead tabular-nums ${i < pairs.length - 1 ? "border-b border-separator" : ""}`}
+              style={{ "--i": Math.min(i + 1, 8) } as CSSProperties}
             >
               <span className="flex-1">{depthWords(p.modelM)}</span>
               <span className="flex-1">{depthWords(p.confirmedM)}</span>

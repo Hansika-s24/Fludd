@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type CSSProperties } from "react";
 import { Group } from "@/components/ui/surface";
 import { depthWords, metresFromInches, percent, rangeWords } from "@/components/report/depth-words";
 import { adminAccessToken } from "@/lib/supabase";
@@ -45,21 +45,35 @@ export function QueueList({ items, onDecided }: { items: QueueItem[]; onDecided:
   if (items.length === 0) {
     return (
       <Group title="Waiting for review">
-        <p className="px-4 py-3 text-subhead text-label-2">Nothing waiting. New reports appear here.</p>
+        <p className="rise-in px-4 py-3 text-subhead text-label-2">Nothing waiting. New reports appear here.</p>
       </Group>
     );
   }
   return (
     <Group title={`Waiting for review (${items.length})`}>
       {items.map((item, i) => (
-        <QueueRow key={item.id} item={item} last={i === items.length - 1} onDecided={onDecided} />
+        <QueueRow key={item.id} item={item} index={i} last={i === items.length - 1} onDecided={onDecided} />
       ))}
     </Group>
   );
 }
 
-function QueueRow({ item, last, onDecided }: { item: QueueItem; last: boolean; onDecided: (id: string) => void }) {
+const MAX_STAGGER = 8; // later rows arrive together, so a long queue never keeps the reviewer waiting
+
+function QueueRow({
+  item,
+  index,
+  last,
+  onDecided,
+}: {
+  item: QueueItem;
+  index: number;
+  last: boolean;
+  onDecided: (id: string) => void;
+}) {
   const depthId = useId();
+  // Fixed when the row first appears: rows above it being decided must not shift its entrance.
+  const [stagger] = useState(() => Math.min(index, MAX_STAGGER));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -84,9 +98,12 @@ function QueueRow({ item, last, onDecided }: { item: QueueItem; last: boolean; o
   const depthValid = depthIn.trim() !== "" && Number.isFinite(parsedIn) && parsedIn >= 0 && parsedIn <= MAX_DEPTH_IN;
 
   return (
-    <article className={`flex flex-col gap-3 px-4 py-4 sm:flex-row ${last ? "" : "border-b border-separator"}`}>
+    <article
+      className={`rise-in flex flex-col gap-3 px-4 py-4 sm:flex-row ${last ? "" : "border-b border-separator"}`}
+      style={{ "--i": stagger } as CSSProperties}
+    >
       {item.photoUrl ? (
-        <a href={item.photoUrl} target="_blank" rel="noreferrer" className="shrink-0 sm:w-48">
+        <a href={item.photoUrl} target="_blank" rel="noreferrer" className="pressable shrink-0 sm:w-48">
           {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed Supabase link */}
           <img
             src={item.photoUrl}
@@ -132,7 +149,7 @@ function QueueRow({ item, last, onDecided }: { item: QueueItem; last: boolean; o
 
         {editing && (
           <form
-            className="mt-3 flex items-end gap-2"
+            className="rise-in mt-3 flex items-end gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (depthValid && !busy) void decide({ decision: "edit", depthM: metresFromInches(parsedIn) });
@@ -192,7 +209,7 @@ function QueueRow({ item, last, onDecided }: { item: QueueItem; last: boolean; o
         </div>
         {unread && <p className="pt-1.5 text-footnote text-label-2">No AI reading, so set the depth with Edit depth.</p>}
         {error && (
-          <p role="alert" className="pt-1.5 text-footnote text-late">
+          <p role="alert" className="nudge pt-1.5 text-footnote text-late">
             {error}
           </p>
         )}

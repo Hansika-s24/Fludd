@@ -31,7 +31,7 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate className="swap-in">
       <Group title="Sign in">
         <label className="flex min-h-11 items-center gap-3 border-b border-separator px-4">
           <span className="w-20 shrink-0 text-subhead">Email</span>
@@ -59,7 +59,7 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
       </Group>
 
       {error && (
-        <p role="alert" className="px-7 pt-2 text-footnote text-late">
+        <p role="alert" className="nudge px-7 pt-2 text-footnote text-late">
           {error}
         </p>
       )}
@@ -73,7 +73,16 @@ export function SignInForm({ onSignedIn }: { onSignedIn: () => void }) {
           disabled={busy || email.trim() === "" || password === ""}
           className="pressable min-h-11 w-full rounded-[var(--radius-control)] bg-tint px-4 text-headline font-semibold text-white active:bg-tint-pressed disabled:opacity-40"
         >
-          {busy ? "Signing in" : "Sign in"}
+          <span key={busy ? "busy" : "idle"} className="swap-in inline-flex items-center justify-center">
+            {busy ? "Signing in" : "Sign in"}
+            {busy && (
+              <span className="typing ml-2" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            )}
+          </span>
         </button>
       </div>
     </form>

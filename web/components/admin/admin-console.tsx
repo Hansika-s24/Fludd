@@ -81,7 +81,16 @@ export function AdminConsole() {
         )}
       </header>
 
-      {session === "checking" && <p className="px-7 pt-6 text-subhead text-label-2">Checking sign-in</p>}
+      {session === "checking" && (
+        <p className="swap-in px-7 pt-6 text-subhead text-label-2">
+          Checking sign-in
+          <span className="typing ml-2 align-middle" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </p>
+      )}
 
       {session === "signedOut" && (
         <SignInForm
@@ -96,13 +105,20 @@ export function AdminConsole() {
         <>
           {queueError ? (
             <Group title="Waiting for review">
-              <p role="alert" className="px-4 py-3 text-subhead text-late">
+              <p role="alert" className="nudge px-4 py-3 text-subhead text-late">
                 {queueError}
               </p>
             </Group>
           ) : queue === null ? (
             <Group title="Waiting for review">
-              <p className="px-4 py-3 text-subhead text-label-2">Loading</p>
+              <p className="px-4 py-3 text-subhead text-label-2">
+                Loading
+                <span className="typing ml-2 align-middle" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </p>
             </Group>
           ) : (
             <QueueList
