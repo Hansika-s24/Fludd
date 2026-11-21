@@ -1,4 +1,4 @@
-/* Boot intro: a rendered logo animation with HTML text timed over it. Sizes use the stage's own
+/* Boot intro: a rendered paper-cut logo animation with HTML text timed over it. Sizes use the stage's own
    height (cqh) so the text sits where the 2D design put it at any viewport size. */
 
 .boot-layer {
@@ -8,23 +8,24 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  /* The film opens on a night storm and clears to the page colour; the layer starts as the night. */
-  background: #0f1a2e;
+  /* The film opens on a paper night storm and clears to the page colour; the layer starts as the night. */
+  background: #14233f;
   color: #1c1d21;
   cursor: pointer;
-  transition: opacity 450ms ease;
+  transition: opacity 420ms ease-in 100ms;
 }
 .boot-leaving {
   opacity: 0;
   pointer-events: none;
 }
-/* Leaving: the camera pushes through the logo while the layer fades, so the app reads as "inside". */
+/* Leaving: the whole stage zooms straight through its centre while the layer fades, like opening an app. */
 .boot-stage {
-  transition: transform 450ms cubic-bezier(0.55, 0, 0.75, 0.2), filter 450ms ease-in;
+  transform-origin: 50% 50%;
+  transition: transform 520ms cubic-bezier(0.6, 0, 0.9, 0.4);
+  will-change: transform;
 }
 .boot-leaving .boot-stage {
-  transform: scale(1.14);
-  filter: blur(6px);
+  transform: scale(2.6);
 }
 
 .boot-stage {
@@ -118,9 +119,6 @@
 .boot-started .boot-caption {
   animation: boot-rise 350ms ease-out 2.6s both;
 }
-.boot-started .boot-text {
-  animation: boot-off 300ms ease-in 4.3s forwards;
-}
 
 .boot-skip {
   position: absolute;
@@ -188,6 +186,5 @@
   .boot-leaving .boot-stage {
     transition: none;
     transform: none;
-    filter: none;
   }
 }

@@ -23,7 +23,7 @@ const CAPTION = "Be a pelican.\nWatch the water, then move.";
 const SEEN_KEY = "fludd-boot-seen";
 /** If the video has not started by now, give up on it. A slow network must never block the app. */
 const START_TIMEOUT_MS = 1500;
-const FADE_MS = 450;
+const FADE_MS = 520;
 
 type Phase = "showing" | "leaving" | "done";
 /** What this page load should do, decided once in the browser. "pending" is the server render. */
@@ -76,6 +76,15 @@ export function BootIntro() {
     window.setTimeout(() => setPhase("done"), FADE_MS);
   }, []);
 
+  // React sets `muted` as a property after insertion, which browsers treat as unmuted and block autoplay.
+  // Mute on the element and start it explicitly; if play() is refused, the give-up timer skips.
+  // Stable identity: an inline ref would run again on every render and restart the film as it leaves.
+  const startVideo = useCallback((el: HTMLVideoElement | null) => {
+    if (!el) return;
+    el.muted = true;
+    el.play().catch(() => {});
+  }, []);
+
   // Not shown at all (already seen this session, or reduced motion): the app can arrive now.
   useEffect(() => {
     if (mode === "skip") signalBootDone();
@@ -112,13 +121,7 @@ export function BootIntro() {
           <video
             key={variant}
             data-boot-video
-            // React sets `muted` as a property after insertion, which browsers treat as unmuted and block
-            // autoplay. Mute on the element and start it explicitly; if play() is refused, the give-up timer skips.
-            ref={(el) => {
-              if (!el) return;
-              el.muted = true;
-              el.play().catch(() => {});
-            }}
+            ref={startVideo}
             className="boot-video"
             autoPlay
             muted
