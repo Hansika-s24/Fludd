@@ -21,6 +21,11 @@ async function openAsResident(page: Page) {
 
 const sheet = (page: Page) => page.locator("#tab-panel");
 
+/** Phones pick a stage from the chips under the search bar; wide screens from the stage cards. */
+const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1440) < 768;
+const stageCtl = (page: Page, name: RegExp) => (isPhone(page) ? page.getByRole("button", { name }) : page.getByRole("tab", { name }));
+const picked = (page: Page) => (isPhone(page) ? "aria-pressed" : "aria-selected");
+
 test("first run: onboarding leads to a graded home", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Get started" }).click();
@@ -44,9 +49,9 @@ test("first run: onboarding leads to a graded home", async ({ page }) => {
   await expect(page.getByRole("dialog").getByText("4202 E Fowler Ave, Tampa, 33620")).toBeVisible();
   await page.getByRole("button", { name: "Show me my home" }).click();
   await expect(sheet(page).getByText("Flood grade")).toBeAttached();
-  await expect(page.getByRole("tab", { name: /Plan a move/ })).toHaveAttribute("aria-selected", "true");
+  await expect(stageCtl(page, /Plan a move/)).toHaveAttribute(picked(page), "true");
   // The vehicle chosen in setup drives the storm answers.
-  await page.getByRole("tab", { name: /Storm mode/ }).click();
+  await stageCtl(page, /Storm mode/).click();
   await expect(sheet(page).getByText("Last way out by SUV or pickup")).toBeVisible();
 });
 
@@ -65,13 +70,13 @@ test("onboarding refuses a home outside the model area", async ({ page }) => {
 
 test("one address before, during and after a flood", async ({ page }) => {
   await openAsResident(page);
-  await page.getByRole("tab", { name: /Storm mode/ }).click();
+  await stageCtl(page, /Storm mode/).click();
   await expect(sheet(page).getByText("Move your car by")).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Storm" })).toBeVisible();
-  await page.getByRole("tab", { name: /After a flood/ }).click();
+  await stageCtl(page, /After a flood/).click();
   await expect(sheet(page).getByText("What Hurricane Milton did here")).toBeVisible();
   await page.getByRole("button", { name: "Replay Milton on the map" }).click();
-  await expect(page.getByRole("tab", { name: /Storm mode/ })).toHaveAttribute("aria-selected", "true");
+  await expect(stageCtl(page, /Storm mode/)).toHaveAttribute(picked(page), "true");
   await expect(page.getByRole("radio", { name: "Milton" })).toHaveAttribute("aria-checked", "true");
 });
 
@@ -80,19 +85,19 @@ test("shortcuts open each section and close back to home", async ({ page }) => {
   // Phones open storm mode from the chip under the search bar; wide screens from the Live shortcut.
   const phone = (page.viewportSize()?.width ?? 1440) < 768;
   await page.getByRole("button", { name: phone ? "Storm mode" : "Live", exact: true }).click();
-  await expect(page.getByRole("tab", { name: /Storm mode/ })).toHaveAttribute("aria-selected", "true");
+  await expect(stageCtl(page, /Storm mode/)).toHaveAttribute(picked(page), "true");
   await page.getByRole("button", { name: "Food & help" }).click();
   await expect(page.getByRole("heading", { name: "Food & help" })).toBeVisible();
   await expect(sheet(page).getByText("211", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
   // Rewards has no button of its own: the weekly highlight opens it.
-  await page.getByRole("button", { name: /See impact/ }).click();
+  await page.getByRole("button", { name: isPhone(page) ? "Your impact" : /See impact/ }).click();
   await expect(page.getByRole("heading", { name: "Your impact" })).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "You", exact: true }).click();
   await expect(sheet(page).getByText("4202 E Fowler Ave")).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
-  await expect(page.getByRole("tab", { name: /Plan a move/ })).toBeVisible();
+  await expect(stageCtl(page, /Plan a move/)).toBeVisible();
 });
 
 test("every section keeps the floodwater warning", async ({ page }) => {

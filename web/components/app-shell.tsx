@@ -17,7 +17,7 @@ import { AfterPanel } from "@/components/stages/after-panel";
 import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
-import { StageControl, type Stage } from "@/components/stages/stage-control";
+import { STAGES, StageControl, type Stage } from "@/components/stages/stage-control";
 import { motion, useReducedMotion } from "motion/react";
 import { PEEK_PX, SHEET_HALF_EVENT, Sheet, useNarrow } from "@/components/ui/sheet";
 import { Logo, LogoMark, PelicanMark } from "@/components/ui/logo";
@@ -62,7 +62,7 @@ const COVER_WORDS: Record<string, string> = {
   unsure: "Not sure about flood insurance",
 };
 
-const TITLES: Record<Tab, string> = { home: "Home", live: "Live", ask: "Ask Pelican", help: "Food & help", rewards: "Your impact", you: "You" };
+const TITLES: Record<Tab, string> = { home: "Home", live: "Live", ask: "Ask Pelican", help: "Food & help", rewards: "Your impact", weather: "Weather", you: "You" };
 
 type Graded = { place: Place; grade: GradeResult };
 
@@ -226,6 +226,12 @@ export function AppShell() {
       setHour(24);
     } else if (scenario === "milton" && s === "before") setScenario("100yr");
   };
+  // Phone chips: show one stage of the place's report, keeping whatever place is on the card.
+  const showStage = (s: Stage) => {
+    window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    setTab("home");
+    pickStage(s);
+  };
   const open = (t: Tab) => {
     // Every shortcut shows its content: raise the sheet off peek.
     window.dispatchEvent(new Event(SHEET_HALF_EVENT));
@@ -306,7 +312,7 @@ export function AppShell() {
     <main className="relative h-dvh w-full overflow-hidden">
       {/* Phone: floating search with the mark and your avatar, chips underneath, like Google Maps. */}
       <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 md:hidden">
-        <div className="material-glass flex items-center gap-1.5 rounded-full py-1 pl-2.5 pr-1 shadow-[0_4px_16px_rgb(0_0_0/0.14)]">
+        <div className="material-glass relative z-10 flex items-center gap-1.5 rounded-full py-1 pl-2.5 pr-1 shadow-[0_4px_16px_rgb(0_0_0/0.14)]">
           <LogoMark size={26} />
           <div className="min-w-0 flex-1">
             <AddressSearch onPick={onPick} floating />
@@ -317,8 +323,12 @@ export function AppShell() {
         </div>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {[
-            { label: "Storm mode", on: tab === "home" && stage === "during", act: () => open("live"), icon: ICONS.live },
+            { label: "Plan a move", on: tab === "home" && stage === "before", act: () => showStage("before"), icon: STAGES[0].icon },
+            { label: "Storm mode", on: tab === "home" && stage === "during", act: () => showStage("during"), icon: STAGES[1].icon },
+            { label: "After a flood", on: tab === "home" && stage === "after", act: () => showStage("after"), icon: STAGES[2].icon },
+            { label: "Weather", on: tab === "weather", act: () => open("weather"), icon: ICONS.weather },
             { label: "Food & help", on: tab === "help", act: () => open("help"), icon: ICONS.help },
+            { label: "Your impact", on: tab === "rewards", act: () => open("rewards"), icon: ICONS.rewards },
             { label: "Drainage", on: drainage, act: () => setDrainage((d) => !d), icon: null },
           ].map((c) => (
             <button
@@ -422,7 +432,7 @@ export function AppShell() {
         <div key={tab} id="tab-panel" role="region" aria-label={TITLES[tab]} className="tab-enter" aria-live="polite">
           {tab === "home" && (
             <>
-              <StageControl stage={stage} onChange={pickStage} />
+              {!narrow && <StageControl stage={stage} onChange={pickStage} />}
               {/* Switching stage: the new content opens in a circle from the card that was tapped. */}
               <motion.div
                 key={stage}
@@ -432,8 +442,8 @@ export function AppShell() {
                 transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               >
               {placeState}
-              {stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
-              {stage === "before" && <WeeklyHighlight onOpen={() => open("rewards")} />}
+              {!narrow && stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
+              {!narrow && stage === "before" && <WeeklyHighlight onOpen={() => open("rewards")} />}
               {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
               {stage === "during" &&
                 (ok ? (
@@ -484,6 +494,8 @@ export function AppShell() {
           )}
 
           {tab === "rewards" && <RewardsPanel />}
+
+          {tab === "weather" && <WeatherCard position={place?.position ?? USF_AREA} />}
 
           {tab === "help" && <HelpPanel position={place?.position ?? USF_AREA} />}
 
