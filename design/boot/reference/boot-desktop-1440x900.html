@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Fludd boot animation, desktop</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>/* vietnamese */
+/* latin-ext */
+/* latin */
+/* cyrillic-ext */
+/* cyrillic */
+/* greek-ext */
+/* greek */
+/* vietnamese */
+/* latin-ext */
+/* latin */
+</style>
+<style>
+body{margin:0}
+a{color:#2f5fa8}a:hover{color:#23467f}
+@keyframes fl-in{from{opacity:0}to{opacity:1}}
+@keyframes fl-panel{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fl-out{to{opacity:0}}
+@keyframes fl-rainzoom{to{transform:scale(2.2);opacity:0}}
+@keyframes fl-zoom{0%{opacity:0;transform:rotate(19deg) scale(.2,.7)}40%{opacity:1}100%{opacity:1;transform:rotate(0deg) scale(1)}}
+@keyframes fl-splash{0%{opacity:0;transform:scale(.1)}12%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+@keyframes fl-rise{0%{opacity:0;transform:scale(.5,.02)}15%{opacity:1}100%{opacity:1;transform:scale(1,1)}}
+@keyframes fl-pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes fl-land{from{opacity:0;transform:translate(36px,-40px)}to{opacity:1;transform:none}}
+@keyframes fl-on{to{opacity:1}}
+@keyframes fl-off{to{opacity:0}}
+@keyframes fl-blink{50%{opacity:0}}
+@keyframes fl-caption{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fl-streak{position:absolute;top:-60px;width:2px;border-radius:1px;background:linear-gradient(to bottom,rgba(91,143,214,0),#5b8fd6);animation-name:fl-rain;animation-timing-function:linear;animation-iteration-count:infinite}
+.fl-wave{transform-box:fill-box;transform-origin:50% 100%;animation:fl-rise .65s cubic-bezier(.2,.8,.2,1) 1.2s both}
+.fl-bead{transform-box:fill-box;transform-origin:center;animation:fl-pop .25s ease-out both}
+.fl-pel{animation:fl-land .4s cubic-bezier(.2,.8,.2,1) 1.8s both}
+.fl-ch{position:relative;display:inline-block;opacity:0;animation:fl-on .06s linear both}
+.fl-car{position:absolute;right:-9px;bottom:.14em;width:4px;height:.74em;background:#1c1d21;opacity:0;animation:fl-on .01s linear both,fl-off .01s linear forwards}
+.fl-caption{animation:fl-caption .35s ease-out 2.6s both}
+.fl-intro{animation:fl-out .45s ease 4.35s forwards}
+@media (prefers-reduced-motion: reduce){.fl-intro{display:none}.fl-final{animation:fl-in .2s ease both !important}}
+@keyframes fl-rain{from{transform:translate(0,0) rotate(19deg)}to{transform:translate(-358px,1040px) rotate(19deg)}}
+@keyframes fl-fall{0%{transform:translateY(0)}94%{opacity:1;transform:translateY(282px)}100%{opacity:0;transform:translateY(290px)}}
+@keyframes fl-handoff{to{opacity:0;transform:translate(-560px,-190px) scale(.3)}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; position: relative; overflow: hidden; background: #f2f1ec; color: #1c1d21; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif">
+  <div style="position: absolute; inset: 0">
+    <div aria-hidden="true" style="position: absolute; inset: 0; background-color: #f2f1ec; background-image: linear-gradient(#ffffff 6px, transparent 6px), linear-gradient(90deg, #ffffff 6px, transparent 6px); background-size: 160px 120px"></div>
+    <div class="fl-final" style="position: absolute; inset: 0; {{finalStyle}}">
+    <div aria-hidden="true" style="position: absolute; left: 560px; top: 300px; width: 260px; height: 170px; border-radius: 48% 52% 40% 60%; background: #5b8fd6; opacity: 0.75"></div>
+    <div aria-hidden="true" style="position: absolute; left: 900px; top: 520px; width: 180px; height: 120px; border-radius: 55% 45% 60% 40%; background: #5b8fd6; opacity: 0.55"></div>
+    <aside style="position: absolute; left: 16px; top: 16px; width: 380px; box-sizing: border-box; padding: 4px 16px 16px; border-radius: 22px; background: rgba(245,246,248,0.82); backdrop-filter: blur(30px) saturate(180%); box-shadow: 0 10px 40px rgba(20,24,40,0.18), 0 1px 3px rgba(20,24,40,0.1); display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; padding: 12px 4px 0; font-size: 28px; line-height: 1.1; letter-spacing: -0.022em; font-weight: 700">Fludd</h1>
+      <p style="margin: -6px 0 0; padding: 0 4px; font-size: 15px; line-height: 1.35; font-weight: 500; color: #3d3f45; white-space: pre-line">{{caption}}</p>
+      <label for="addr-boot" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Address near USF</label>
+      <input id="addr-boot" type="search" placeholder="Search an address near USF" style="height: 44px; box-sizing: border-box; border: 0; border-radius: 10px; background: rgba(28,29,33,0.06); padding: 0 14px; font: inherit; font-size: 16px; color: #1c1d21">
+      <div style="border-radius: 14px; background: rgba(255,255,255,0.92); padding: 20px 16px; text-align: center">
+        <p style="margin: 0; font-size: 17px; font-weight: 600">No address yet</p>
+        <p style="margin: 4px 0 0; font-size: 15px; line-height: 1.4; color: #5f6168">Search for one to see its flood grade, where the water goes and when to move your car.</p>
+      </div>
+      <p style="margin: 0; padding: 0 12px; font-size: 13px; line-height: 1.45; color: #6b6e76">Screening estimate from a simplified model. It leaves out storm sewers, storm surge, river flooding and groundwater, and is checked against one storm. Not a FEMA flood determination, and not for insurance, lending or purchase decisions. In a storm, follow Hillsborough County Emergency Management and the National Weather Service. Never drive or walk into floodwater.</p>
+    </aside>
+    </div>
+  </div>
+  <sc-if value="{{showIntro}}" hint-placeholder-val="{{true}}">
+    <div class="fl-intro" style="position: absolute; inset: 0">
+      <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(242,241,236,0.5)"></div>
+      <div aria-hidden="true" style="position: absolute; inset: 0; transform-origin: 720px 150px; animation: fl-rainzoom .5s ease-in .45s forwards"><span class="fl-streak" style="left: 663px; height: 30px; opacity: 0.78; animation-duration: 0.59s; animation-delay: -0.03s"></span><span class="fl-streak" style="left: 192px; height: 37px; opacity: 0.54; animation-duration: 0.63s; animation-delay: -0.57s"></span><span class="fl-streak" style="left: 176px; height: 39px; opacity: 0.67; animation-duration: 0.59s; animation-delay: -0.14s"></span><span class="fl-streak" style="left: 121px; height: 29px; opacity: 0.68; animation-duration: 0.71s; animation-delay: -0.45s"></span><span class="fl-streak" style="left: 126px; height: 38px; opacity: 0.67; animation-duration: 0.51s; animation-delay: -0.11s"></span><span class="fl-streak" style="left: 272px; height: 35px; opacity: 0.68; animation-duration: 0.59s; animation-delay: -0.32s"></span><span class="fl-streak" style="left: 1147px; height: 31px; opacity: 0.53; animation-duration: 0.52s; animation-delay: -0.30s"></span><span class="fl-streak" style="left: 199px; height: 28px; opacity: 0.65; animation-duration: 0.62s; animation-delay: -0.39s"></span><span class="fl-streak" style="left: 1088px; height: 39px; opacity: 0.82; animation-duration: 0.67s; animation-delay: -0.31s"></span><span class="fl-streak" style="left: 740px; height: 35px; opacity: 0.76; animation-duration: 0.55s; animation-delay: -0.10s"></span><span class="fl-streak" style="left: 167px; height: 35px; opacity: 0.74; animation-duration: 0.62s; animation-delay: -0.54s"></span><span class="fl-streak" style="left: 589px; height: 28px; opacity: 0.75; animation-duration: 0.53s; animation-delay: -0.22s"></span><span class="fl-streak" style="left: 311px; height: 41px; opacity: 0.48; animation-duration: 0.59s; animation-delay: -0.57s"></span><span class="fl-streak" style="left: 1142px; height: 36px; opacity: 0.65; animation-duration: 0.57s; animation-delay: -0.20s"></span><span class="fl-streak" style="left: 1632px; height: 40px; opacity: 0.56; animation-duration: 0.52s; animation-delay: -0.05s"></span><span class="fl-streak" style="left: 1427px; height: 28px; opacity: 0.71; animation-duration: 0.51s; animation-delay: -0.36s"></span><span class="fl-streak" style="left: 1395px; height: 40px; opacity: 0.72; animation-duration: 0.56s; animation-delay: -0.22s"></span><span class="fl-streak" style="left: 46px; height: 40px; opacity: 0.65; animation-duration: 0.58s; animation-delay: -0.35s"></span><span class="fl-streak" style="left: 446px; height: 35px; opacity: 0.61; animation-duration: 0.53s; animation-delay: -0.13s"></span><span class="fl-streak" style="left: 1784px; height: 41px; opacity: 0.67; animation-duration: 0.52s; animation-delay: -0.23s"></span><span class="fl-streak" style="left: 280px; height: 39px; opacity: 0.62; animation-duration: 0.69s; animation-delay: -0.19s"></span><span class="fl-streak" style="left: 734px; height: 38px; opacity: 0.52; animation-duration: 0.71s; animation-delay: -0.11s"></span><span class="fl-streak" style="left: 475px; height: 33px; opacity: 0.52; animation-duration: 0.50s; animation-delay: -0.42s"></span><span class="fl-streak" style="left: 577px; height: 26px; opacity: 0.69; animation-duration: 0.53s; animation-delay: -0.28s"></span><span class="fl-streak" style="left: 652px; height: 30px; opacity: 0.70; animation-duration: 0.65s; animation-delay: -0.34s"></span><span class="fl-streak" style="left: 1384px; height: 27px; opacity: 0.83; animation-duration: 0.60s; animation-delay: -0.52s"></span><span class="fl-streak" style="left: 1393px; height: 38px; opacity: 0.64; animation-duration: 0.59s; animation-delay: -0.23s"></span><span class="fl-streak" style="left: 820px; height: 27px; opacity: 0.63; animation-duration: 0.54s; animation-delay: -0.53s"></span><span class="fl-streak" style="left: 225px; height: 36px; opacity: 0.68; animation-duration: 0.63s; animation-delay: -0.06s"></span><span class="fl-streak" style="left: 1098px; height: 29px; opacity: 0.48; animation-duration: 0.71s; animation-delay: -0.43s"></span><span class="fl-streak" style="left: 425px; height: 38px; opacity: 0.59; animation-duration: 0.53s; animation-delay: -0.13s"></span><span class="fl-streak" style="left: 745px; height: 41px; opacity: 0.85; animation-duration: 0.53s; animation-delay: -0.45s"></span><span class="fl-streak" style="left: 954px; height: 41px; opacity: 0.49; animation-duration: 0.61s; animation-delay: -0.05s"></span><span class="fl-streak" style="left: 701px; height: 34px; opacity: 0.66; animation-duration: 0.61s; animation-delay: -0.42s"></span><span class="fl-streak" style="left: 420px; height: 42px; opacity: 0.82; animation-duration: 0.58s; animation-delay: -0.40s"></span><span class="fl-streak" style="left: 1552px; height: 42px; opacity: 0.49; animation-duration: 0.57s; animation-delay: -0.36s"></span><span class="fl-streak" style="left: 1731px; height: 34px; opacity: 0.59; animation-duration: 0.61s; animation-delay: -0.56s"></span><span class="fl-streak" style="left: 456px; height: 42px; opacity: 0.77; animation-duration: 0.57s; animation-delay: -0.13s"></span><span class="fl-streak" style="left: 1553px; height: 32px; opacity: 0.75; animation-duration: 0.68s; animation-delay: -0.55s"></span><span class="fl-streak" style="left: 464px; height: 32px; opacity: 0.46; animation-duration: 0.61s; animation-delay: -0.22s"></span><span class="fl-streak" style="left: 57px; height: 34px; opacity: 0.69; animation-duration: 0.60s; animation-delay: -0.12s"></span><span class="fl-streak" style="left: 705px; height: 40px; opacity: 0.59; animation-duration: 0.68s; animation-delay: -0.49s"></span><span class="fl-streak" style="left: 746px; height: 28px; opacity: 0.53; animation-duration: 0.55s; animation-delay: -0.12s"></span><span class="fl-streak" style="left: 418px; height: 41px; opacity: 0.79; animation-duration: 0.64s; animation-delay: -0.57s"></span><span class="fl-streak" style="left: 981px; height: 37px; opacity: 0.71; animation-duration: 0.68s; animation-delay: -0.06s"></span><span class="fl-streak" style="left: 795px; height: 32px; opacity: 0.77; animation-duration: 0.61s; animation-delay: -0.11s"></span><span class="fl-streak" style="left: 680px; height: 28px; opacity: 0.61; animation-duration: 0.68s; animation-delay: -0.66s"></span><span class="fl-streak" style="left: 822px; height: 28px; opacity: 0.50; animation-duration: 0.66s; animation-delay: -0.11s"></span><span class="fl-streak" style="left: 309px; height: 40px; opacity: 0.78; animation-duration: 0.68s; animation-delay: -0.10s"></span><span class="fl-streak" style="left: 971px; height: 37px; opacity: 0.46; animation-duration: 0.53s; animation-delay: -0.29s"></span><span class="fl-streak" style="left: 1637px; height: 29px; opacity: 0.62; animation-duration: 0.62s; animation-delay: -0.57s"></span><span class="fl-streak" style="left: 1785px; height: 32px; opacity: 0.55; animation-duration: 0.68s; animation-delay: -0.14s"></span><span class="fl-streak" style="left: 599px; height: 42px; opacity: 0.55; animation-duration: 0.55s; animation-delay: -0.32s"></span><span class="fl-streak" style="left: 858px; height: 30px; opacity: 0.81; animation-duration: 0.51s; animation-delay: -0.38s"></span></div>
+      <div aria-hidden="true" style="position: absolute; left: 700px; top: 120px; width: 40px; height: 56px; animation: fl-fall .28s cubic-bezier(.55,0,1,.45) .9s both">
+        <div style="width: 40px; height: 56px; animation: fl-zoom .45s ease-out .45s both"><svg width="40" height="56" viewBox="0 0 40 56" aria-hidden="true" style="display: block"><path d="M20 2 C20 2 4 26 4 38 A16 16 0 0 0 36 38 C36 26 20 2 20 2 Z" fill="#5b8fd6"></path><path d="M12 36 C12 31 14 27 16 24" fill="none" stroke="#fbfaf6" stroke-width="3" stroke-linecap="round" opacity="0.7"></path></svg></div>
+      </div>
+      <div aria-hidden="true" style="position: absolute; left: 660px; top: 448px; width: 120px; height: 20px; box-sizing: border-box; border: 2px solid #5b8fd6; border-radius: 50%; animation: fl-splash .5s ease-out 1.15s both"></div>
+      <div style="position: absolute; left: 0; right: 0; top: 160px; display: flex; flex-direction: column; align-items: center; transform-origin: 50% 0; animation: fl-handoff .5s ease-in 4.3s forwards">
+        <svg width="320" height="320" viewBox="0 0 200 200" role="img" aria-label="Fludd logo: a pelican perched on a wave" style="display: block; overflow: visible"><g class="fl-wave"><g transform="translate(0 40)"><path d="M0 150 C35 148 55 110 70 70 C85 30 110 26 130 28 C155 30 178 48 180 72 C182 92 166 102 154 94 C144 88 146 74 158 74 C150 62 128 58 116 74 C104 92 108 128 140 140 C160 146 180 146 200 146 L200 160 L0 160 Z" fill="#23467f"></path><path d="M44 152 C60 140 70 112 80 90 C90 66 106 50 128 44" fill="none" stroke="#9cc7ea" stroke-width="5" stroke-linecap="round" opacity="0.6"></path><path d="M0 160 V148 C30 140 60 140 90 148 C120 156 150 154 200 142 V160 Z" fill="#5b8fd6"></path><circle class="fl-bead" cx="151.5" cy="33.8" r="5" fill="#fbfaf6" style="animation-delay: 1.70s"></circle><circle class="fl-bead" cx="168.7" cy="46.7" r="5" fill="#fbfaf6" style="animation-delay: 1.75s"></circle><circle class="fl-bead" cx="177.7" cy="61.6" r="4.5" fill="#fbfaf6" style="animation-delay: 1.80s"></circle><circle class="fl-bead" cx="138" cy="30" r="3.5" fill="#fbfaf6" style="animation-delay: 1.85s"></circle></g></g><g class="fl-pel"><path d="M102 56 L88 64 L104 63 Z" fill="#5a4e44"></path><ellipse cx="124" cy="57" rx="22" ry="12" fill="#5a4e44"></ellipse><path d="M108 56 C118 48 132 48 142 55" fill="none" stroke="#e4d8bf" stroke-width="3" stroke-linecap="round"></path><path d="M138 52 C142 48 142 43 145 38" fill="none" stroke="#5a4e44" stroke-width="8" stroke-linecap="round"></path><circle cx="146" cy="36" r="7" fill="#5a4e44"></circle><path d="M151 33 L182 44 L176 48 L150 40 Z" fill="#e8964a" stroke="#e8964a" stroke-width="1.5" stroke-linejoin="round"></path><circle cx="147" cy="34" r="1.6" fill="#fbfaf6"></circle></g></svg>
+        <p style="margin: 4px 0 0; font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 92px; line-height: 1.1; letter-spacing: -0.02em; color: #1c1d21; white-space: nowrap"><span class="fl-ch" style="animation-delay: 2.15s">F<span class="fl-car" aria-hidden="true" style="animation-delay: 2.15s, 2.25s"></span></span><span class="fl-ch" style="animation-delay: 2.25s">l<span class="fl-car" aria-hidden="true" style="animation-delay: 2.25s, 2.35s"></span></span><span class="fl-ch" style="animation-delay: 2.35s">u<span class="fl-car" aria-hidden="true" style="animation-delay: 2.35s, 2.45s"></span></span><span class="fl-ch" style="animation-delay: 2.45s">d<span class="fl-car" aria-hidden="true" style="animation-delay: 2.45s, 2.55s"></span></span><span class="fl-ch" style="animation-delay: 2.55s">d<span class="fl-car" aria-hidden="true" style="animation: fl-on .01s linear 2.55s both, fl-blink .4s steps(1) 2.60s 1, fl-off .01s linear 2.95s forwards"></span></span></p>
+        <p class="fl-caption" style="margin: 8px 0 0; padding: 0 24px; text-align: center; font-family: Inter, system-ui, sans-serif; font-weight: 500; font-size: 30px; line-height: 1.3; letter-spacing: -0.01em; color: #1c1d21; white-space: pre-line">{{caption}}</p>
+      </div>
+      <button type="button" aria-hidden="true" tabindex="-1" sc-camel-on-click="{{skip}}" style="position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer"></button>
+      <button type="button" sc-camel-on-click="{{skip}}" style="position: absolute; right: 24px; bottom: 24px; height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: rgba(28,29,33,0.06); font-family: Inter, system-ui, sans-serif; font-size: 15px; font-weight: 500; color: #1c1d21; cursor: pointer">Skip intro</button>
+    </div>
+  </sc-if>
+  <sc-if value="{{showReplay}}" hint-placeholder-val="{{false}}">
+    <button type="button" sc-camel-on-click="{{replay}}" style="position: absolute; right: 24px; bottom: 24px; height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: rgba(28,29,33,0.72); font-family: Inter, system-ui, sans-serif; font-size: 15px; font-weight: 500; color: #ffffff; cursor: pointer">Replay intro</button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;caption&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Be a pelican.\nWatch the water, then move.&quot;, &quot;options&quot;: [&quot;Be a pelican.\nWatch the water, then move.&quot;, &quot;Read the water\nlike a pelican.&quot;, &quot;Know where the water goes,\nbefore it gets there.&quot;]}, &quot;reducedMotion&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false}, &quot;$preview&quot;: {&quot;width&quot;: 1440, &quot;height&quot;: 900}}">
+class Component extends DCLogic {
+componentDidMount() { this.start(); }
+componentWillUnmount() { clearTimeout(this.t); clearTimeout(this.r); }
+start() { clearTimeout(this.t); this.t = setTimeout(() => this.setState({ mode: 'ended' }), 4900); }
+renderVals() {
+const mode = (this.state && this.state.mode) || 'play';
+const reduced = this.props.reducedMotion ?? false;
+let finalStyle = 'opacity: 1';
+if (reduced && mode === 'play') finalStyle = 'animation: fl-in .2s ease both';
+else if (mode === 'play') finalStyle = 'animation: fl-panel .5s cubic-bezier(.2,.8,.2,1) 4.3s both';
+else if (mode === 'skipped') finalStyle = 'animation: fl-in .15s ease both';
+else if (mode === 'reset') finalStyle = 'opacity: 0';
+return {
+caption: this.props.caption ?? 'Be a pelican.\nWatch the water, then move.',
+showIntro: mode === 'play' && !reduced,
+showReplay: mode === 'ended' || mode === 'skipped' || (reduced && mode === 'play'),
+finalStyle: finalStyle,
+skip: () => { clearTimeout(this.t); this.setState({ mode: 'skipped' }); },
+replay: () => { clearTimeout(this.t); this.setState({ mode: 'reset' }); this.r = setTimeout(() => { this.setState({ mode: 'play' }); this.start(); }, 40); }
+};
+}
+}
+</script>
+</body></html>
