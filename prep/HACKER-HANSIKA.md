@@ -396,9 +396,57 @@ Gaps in PLAN.md itself, to raise with Harshith:
 - Useful fields: `SITE_ADDR`, `MARKET_VAL`, `JUST`, `S_AMT` and `S_DATE` (last sale; many are 0 or old), `tBEDS`, `tBATHS`, `HEAT_AR` (living area, sq ft), `LU_GRP` (for example SINGLE FAMILY, MOBILE HOMES), `FOLIO`.
 - Privacy: the layer also carries owner names and mailing addresses (`OWNER`, `ADDR_1`...). Never request those fields.
 
+**11:55 Implementation plan, buyer and builder focus (proposed; agree with Harshith first)**
+
+Who it is for: people buying or renting a home, and builders or developers choosing a lot near USF. Storm-day features (move your car, rescue reach) move to "if time".
+
+What the user gets for one address:
+1. Letter grade A to F with reasons (depth model, FEMA zone, evidence caps), and the "official map says / we found" pair.
+2. Flood history at and near the address: Milton damage points, city known-flooding parcel and recorded flood height, police street-flooding points, NFIP claims count for the block group.
+3. Drainage nearby: pump stations, inlets, ponds, channels.
+4. Storm playback: water depth there for 10, 25, 100, 500-year storms and the Milton replay, pump on and off.
+5. Remedies: what would lower the risk at that address (raise floor above modelled level, flood vents, flood insurance, lot grading), written by Gemini from our numbers only.
+6. Better options nearby: homes within about 1 mile, same property type, assessed value within about 20%, similar beds, with a better grade. Sorted by grade, then distance.
+
+Data, all free and keyless (fetch once, keep raw files, never re-fetch during the demo):
+
+| Data | Source (endpoint in research file) | Used for |
+|---|---|---|
+| Elevation, ~3 m lidar 2011 | USGS 3DEP `exportImage` (02 B2) | Depth model |
+| FEMA flood zones | FEMA NFHL layer 28 query (02) | Official map says; caps |
+| Milton flood-damage points (547) | County `HC_DamageAssessments2024_PublicView/FeatureServer/24`, filter Milton + Flood (03 D1) | History; validation |
+| Known-flooding parcels (1,016) | City `UtilityStorm/MapServer/14` (03 A4) | History; caps |
+| Police street-flooding points (159) | `Tampa_Flooding_Spots/FeatureServer/1` (03 D1) | History |
+| NFIP claims by block group | OpenFEMA `v3/NfipClaims` (03 D1) | "Insurance claims near you" count |
+| County and city drainage | `HC_STORMWATER/MapServer/4`, `MaintStarStormWaterOnly/MapServer/1,2,9`, city `UtilityStorm/MapServer/2,5,7,8` (03 ranked list) | Drainage nearby; pump in model |
+| Parcels with assessed value (16,808) | County `HC_ParcelsPublic/FeatureServer/0` (above) | Better options nearby |
+| Address search | County geocoder `suggest` + `findAddressCandidates`, then `Site_Address_Point` (03 E1) | Search box |
+| Rainfall storm sizes | NOAA Atlas 14 values in `config.py` | Model scenarios |
+| Roads, fire stations | Overpass OSM; county `DisplayLayers/MapServer/2` (03) | Only if routing comes back |
+
+Services that need a key or account:
+
+| Service | What for | Where the key goes |
+|---|---|---|
+| Gemini API (`@google/genai`, model `gemini-4-hydrogen`, fallback `gemini-3.8-flash`) | Remedies text; plain-English summary of the card; optional photo reading | `GEMINI_API_KEY` in `web/.env.local` (never committed); Harshith sets it in Vercel |
+| Supabase | Resident photo reports, admin queue (only if time) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in `web/.env.local` |
+
+Gemini guards: server side only; it is given the numbers and may not add new ones (check every number in its output appears in the input, else a fixed fallback sentence); it never says a flooded road is safe; the app fully works with Gemini off.
+
+My build order:
+1. 12:00 Lane A downloads: elevation, FEMA, evidence layers, drainage, parcels (owner fields excluded).
+2. 12:00 to 13:00 Lane B runoff, bowls, water movement on the toy fixture; Lane E loaders, depth at a point, address lookup, base grade.
+3. 13:00 Gate: type an address, see grade and water on real data. Cascade fallback if the full model is red.
+4. 14:00 Better options nearby (`web/lib/compare/`): parcel loader and the search, tests first.
+5. 14:30 Milton validation number. Gemini remedies route and summary.
+6. 15:00 Decide: photo reports and Supabase, or routing "move your car by". Not both.
+7. 16:30 Freeze.
+
 ### Notes for my teammate
 
 Claude appends here, newest last, whenever something on this side affects Harshith. Format: time, what changed, what they need to do.
+
+- 11:55 Proposed change of focus to buyers, renters and builders; storm-day routing moves to "if time". Full plan under "Notes" above. Needs your agreement before contracts change. Proposed new contract rows: "Better options nearby" (position → list of address, assessed value, beds, baths, living area, property type, grade, distance) and `POST /api/gemini/remedies` (the numbers for one address → 2 to 4 plain sentences). New env keys for `.env.example`: `GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
