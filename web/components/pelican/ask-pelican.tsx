@@ -1,5 +1,7 @@
 "use client";
 
+import { STORM_WORDS } from "@/components/ui/storm-words";
+
 // Ask Pelican: type where you need to go; get a route on roads the model keeps open at the chosen storm hour.
 // The server only reads the request and looks up real places; every route and time comes from bestRoute
 // on the road graph, here in the browser. Pelican never calls a road safe.
@@ -27,7 +29,7 @@ interface Option {
 }
 
 type Reply =
-  | { kind: "routes"; best: Option; others: Option[]; mode: string; when: string }
+  | { kind: "routes"; best: Option; others: Option[]; mode: string; when: string; note?: string }
   | { kind: "text"; text: string };
 
 interface Turn {
@@ -112,24 +114,48 @@ export function AskPelican({
     }
 
     const vehicle = intent.vehicle === "foot" ? "foot" : ownVehicle;
-    const results = await Promise.all(
-      targets.map(async (t) => {
-        try {
-          const r = await bestRoute(from, t.position, vehicle, scenario, pump, hour);
-          return r.kind === "ok" ? { name: t.name, line: r.line, minutes: r.minutes } : null;
-        } catch {
-          return null;
-        }
-      }),
-    );
-    const open = results.filter((r): r is Option => r !== null).sort((a, b) => a.minutes - b.minutes);
-    if (open.length === 0) {
-      onRoute(null);
-      const noun = intent.kind === "address" ? "that address" : `a ${CATEGORY_WORDS[intent.category ?? "work_other"]}`;
-      return { kind: "text", text: `Every route to ${noun} closes by then in this storm. Stay put and follow official instructions.` };
+    // "failed" (the router broke) is not the same as "closed" (the model floods every way there).
+    const routesAt = async (h: number) => {
+      let failed = 0;
+      const results = await Promise.all(
+        targets.map(async (t) => {
+          try {
+            const r = await bestRoute(from, t.position, vehicle, scenario, pump, h);
+            return r.kind === "ok" ? { name: t.name, line: r.line, minutes: r.minutes } : null;
+          } catch {
+            failed++;
+            return null;
+          }
+        }),
+      );
+      return { open: results.filter((r): r is Option => r !== null).sort((a, b) => a.minutes - b.minutes), failed };
+    };
+    const mode = vehicle === "foot" ? "on foot" : "by car";
+    const noun = intent.kind === "address" ? "that address" : `a ${CATEGORY_WORDS[intent.category ?? "work_other"]}`;
+    const atHour = await routesAt(hour);
+    if (atHour.open.length > 0) {
+      onRoute(atHour.open[0].line);
+      return { kind: "routes", best: atHour.open[0], others: atHour.open.slice(1, 3), mode, when };
     }
-    onRoute(open[0].line);
-    return { kind: "routes", best: open[0], others: open.slice(1, 3), mode: vehicle === "foot" ? "on foot" : "by car", when };
+    if (atHour.failed === targets.length) {
+      onRoute(null);
+      return { kind: "text", text: "Routes are unavailable right now. Try again in a moment, and follow official instructions." };
+    }
+    // Every way is closed in the simulated storm at this hour. No flood is happening now, so give today's route too.
+    const now = hour > 0 ? await routesAt(0) : { open: [], failed: 0 };
+    if (now.open.length > 0) {
+      onRoute(now.open[0].line);
+      return {
+        kind: "routes",
+        best: now.open[0],
+        others: now.open.slice(1, 3),
+        mode,
+        when: "the start of the storm, before the rain builds",
+        note: `In the simulated ${STORM_WORDS[scenario].name.toLowerCase()} at ${when}, every route to ${noun} is flooded: go before then, or stay put.`,
+      };
+    }
+    onRoute(null);
+    return { kind: "text", text: `Every route to ${noun} is flooded in this storm. Stay put and follow official instructions.` };
   }
 
   async function send(ask: string) {
@@ -245,6 +271,7 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
         </button>
         , about {mins(best.minutes)} min {mode}, on roads the model keeps open at {when}.
       </p>
+      {reply.note && <p className="rise-in mt-1.5 text-subhead font-medium text-late">{reply.note}</p>}
       {others.length > 0 && (
         <div className="rise-in mt-2 overflow-hidden rounded-control bg-group" style={at(1)}>
           <p className="px-3 pt-2 text-footnote text-label-2">Other open routes</p>
