@@ -1,8 +1,18 @@
-// STUB (Harshith's 11:00 scaffold). Real version calls the AI provider; the app works with it off.
-import { apiError } from "@/lib/api";
+// Body: the numbers for one address and hour (see guidanceInput in lib/gemini/schemas).
+// Returns { text: string }, two or three sentences. Gemini may not add numbers or call a flooded
+// road safe; with the provider off or failing, a fixed fallback comes back instead.
+// Bad input -> 400 in the shared error shape.
+import { getProvider, type TextProvider } from "@/lib/gemini";
+import { handleGuidance } from "@/lib/gemini/handlers";
 
-/** Body: the numbers for one address and hour (grade, depth bands, moveByHour, ...). */
+function provider(): TextProvider | null {
+  try {
+    return getProvider();
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
-  if (!(await request.json().catch(() => null))) return apiError(400, "bad_request", "JSON body required");
-  return Response.json({ text: "Water may reach your door in a large storm. Move your car to higher ground before the evening peak." });
+  return handleGuidance(request, provider());
 }
