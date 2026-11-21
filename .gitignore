@@ -5,3 +5,10 @@ DEVLOG.md
 .local/
 design/boot/*.blend1
 .claude/worktrees/
+
+# AI assistant setup: kept on our machines, not in the repo
+CLAUDE.md
+.claude/
+AGENTS.md
+**/AGENTS.md
+.playwright-mcp/
