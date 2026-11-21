@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-export type Tab = "home" | "live" | "ask" | "rewards" | "you";
+export type Tab = "home" | "live" | "ask" | "help" | "rewards" | "you";
 
 const svg = (d: ReactNode) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -16,13 +16,13 @@ export const ICONS: Record<Tab, ReactNode> = {
   ask: svg(<path d="M4 5h16v11H9l-5 4V5Z" />),
   rewards: svg(<><circle cx="12" cy="9" r="5" /><path d="m9 13-1.5 8L12 19l4.5 2L15 13" /></>),
   you: svg(<><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></>),
+  help: svg(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9" /></>),
 };
 
 const SHORTCUTS: { key: Tab; label: string }[] = [
   { key: "home", label: "Home" },
   { key: "live", label: "Live" },
-  { key: "ask", label: "Ask Pelican" },
-  { key: "rewards", label: "Rewards" },
+  { key: "help", label: "Food & help" },
 ];
 
 function letterTone(letter: string): string {
@@ -37,7 +37,7 @@ function letterTone(letter: string): string {
  */
 export function Shortcuts({ tab, onOpen, homeLetter }: { tab: Tab; onOpen: (t: Tab) => void; homeLetter: string | null }) {
   return (
-    <nav aria-label="Sections" className="grid grid-cols-4 gap-1 px-3 pb-3 pt-3">
+    <nav aria-label="Sections" className="grid grid-cols-3 gap-1 px-3 pb-3 pt-3">
       {SHORTCUTS.map((s) => {
         const graded = s.key === "home" && homeLetter;
         return (

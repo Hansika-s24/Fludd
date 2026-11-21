@@ -75,11 +75,15 @@ test("shortcuts open each section and close back to home", async ({ page }) => {
   await openAsResident(page);
   await page.getByRole("button", { name: "Live" }).click();
   await expect(page.getByRole("tab", { name: "During" })).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("button", { name: "Rewards" }).click();
-  await expect(page.getByRole("region", { name: "Rewards" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Rewards" })).toBeVisible();
+  await page.getByRole("button", { name: "Food & help" }).click();
+  await expect(page.getByRole("heading", { name: "Food & help" })).toBeVisible();
+  await expect(sheet(page).getByText("211", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
-  await page.getByRole("button", { name: "You" }).click();
+  // Rewards has no button of its own: the weekly highlight opens it.
+  await page.getByRole("button", { name: /See impact/ }).click();
+  await expect(page.getByRole("heading", { name: "Your impact" })).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "You", exact: true }).click();
   await expect(sheet(page).getByText("4202 E Fowler Ave")).toBeVisible();
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("tab", { name: "Before" })).toBeVisible();
@@ -89,7 +93,7 @@ test("every section keeps the floodwater warning", async ({ page }) => {
   await openAsResident(page);
   const warning = page.getByText("Never drive or walk into floodwater.").first();
   await expect(warning).toBeAttached();
-  for (const s of ["Ask Pelican", "Rewards"]) {
+  for (const s of ["Ask Pelican", "Food & help"]) {
     await page.getByRole("button", { name: s }).click();
     await expect(warning).toBeAttached();
     await page.getByRole("button", { name: "Close" }).click();
