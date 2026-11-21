@@ -209,8 +209,9 @@ export function FloodCamera({ home }: { home: LngLat | null }) {
       <details className="mt-2">
         <summary className="pressable min-h-11 cursor-pointer py-2.5 text-subhead font-medium text-tint">Have a doorbell or security camera?</summary>
         <p className="rise-in pb-1 text-subhead text-label-2">
-          Ring and Google Nest don&apos;t let other apps read their cameras, so Fludd can&apos;t connect to them. Cameras with a snapshot link only answer on your home
-          Wi-Fi over an unsecured connection, which browsers block on a secure site like this one. A spare phone is the way that works today.
+          CCTV and IP cameras that give a video address or a snapshot link can send stills too: a few lines on a computer at home take one still and send it
+          here, so the camera&apos;s address and password stay in your house. This page can&apos;t reach a camera on your Wi-Fi itself, because browsers block
+          that from a secure site. Ring and Google Nest keep their video inside their own apps, so Fludd can&apos;t use those yet.
         </p>
       </details>
       <p className="text-footnote text-label-3">Nothing is recorded or streamed. One still photo is sent each time, and you can turn it off here.</p>

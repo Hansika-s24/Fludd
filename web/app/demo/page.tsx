@@ -23,7 +23,7 @@ const DEMOS = [
   {
     href: "/demo/3",
     title: "Your camera is a gauge",
-    line: "A spare phone pointed at your parking spot reads the water at your own kerb, every few minutes, and sets it against the model.",
+    line: "A camera you already have, or a spare phone, pointed at your parking spot reads the water at your own kerb and sets it against the model.",
     note: "Simulated camera on the real model",
   },
 ] as const;

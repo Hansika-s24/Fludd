@@ -231,12 +231,12 @@ export function Demo3() {
 
   const steps: DemoStep[] = [
     {
-      title: "A spare phone in the window",
+      title: "A camera you already have",
       body: (
         <>
           <p>
-            Prop an old phone in a window that faces your parking spot. Fludd takes one still when you ask, or one every few minutes while it rains.
-            Nothing is recorded and nothing is streamed.
+            A security camera that already looks at your driveway, or an old phone propped in a window. Fludd gets one still when you ask, or one every
+            few minutes while it rains. Nothing is recorded and nothing is streamed.
           </p>
           <p className="text-label-2">From each still it reads one thing: how high the water stands against the kerb and the tyre.</p>
         </>
@@ -320,6 +320,14 @@ export function Demo3() {
           <Link href="/" className="pressable block rounded-[var(--radius-group)] bg-group px-4 py-3 font-semibold text-tint">
             Open Fludd, then You, then Flood camera, on a spare phone.
           </Link>
+          <div className="rounded-[var(--radius-group)] bg-group px-4 py-3">
+            <p className="font-semibold">Already have CCTV or an IP camera?</p>
+            <p className="mt-1 text-label-2">
+              A few lines on a computer at home take one still from it and send it to the same place, so the camera&apos;s address and password never leave
+              your house. It works with cameras and recorders that give a video address. Ring and Nest keep their video inside their own apps, so not
+              those, yet.
+            </p>
+          </div>
         </>
       ),
     },

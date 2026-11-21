@@ -29,6 +29,7 @@ Type any address near USF and get a flood report card: a letter grade, where the
   - **During:** water at the door hour by hour, move-your-car time, fire truck reach, last way out, live National Weather Service alerts, and "Ask Pelican" for a trip that avoids roads the model closes.
   - **After:** what Milton did at the address, what the pumps changed, and resident photo reports checked by a person before they appear.
 - **Guided demos** (`/demo`): three short walks on the real map and model. Neighbours' reports landing on the map and set against the model (the reports are simulated and labelled so on screen); two real addresses compared for someone moving or building; a spare phone at a parking spot used as a water gauge (the camera readings are simulated and labelled). Model values in the demos are read from the model at run time.
+- **Cameras you already own:** besides a spare phone, a CCTV or IP camera can be the gauge. A short script on the home network takes one still and posts it to the same report route (`docs/camera-bridge.md`). Cloud-only doorbells (Ring, Nest) are not supported.
 - **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server. Reports carry no identity and photos are stripped of metadata; see `docs/privacy.md`.
 
 ## Data sources
@@ -126,6 +127,7 @@ CI runs lint, typecheck, both test suites and a secret scan on every push.
 - `web/`: the Next.js app. `lib/` holds the logic, `components/` the display, `app/api/` the server routes.
 - `supabase/`: reports table, private photo storage, access rules.
 - `docs/contracts.md`: the boundary between the logic and the interface.
+- `docs/camera-bridge.md`: sending stills from a security camera you already have.
 - `docs/privacy.md`: what is collected, how reports stay anonymous, GDPR-style rights, and rules for public-safety cameras.
 - `docs/shortcut.md`: the "Report flooding" and "Flood brief" iPhone Shortcuts, and Home Screen widget options.
 - `docs/demo-script.md`: the 3-minute judging walkthrough.
