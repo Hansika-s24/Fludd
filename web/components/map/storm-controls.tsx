@@ -1,14 +1,9 @@
 "use client";
 
-import type { Hour, PumpState, Scenario } from "@/lib/types";
+import { STORM_WORDS } from "@/components/ui/storm-words";
+import { SCENARIOS, type Hour, type PumpState, type Scenario } from "@/lib/types";
 
-const STORMS: { key: Scenario; label: string }[] = [
-  { key: "10yr", label: "10 yr" },
-  { key: "25yr", label: "25 yr" },
-  { key: "100yr", label: "100 yr" },
-  { key: "500yr", label: "500 yr" },
-  { key: "milton", label: "Milton" },
-];
+const STORMS = SCENARIOS.map((key) => ({ key, label: STORM_WORDS[key].short }));
 
 /** "Sat 2 pm" from hour zero plus whole hours. */
 export function clockLabel(hourZero: string, hour: Hour): string {

@@ -1,5 +1,6 @@
 import { Group } from "@/components/ui/surface";
-import type { DepthBand, Grade, Letter, Scenario } from "@/lib/types";
+import { STORM_WORDS } from "@/components/ui/storm-words";
+import { SCENARIOS, type DepthBand, type Grade, type Letter } from "@/lib/types";
 
 const BAND_WORDS: Record<DepthBand, string> = {
   none: "Dry",
@@ -8,13 +9,7 @@ const BAND_WORDS: Record<DepthBand, string> = {
   "1_2ft": "1 to 2 ft",
   over_2ft: "Over 2 ft",
 };
-const STORM_ROWS: { key: Scenario; label: string }[] = [
-  { key: "10yr", label: "10-year storm" },
-  { key: "25yr", label: "25-year storm" },
-  { key: "100yr", label: "100-year storm" },
-  { key: "500yr", label: "500-year storm" },
-  { key: "milton", label: "Milton replay" },
-];
+const STORM_ROWS = SCENARIOS.map((key) => ({ key, label: STORM_WORDS[key].name, often: STORM_WORDS[key].often }));
 // Meaning colours only: green safe, orange warning, red too late. The letter itself always carries the meaning too.
 const LETTER_COLOR: Record<Letter, string> = { A: "text-safe", B: "text-safe", C: "text-warn", D: "text-late", F: "text-late" };
 const BAND_COLOR: Record<DepthBand, string> = {
@@ -54,7 +49,10 @@ export function GradeCard({ label, grade }: { label: string; grade: Grade }) {
             key={s.key}
             className={`flex min-h-11 items-center justify-between gap-3 px-4 text-subhead ${i < STORM_ROWS.length - 1 ? "border-b border-separator" : ""}`}
           >
-            <span>{s.label}</span>
+            <span className="py-2">
+              <span className="block">{s.label}</span>
+              <span className="block text-footnote text-label-2">{s.often}</span>
+            </span>
             <span className={`font-medium ${BAND_COLOR[grade.depthByStorm[s.key]]}`}>{BAND_WORDS[grade.depthByStorm[s.key]]}</span>
           </div>
         ))}
