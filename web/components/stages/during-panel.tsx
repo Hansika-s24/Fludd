@@ -80,6 +80,11 @@ export function DuringPanel({
         </div>
       )}
 
+      {/* Storm controls first: at half height they sit right under the map they drive. */}
+      <Group title="Storm">
+        <StormControls {...controls} />
+      </Group>
+
       <Group title={`At ${place.label.split(",")[0]}`}>
         <ListRow
           icon={Icon.door}
@@ -126,10 +131,6 @@ export function DuringPanel({
             />
           </>
         )}
-      </Group>
-
-      <Group title="Storm">
-        <StormControls {...controls} />
       </Group>
     </>
   );
