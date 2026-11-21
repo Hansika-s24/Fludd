@@ -331,7 +331,7 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [x] B2 Bowls tests and code. 5 tests; real sweep 2 s, 8,612 bowls after the noise filter (>= 0.10 m deep, >= 3 cells)
 - [x] B3 Water movement tests and code; volume conserved. 7 tests incl. random-storm mass balance and monotonicity
 - [x] B4 Runs on real elevation: the FULL model (fill-spill-merge), not the cascade. About 1.5 s per storm
-- [ ] B5 Milton replay; `validation.json` written; figures in notes
+- [x] B5 Milton replay; `validation.json` written; figures in notes (below, 12:25). 4 tests
 - [ ] B6 Four storm sizes, pump on and off; low and high variants. Storms and pump on/off done (export 22 s); low/high variants not yet. Pump drains the Duck Pond watershed (county polygon, 3,026 leaf bowls) at an assumed 70 cfs
 
 **Lane C: routing**
@@ -442,6 +442,31 @@ My build order:
 6. 15:00 Decide: photo reports and Supabase, or routing "move your car by". Not both.
 7. 16:30 Freeze.
 
+**12:25 Milton validation (computed by `pipeline/model/validate.py`, written to `web/public/data/validation.json`)**
+
+Scenario: Milton replay, 10.7 in, Duck Pond pump failing 03:00 Oct 10 to 10:00 Oct 11. Not tuned to the points. 547 county Milton flood-damage points (filter `EventName = 'Hurricane Milton' AND PRIMCAUSE = 'Flood'`, inside the box).
+
+| Figure | Value |
+|---|---|
+| Hit rate (water >= 0.15 m within 25 m of the point) | **286 / 547 = 52.3%** |
+| Points outside FEMA high-risk zones that the model catches | **136 / 207 = 65.7%** |
+| FEMA baseline: points inside a FEMA high-risk zone (SFHA) | 340 / 547 = 62.2% |
+| Area flagged: model wet area vs FEMA high-risk area | 3.54 km2 (8.6% of box) vs 9.07 km2 (21.9%) |
+| False-alarm area (wet, no recorded flooding within 150 m) | 2.61 km2 |
+| Pump on instead of failing | 286 hits (no change in hit count) |
+
+The one allowed check (pump and runoff settings), recorded, nothing adopted:
+
+| Setting | Hits | Wet area |
+|---|---|---|
+| As built: CN 85, sewer drain 0.25 in/h, 10.7 in | 286 (52.3%) | 3.54 km2 |
+| No sewer drain | 333 (60.9%) | 4.52 km2 |
+| CN 90 | 287 (52.5%) | 3.65 km2 |
+| 13.8 in (upper reported total) | 312 (57.0%) | 4.20 km2 |
+| All three | 357 (65.3%) | 5.18 km2 |
+
+How to say it to judges: "FEMA's high-risk zone covers 22% of the area and holds 62% of the Milton damage points. Our model flags 9% of the area and catches 52%; and of the 207 damaged homes FEMA did not mark high-risk, it catches 136. One storm, a sanity check, not a validation study." Say what it misses: 261 points, mostly where water pooled more than 25 m away or the model has no storm-sewer backup.
+
 ### Notes for my teammate
 
 Claude appends here, newest last, whenever something on this side affects Harshith. Format: time, what changed, what they need to do.
@@ -492,3 +517,5 @@ Added for the two-person setup (not in PLAN.md):
 | Vercel will not build your commits | Your first push shows no deploy | Tell Harshith, who owns the Vercel project and can redeploy |
 | A broken push breaks the live site | Vercel build red | Whoever pushed it fixes or reverts their own commit at once. After 16:30, test locally before every push |
 | Claude usage limit reached | Session refuses work | Tell Harshith at once. Swap the least finished lane to their session and say it out loud |
+
+- 12:25 `validation.json` is real (`loadValidation` reads it). Headline for the validation panel and README: 286 of 547 Milton flood-damage points caught (52.3%); 136 of the 207 points outside FEMA high-risk zones caught; FEMA high-risk zones hold 340 of 547 (62.2%) but cover 9.07 km2 vs the model's 3.54 km2. Extra fields in the file: `femaHighRiskAreaKm2`, `wetAreaKm2`, `boxAreaKm2`, `outsideHighRisk`, `hitsOutsideHighRisk`, `pumpOnHits`, `notes`. Full table under "Notes" in my doc.
