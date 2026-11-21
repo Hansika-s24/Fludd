@@ -123,44 +123,69 @@ class WaterState:
                 work.append(receiver)
 
 
-def region_heights(tree: BowlTree, ground_m: NDArray[np.floating]) -> list[NDArray[np.float64]]:
-    """Per bowl: sorted ground heights of every cell in the bowl and all bowls below it."""
-    z = np.asarray(ground_m, dtype=np.float64).ravel()
-    own: list[list[NDArray[np.float64]]] = [[] for _ in range(tree.n)]
-    cells = np.flatnonzero(tree.cell_node >= 0)
-    nodes = tree.cell_node[cells]
-    order = np.argsort(nodes, kind="stable")
-    cells, nodes = cells[order], nodes[order]
-    bounds = np.searchsorted(nodes, np.arange(tree.n + 1))
-    regions: list[NDArray[np.float64]] = [np.empty(0)] * tree.n
-    # children have lower ids than parents, so one pass upward builds each region
-    for i in range(tree.n):
-        parts = [z[cells[bounds[i] : bounds[i + 1]]]]
-        for child in (tree.child0[i], tree.child1[i]):
-            if child >= 0:
-                parts.append(regions[child])
-        regions[i] = np.sort(np.concatenate(parts))
-        own[i] = parts
-    return regions
+class Regions:
+    """Ground heights of each bowl's cells, built only for bowls that hold water.
+
+    A bowl's region is its own cells plus every bowl below it. Building all regions up
+    front would copy nested cells many times, so they are built on demand and cached.
+    """
+
+    def __init__(self, tree: BowlTree, ground_m: NDArray[np.floating]) -> None:
+        self.tree = tree
+        z = np.asarray(ground_m, dtype=np.float64).ravel()
+        cells = np.flatnonzero(tree.cell_node >= 0)
+        nodes = tree.cell_node[cells]
+        order = np.argsort(nodes, kind="stable")
+        self._own_z = z[cells[order]]
+        self._bounds = np.searchsorted(nodes[order], np.arange(tree.n + 1))
+        self._cache: dict[int, tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]] = {}
+
+    def heights(self, node: int) -> NDArray[np.float64]:
+        return self._tables(node)[0]
+
+    def _tables(self, node: int) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+        if node not in self._cache:
+            parts = []
+            stack = [node]
+            while stack:
+                i = stack.pop()
+                parts.append(self._own_z[self._bounds[i] : self._bounds[i + 1]])
+                for child in (self.tree.child0[i], self.tree.child1[i]):
+                    if child >= 0:
+                        stack.append(int(child))
+            h = np.sort(np.concatenate(parts))
+            cum = np.cumsum(h)
+            filled = np.arange(1, h.size + 1) * h - cum
+            self._cache[node] = (h, cum, filled)
+        return self._cache[node]
+
+    def level(self, node: int, volume_m3: float) -> float:
+        h, cum, filled = self._tables(node)
+        return _level(h, cum, filled, volume_m3 / self.tree.cell_area_m2)
+
+    def forget(self, node: int) -> None:
+        self._cache.pop(node, None)
+
+
+def _level(h: NDArray[np.float64], cum: NDArray[np.float64], filled: NDArray[np.float64], v: float) -> float:
+    if h.size == 0:
+        return float("nan")
+    if v <= 0:
+        return float(h[0])
+    k = int(np.searchsorted(filled, v, side="right"))
+    k = max(1, min(k, h.size))
+    return float((v + cum[k - 1]) / k)
 
 
 def level_of(heights_sorted: NDArray[np.float64], volume_m3: float, cell_area_m2: float) -> float:
     """Water surface height that holds `volume_m3` over cells with these ground heights."""
-    if heights_sorted.size == 0:
-        return float("nan")
-    v = volume_m3 / cell_area_m2
-    if v <= 0:
-        return float(heights_sorted[0])
-    cum = np.cumsum(heights_sorted)
-    k_idx = np.arange(1, heights_sorted.size + 1)
-    # volume (in cell-heights) when the k lowest cells are filled to the k-th height
-    filled = k_idx * heights_sorted - cum
-    k = int(np.searchsorted(filled, v, side="right"))
-    k = max(1, min(k, heights_sorted.size))
-    return float((v + cum[k - 1]) / k)
+    h = np.asarray(heights_sorted, dtype=np.float64)
+    cum = np.cumsum(h)
+    filled = np.arange(1, h.size + 1) * h - cum
+    return _level(h, cum, filled, volume_m3 / cell_area_m2)
 
 
-def bowl_levels(state: WaterState, regions: list[NDArray[np.float64]]) -> NDArray[np.float64]:
+def bowl_levels(state: WaterState, regions: Regions) -> NDArray[np.float64]:
     """Water surface height for every bowl at this moment.
 
     A bowl inside a lake gets the lake's level. A parent whose children have not merged
@@ -173,7 +198,7 @@ def bowl_levels(state: WaterState, regions: list[NDArray[np.float64]]) -> NDArra
         if state.is_leaf(i) or state.merged[i]:
             lake = state.lake_of(i)
             if lake not in lake_level:
-                lake_level[lake] = level_of(regions[lake], float(state.water_m3[lake]), tree.cell_area_m2)
+                lake_level[lake] = regions.level(lake, float(state.water_m3[lake]))
             levels[i] = lake_level[lake]
         else:
             levels[i] = float(tree.spill_m[tree.child0[i]])

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from model.depressions import find_bowls
-from model.routing_volume import Pump, WaterState, bowl_levels, level_of, region_heights
+from model.routing_volume import Pump, Regions, WaterState, bowl_levels, level_of
 
 EDGE = 10.0
 
@@ -43,7 +43,7 @@ def test_full_bowl_spills_into_its_neighbour() -> None:
     pour(state, a, 10.0)  # A holds 8
     assert state.water_m3[a] == pytest.approx(8.0)
     assert state.water_m3[b] == pytest.approx(2.0)
-    levels = bowl_levels(state, region_heights(tree, ground))  # type: ignore[arg-type]
+    levels = bowl_levels(state, Regions(tree, ground))  # type: ignore[arg-type]
     assert levels[a] == pytest.approx(6.0)
     assert levels[b] == pytest.approx(4.0)
 
@@ -55,7 +55,7 @@ def test_two_full_bowls_merge_at_the_right_level() -> None:
     pour(state, a, 17.0)  # 8 + 6 fills both, 3 more merges them
     assert state.merged[p]
     assert state.water_m3[p] == pytest.approx(17.0)
-    levels = bowl_levels(state, region_heights(tree, ground))  # type: ignore[arg-type]
+    levels = bowl_levels(state, Regions(tree, ground))  # type: ignore[arg-type]
     assert levels[a] == levels[b] == levels[p] == pytest.approx(6.6)
 
 
@@ -102,7 +102,7 @@ def test_pump_at_zero_changes_the_result() -> None:
 def test_more_rain_never_lowers_water() -> None:
     ground, tree = two_bowls()
     a, _, _ = ids(tree)
-    regions = region_heights(tree, ground)  # type: ignore[arg-type]
+    regions = Regions(tree, ground)  # type: ignore[arg-type]
     previous = None
     for total in [1.0, 5.0, 9.0, 15.0, 20.0, 40.0]:
         state = WaterState(tree)  # type: ignore[arg-type]

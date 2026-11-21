@@ -29,6 +29,31 @@ PUMP_STATES: tuple[str, ...] = ("on", "off")
 HOURS: dict[str, int] = {"10yr": 36, "25yr": 36, "100yr": 36, "500yr": 36, "milton": 48}
 MILTON_HOUR_ZERO = "2024-10-09T12:00:00-04:00"
 
+# Rainfall depth (inches) by duration (hours) at USF, NOAA Atlas 14, from
+# prep/04-depth-model-and-routing.md section 5. Used to shape the hourly design storms.
+DEPTH_DURATION_IN: dict[str, dict[int, float]] = {
+    "10yr": {1: 2.94, 2: 3.66, 3: 4.06, 6: 4.74, 12: 5.49, 24: 6.60},
+    "25yr": {1: 3.38, 2: 4.24, 3: 4.77, 6: 5.73, 12: 6.84, 24: 8.40},
+    "100yr": {1: 4.03, 2: 5.12, 3: 5.90, 6: 7.48, 12: 9.44, 24: 11.9},
+    "500yr": {1: 4.75, 2: 6.13, 3: 7.30, 6: 9.89, 12: 13.3, 24: 17.2},
+}
+RAIN_HOURS = 24  # design storms rain for 24 h, then drain until HOURS ends
+
+# Milton replay. 10.7 in is the county-reported University Area total (research 01 3.2,
+# 04 2.1); the North Tampa figure was 13.8 in. Worst rain 8 pm to midnight Oct 9.
+MILTON_TOTAL_IN = 10.7
+MILTON_PEAK_HOUR = 10  # hours after MILTON_HOUR_ZERO (22:00 Oct 9)
+# Duck Pond outage, about 03:00 Oct 10 to 10:00 Oct 11, in hours after MILTON_HOUR_ZERO.
+MILTON_PUMP_OFF_HOURS = (15, 46)
+
+# Model assumptions (stated in the README; not calibrated to Milton).
+CURVE_NUMBER = 85  # wet urban ground; research 04 section 1.2 suggests the wet end for hurricanes
+BACKGROUND_DRAIN_IN_PER_HOUR = 0.25  # storm sewers, one global knob; true value unknown
+# Duck Pond East pump station (county layer; position flagged "STATION NEED GPS").
+DUCK_POND_PUMP_LNGLAT = (-82.43053936666412, 28.05883506339908)
+DUCK_POND_PUMP_CFS = 70.0  # county quoted 50 to 90 cfs (unverified); midpoint
+CFS_TO_M3_PER_HOUR = 0.028316846592 * 3600
+
 # Grade geometry, as agreed in docs/contracts.md.
 BUILDING_RING_CELLS = 3  # radius around the address point, ~9 m at 3 m cells
 MILTON_NEARBY_M = 100.0  # a Milton flood point this close caps the grade at C
