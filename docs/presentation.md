@@ -6,7 +6,7 @@ Who says what, in the order the judges will hear it. The minute-by-minute live w
 
 | Part | Who | Time | Why this person |
 |---|---|---|---|
-| 1. Why we built it | **Harshith** | 0:30 | It is the product story |
+| 1. Why we built it | **Harshith** | 0:40 | It is the product story, and it should land before any screen is shown |
 | 2. Impact | **Hansika** | 0:30 | It is her validation number |
 | 3. Features (live) | **Harshith** drives the phone | 1:15 | He built the interface |
 | 4. Tech stack | **Hansika** | 0:35 | She built the model and routing |
@@ -15,16 +15,29 @@ Who says what, in the order the judges will hear it. The minute-by-minute live w
 
 If they give five minutes instead of three, spend the extra on part 3 (add the photo report and one guided demo), not on more talking.
 
-## 1. Why we built it (Harshith, 30 s)
+## 1. Why we built it (Harshith, about 40 s)
 
-Say it in your own words; these are the beats.
+Say this before you touch the phone. Slowly. Look at the judges, not the screen.
 
-- "In Hurricane Milton, the neighbourhood next to this campus flooded. The county recorded **547** flood-damaged properties in the area we study."
-- "**207** of them were outside FEMA's high-risk flood zones. If you looked up one of those homes before signing a lease, the official map said **'Zone X, minimal flood hazard'**."
-- "Renters and students pick housing with that map, or with nothing. Nobody hands a renter a flood report."
-- "So we built one. Type an address, get a grade, and see what the water does there hour by hour."
+> "On October 9th, 2024, eleven and a half inches of rain fell on Tampa in a single day. That is more than this city had ever recorded in an entire October.
+>
+> The water rose in the dark. In six hours that night, Hillsborough firefighters pulled more than five hundred people out of flooded homes.
+>
+> In the sixteen square miles around this campus, the county later counted **five hundred and forty-seven** flood-damaged properties. And **two hundred and seven** of them sat outside the official high-risk flood zones. If you had looked one of them up before signing a lease, the map would have told you: *minimal flood hazard*.
+>
+> Nearly half the homes in Tampa are at risk of flooding in the next thirty years. Nobody hands a renter a flood report. So we built one."
 
-One line to hold in reserve: "Two homes on E 139th Ave, 265 metres apart, both Zone X. Our model grades one A and the other F."
+Then one beat of silence, and: "This is Fludd." Start the phone.
+
+**Where each number comes from** (in case a judge asks):
+- 11.43 in at Tampa International on October 9, the second-wettest day on record there, and more than any full October since 1890: National Weather Service Tampa Bay, Hurricane Milton summary.
+- More than 500 people rescued by Hillsborough County Fire Rescue overnight: Axios Tampa Bay, October 10, 2024. (Fox 13 quoted the county at more than 725 people and 128 pets between 9 pm and 3 am. Say "more than five hundred"; both reports support it.)
+- 547 damaged properties in our study area, 207 outside FEMA's high-risk zones: Hillsborough County damage assessments, counted by our pipeline (`web/public/data/validation.json`). The study area is 41.3 km², about 16 square miles.
+- "Nearly half the homes in Tampa": 44% of residential properties in the city of Tampa, First Street Foundation's 2021 analysis as reported by the National Wildlife Federation.
+
+**Numbers to leave out:** a yearly "chance of a hurricane hitting Tampa". The only figure we found is a forecaster's "about once a decade" in a news story, with no clear definition. If you want the idea, say "a hurricane passes close to Tampa about once a decade" and nothing more precise.
+
+In reserve, if you have five more seconds: "Two homes on E 139th Ave, 265 metres apart, both 'minimal hazard' on the official map. Our model grades one A and the other F."
 
 ## 2. Impact (Hansika, 30 s)
 
