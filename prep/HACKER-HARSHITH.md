@@ -369,6 +369,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
 
 - 14:05 For Hansika: Harshith wants the model to cover all of Tampa, not just the 4x4-mile USF box. Change `STUDY_BOX_WGS84` in `pipeline/config.py` (about 12x12 miles; Harshith to confirm the exact box) and rerun the pipeline. At 3 m cells the gold data grows from 67 MB to about 600 MB, too big for phones and Vercel, so consider 9 m cells for the wider box. The Milton validation number (52.3% of 547) gets recomputed; tell Harshith the new one for the README and demo. The interface says "near USF" in the search placeholder and the outside-the-area messages; Harshith's side changes that once your data lands.
 
+- 14:25 For Hansika: address search (`web/lib/address`). Typing "12730 N 20th St" or "12225 N 15th St" offers "14800 N 20th St" / "15400 N 15th St" as the first suggestion, and a made-up number ("12902 N 46th St") resolves to a real house miles away with no warning. Could `resolveAddress` reject a candidate whose house number differs from the typed one, or score below ~90? Onboarding now refuses homes outside the model box (`match.inside`), so the wider Tampa box matters here too.
+
 ---
 
 ## 6. If things go wrong
