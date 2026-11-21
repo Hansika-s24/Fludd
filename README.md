@@ -4,6 +4,15 @@
 
 Type any address near USF and get a flood report card: a letter grade, where the water goes hour by hour, when to move your car, whether a fire truck can still reach you, and what to fix. Built at HackJam '26 (SHPE USF, an MLH event) on November 21, 2026 by Harshith and Hansika.
 
+**Fludd is four things in one map:**
+
+| | For | What it does |
+|---|---|---|
+| **Before you move** | Renters and buyers | A flood grade for any building (search it or tap it on the map): what the official map says against what we found, Milton damage nearby, drainage, fixes |
+| **Weather** | Everyone, every day | Weather now, when it will rain in the next 12 hours, air quality, National Weather Service alerts; also as a one-tap iPhone Shortcut widget |
+| **During a flood** | Residents and drivers | Floodwater hour by hour (press Play), a live meter for water at your home, when to move your car, and Ask Pelican routes that avoid flooded roads |
+| **Help each other** | Neighbours | Photo reports checked by a person, food banks and shelters nearby, 911 and 211, and a weekly note on how many neighbours your reports reached |
+
 ## What makes it different
 
 1. **A depth model built around bowls, spill points and pumps.** It fills low ground the way the University Area flooded in Hurricane Milton, bowl by bowl, spilling into the next one. A pump station is a real object you can switch off.
@@ -19,7 +28,7 @@ Type any address near USF and get a flood report card: a letter grade, where the
   - **Before:** grade, flood history nearby, drainage network, steps that fit your home (own or rent, floor) and similar homes nearby with a better grade. For an address you do not live at yet, a checklist for buying, renting or building there, made from the same report.
   - **During:** water at the door hour by hour, move-your-car time, fire truck reach, last way out, live National Weather Service alerts, and "Ask Pelican" for a trip that avoids roads the model closes.
   - **After:** what Milton did at the address, what the pumps changed, and resident photo reports checked by a person before they appear.
-- **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server.
+- **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server. Reports carry no identity and photos are stripped of metadata; see `docs/privacy.md`.
 
 ## Data sources
 
