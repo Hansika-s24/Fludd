@@ -1,0 +1,15 @@
+/* Full-screen onboarding: screens slide with the spring ease, cross-fade with reduced motion. */
+.ob-layer { background: oklch(0.975 0.004 260); }
+
+.ob-forward { animation: ob-from-right var(--spring-response) var(--ease-spring) both; }
+.ob-back { animation: ob-from-left var(--spring-response) var(--ease-spring) both; }
+@keyframes ob-from-right { from { opacity: 0; transform: translateX(48px); } to { opacity: 1; transform: none; } }
+@keyframes ob-from-left { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
+
+.ob-progress > span { transition: width var(--spring-response) var(--ease-spring); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-forward, .ob-back { animation: ob-fade 200ms ease both; }
+  .ob-progress > span { transition: none; }
+  @keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
+}
