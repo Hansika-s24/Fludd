@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ReportFlow } from "@/components/report/report-flow";
 import { Group } from "@/components/ui/surface";
 import { loadGold, loadLevels, peakBuildingDepth } from "@/lib/data";
 import type { Grade } from "@/lib/types";
@@ -15,6 +16,7 @@ interface Replay {
 /** After a flood: what Milton did here, what the pumps changed, and what to improve. */
 export function AfterPanel({ place, grade, onReplay }: { place: Place; grade: Grade; onReplay: () => void }) {
   const [replay, setReplay] = useState<Replay | null>(null);
+  const [reporting, setReporting] = useState(false);
   const remedies = useRemedies(grade, replay?.depth100 ?? null);
 
   useEffect(() => {
@@ -79,9 +81,22 @@ export function AfterPanel({ place, grade, onReplay }: { place: Place; grade: Gr
       </Group>
 
       <Group title="Report what you saw">
-        <p className="px-4 py-3 text-subhead text-label-2">
-          Photos of flooding help us check the model. A person reviews every photo before it appears on the map.
-        </p>
+        {reporting ? (
+          <ReportFlow onClose={() => setReporting(false)} />
+        ) : (
+          <div className="px-4 py-3">
+            <p className="text-subhead text-label-2">
+              Photos of flooding help us check the model. A person reviews every photo before it appears on the map.
+            </p>
+            <button
+              type="button"
+              onClick={() => setReporting(true)}
+              className="pressable mt-3 h-11 w-full rounded-[var(--radius-control)] bg-fill text-body font-medium text-tint"
+            >
+              Report flooding
+            </button>
+          </div>
+        )}
       </Group>
     </>
   );

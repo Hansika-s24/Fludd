@@ -39,7 +39,8 @@ function decideMode(): Mode {
   } catch {
     seen = false;
   }
-  if (seen || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+  // The admin screen is a work tool: no intro there.
+  if (seen || window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
     decided = "skip";
   else
     decided =
