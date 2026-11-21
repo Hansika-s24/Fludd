@@ -1,0 +1,46 @@
+{
+ "nodeCount": 6481,
+ "edgeCount": 9064,
+ "speedClasses": {
+  "1": "residential 25 mph",
+  "2": "arterial 40 mph"
+ },
+ "arrays": [
+  {
+   "name": "nodeLng",
+   "type": "float32",
+   "offset": 0,
+   "length": 6481
+  },
+  {
+   "name": "nodeLat",
+   "type": "float32",
+   "offset": 25924,
+   "length": 6481
+  },
+  {
+   "name": "edgeFrom",
+   "type": "uint32",
+   "offset": 51848,
+   "length": 9064
+  },
+  {
+   "name": "edgeTo",
+   "type": "uint32",
+   "offset": 88104,
+   "length": 9064
+  },
+  {
+   "name": "edgeLengthM",
+   "type": "float32",
+   "offset": 124360,
+   "length": 9064
+  },
+  {
+   "name": "edgeSpeedClass",
+   "type": "uint8",
+   "offset": 160616,
+   "length": 9064
+  }
+ ]
+}
