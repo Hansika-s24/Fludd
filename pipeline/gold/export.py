@@ -144,6 +144,80 @@ def layers() -> dict[str, int]:
     return {name: len(feats) for name, feats in groups.items()}
 
 
+def _rasterize(grid: Grid, geometries: list[dict[str, Any]]) -> NDArray[np.bool_]:
+    from rasterio.features import rasterize
+    from rasterio.transform import from_bounds
+
+    height, width = grid.ground_m.shape
+    if not geometries:
+        return np.zeros((height, width), dtype=bool)
+    transform = from_bounds(*grid.bbox, width, height)
+    return rasterize(geometries, out_shape=(height, width), transform=transform, fill=0, default_value=1, all_touched=True).astype(bool)
+
+
+def peak_depth(tree: BowlTree, grid: Grid, levels: NDArray[np.float64]) -> NDArray[np.float64]:
+    peak = levels.max(axis=1)
+    node = tree.cell_node.reshape(grid.ground_m.shape)
+    level = np.where(node >= 0, peak[np.maximum(node, 0)], -np.inf)
+    return np.maximum(level - grid.ground_m, 0.0)
+
+
+def validation(tree: BowlTree, grid: Grid, milton_off: NDArray[np.float64], milton_on: NDArray[np.float64]) -> None:
+    from model import validate
+
+    def feats(name: str) -> list[dict[str, Any]]:
+        return json.loads((config.BRONZE_DIR / f"{name}.geojson").read_text())["features"]
+
+    points = feats("milton_flood_points")
+    lnglat = [tuple(f["geometry"]["coordinates"][:2]) for f in points]
+    cells = [grid.cell_of(lng, lat) or (-1, -1) for lng, lat in lnglat]
+    radius = int(round(validate.HIT_RADIUS_M / grid.cell_size_m))
+    depth_off = peak_depth(tree, grid, milton_off)
+    depth_on = peak_depth(tree, grid, milton_on)
+    hits = validate.hit_mask(depth_off, cells, radius)
+    hits_pump_on = validate.hit_mask(depth_on, cells, radius)
+
+    sfha = _rasterize(grid, [f["geometry"] for f in feats("fema_zones") if f["properties"].get("SFHA_TF") == "T"])
+    inside = np.array([bool(sfha[r, c]) if r >= 0 else False for r, c in cells])
+
+    evidence = _rasterize(
+        grid,
+        [f["geometry"] for f in points] + [f["geometry"] for f in feats("known_flooding_parcels")] + [f["geometry"] for f in feats("street_flooding_reports")],
+    )
+    buffer = int(round(validate.EVIDENCE_BUFFER_M / grid.cell_size_m))
+    false_alarm = validate.false_alarm_area_km2(depth_off, evidence, buffer, grid.cell_x_m * grid.cell_y_m)
+
+    result = validate.summarise(hits, inside, false_alarm)
+    cell_area = grid.cell_x_m * grid.cell_y_m
+    result.update(
+        {
+            "scenario": "milton-pump-off",
+            "hitRadiusM": validate.HIT_RADIUS_M,
+            "wetThresholdM": validate.WET_M,
+            "evidenceBufferM": validate.EVIDENCE_BUFFER_M,
+            "wetAreaKm2": round(float(np.count_nonzero(depth_off >= validate.WET_M)) * cell_area / 1e6, 3),
+            "boxAreaKm2": round(depth_off.size * cell_area / 1e6, 3),
+            "pumpOnHits": int(np.count_nonzero(hits_pump_on)),
+            "femaHighRiskAreaKm2": round(float(np.count_nonzero(sfha)) * cell_area / 1e6, 3),
+            "outsideHighRisk": int(np.count_nonzero(~inside)),
+            "hitsOutsideHighRisk": int(np.count_nonzero(hits & ~inside)),
+            "pointFilter": "EventName = 'Hurricane Milton' AND PRIMCAUSE = 'Flood', inside the study box",
+            "notes": "One storm, not tuned to these points. False-alarm area counts wet cells with no recorded flooding within the buffer, which includes real flooding nobody recorded.",
+        }
+    )
+    _write_json(GOLD / "validation.json", result)
+    print(f"   validation: {result['hits']}/{result['total']} hits ({result['hitRate']:.1%}), pump on {result['pumpOnHits']}; "
+          f"FEMA SFHA {result['femaBaseline']['insideHighRisk']}/{result['total']}; wet {result['wetAreaKm2']} km2 of {result['boxAreaKm2']}; "
+          f"false alarm {result['falseAlarmAreaKm2']} km2; FEMA area {result['femaHighRiskAreaKm2']} km2; "
+          f"outside FEMA high risk: {result['hitsOutsideHighRisk']}/{result['outsideHighRisk']} hit")
+    order = np.argsort([-1 if h else 1 for h in hits], kind="stable")
+    shown_hits = [lnglat[i] for i in np.flatnonzero(hits)[:5]]
+    shown_miss = [(lnglat[i], round(float(depth_off[max(cells[i][0]-radius,0):cells[i][0]+radius+1, max(cells[i][1]-radius,0):cells[i][1]+radius+1].max()), 3)) for i in np.flatnonzero(~hits)[:5]]
+    print(f"   example hits: {shown_hits}")
+    print(f"   example misses (max depth within radius): {shown_miss}")
+    del order
+
+
 def manifest(grid: Grid, ground_range: tuple[float, float]) -> None:
     bronze = json.loads((config.BRONZE_DIR / "manifest.json").read_text())
     height, width = grid.ground_m.shape
@@ -174,11 +248,15 @@ def run() -> None:
     print(f"   Duck Pond pump serves {len(pump_nodes)} leaf bowls")
     bowls_png(tree, grid.ground_m.shape)
     bowls_json(tree, grid, pump_nodes)
+    milton: dict[str, NDArray[np.float64]] = {}
     for scenario in config.SCENARIOS:
         for pump in config.PUMP_STATES:
             result = run_scenario(tree, regions, scenario, pump, pump_nodes)
             levels_json(tree, result.levels_m, scenario, pump)
+            if scenario == "milton":
+                milton[pump] = result.levels_m
             print(f"   {scenario}-pump-{pump}: off map {result.off_map_m3:,.0f} m3, pumped {result.pumped_m3:,.0f} m3")
+    validation(tree, grid, milton["off"], milton["on"])
     counts = layers()
     manifest(grid, lo_hi)
     print(f"   {tree.n} bowls; layers {counts}")
