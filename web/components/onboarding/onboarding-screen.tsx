@@ -4,7 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { StepIllustration } from "@/components/illustrations";
 import { AddressSearch } from "@/components/report-card/address-search";
-import { WORDMARK_CLASS } from "@/components/ui/logo";
+import { LogoMark, WORDMARK_CLASS } from "@/components/ui/logo";
+import { motion, useReducedMotion } from "motion/react";
 import {
   currentPosition,
   EMPTY_PROFILE,
@@ -167,15 +168,47 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
   switch (current) {
     case "welcome":
       body = (
-        <div className="flex flex-1 flex-col items-center justify-center pb-16 text-center">
-          <div style={at(0)} className="rise-in mb-6 flex">
-            <StepIllustration step="welcome" />
+        // Full-bleed hero: cancels the screen's side padding and header so the navy reaches the edges and the top.
+        <div className="-mx-6 -mt-[calc(max(0.5rem,env(safe-area-inset-top))+2.75rem)] flex flex-1 flex-col text-center">
+          <div
+            className="relative flex min-h-[40dvh] flex-col items-center justify-center overflow-hidden pb-12 pt-[calc(max(0.5rem,env(safe-area-inset-top))+1.5rem)]"
+            style={{ background: "radial-gradient(120% 80% at 50% 25%, #3a68ad 0%, #23467f 55%, #182f57 100%)" }}
+          >
+            <WelcomeRain />
+            {/* The mark on its paper tile, like the app icon: the navy wave needs the cream behind it. */}
+            <div
+              style={at(0)}
+              className="pop-in relative grid size-[8.5rem] place-items-center rounded-[2.25rem] bg-[#fbfaf6] shadow-[0_20px_40px_rgb(0_0_0/0.35),inset_0_-3px_0_rgb(0_0_0/0.06)]"
+            >
+              <LogoMark size={112} />
+            </div>
+            <svg className="absolute inset-x-0 -bottom-px h-12 w-full" viewBox="0 0 400 48" preserveAspectRatio="none" aria-hidden>
+              <path d="M0 22 C60 6 120 6 180 20 S300 40 400 16 V48 H0 Z" fill="#5b8fd6" opacity="0.55" />
+              <path d="M0 30 C70 16 140 18 200 30 S320 46 400 26 V48 H0 Z" fill="oklch(0.975 0.004 260)" />
+            </svg>
           </div>
-          <p translate="no" style={at(1)} className={`rise-in ${WORDMARK_CLASS} text-[3.5rem] leading-none tracking-[-0.03em]`}>Fludd</p>
-          <h1 id={titleId} style={at(2)} className="rise-in mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
-            Know what the water will do before it does.
-          </h1>
-          <p style={at(3)} className="rise-in mt-3 max-w-[34ch] text-body text-label-2 text-balance">A few quick questions make your flood report about your home. Everything stays on this device.</p>
+
+          <div className="flex flex-1 flex-col items-center px-6 pt-2">
+            <p translate="no" style={at(1)} className={`rise-in ${WORDMARK_CLASS} text-[2.75rem] leading-none tracking-[-0.03em]`}>Fludd</p>
+            <h1 id={titleId} style={at(2)} className="rise-in mt-2 text-[1.375rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
+              Know what the water will do before it does.
+            </h1>
+            <ul style={at(3)} className="rise-in mt-4 w-full max-w-[22rem] space-y-2 text-left">
+              {[
+                ["A flood grade for any home in Tampa", "before you rent, buy or move"],
+                ["Water on your street, hour by hour", "and when to move your car"],
+                ["Routes around flooded roads", "plus food, shelter and help nearby"],
+              ].map(([title, detail]) => (
+                <li key={title} className="flex items-start gap-3">
+                  <span className="mt-1.5 size-2 shrink-0 rounded-full bg-tint" aria-hidden />
+                  <span className="text-subhead leading-snug">
+                    <span className="font-semibold">{title}</span> <span className="text-label-2">{detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p style={at(3)} className="rise-in mt-3 text-footnote text-label-3">Setup takes a minute. Everything stays on this device.</p>
+          </div>
         </div>
       );
       footer = (
@@ -589,5 +622,26 @@ function Summary({ label, value, detail, last }: { label: string; value: string;
       <dd className="text-body">{value}</dd>
       {detail && <dd className="text-footnote text-label-2">{detail}</dd>}
     </div>
+  );
+}
+
+/** Light rain over the welcome hero: thin streaks falling on a loop. Still for people who reduce motion. */
+function WelcomeRain() {
+  const reduce = useReducedMotion();
+  const drops = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37) % 400, y: (i * 53) % 300, len: 10 + ((i * 7) % 10) }));
+  return (
+    <motion.svg
+      className="pointer-events-none absolute inset-0 h-[130%] w-full opacity-35"
+      viewBox="0 0 400 300"
+      preserveAspectRatio="none"
+      aria-hidden
+      initial={{ y: "-23%" }}
+      animate={reduce ? undefined : { y: "0%" }}
+      transition={{ duration: 1.8, ease: "linear", repeat: Infinity }}
+    >
+      {drops.map((d, i) => (
+        <line key={i} x1={d.x} y1={d.y} x2={d.x - 3} y2={d.y + d.len} stroke="#cfe2ff" strokeWidth="1.4" strokeLinecap="round" />
+      ))}
+    </motion.svg>
   );
 }
