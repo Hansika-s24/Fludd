@@ -61,8 +61,8 @@ export async function rescueReach(
   return rescueReachFrom(graph, hours[vehicle], stationNodes, node, hour);
 }
 
-export async function latestDeparture(position: LngLat, scenario: Scenario, pump: PumpState): Promise<LatestDeparture> {
+export async function latestDeparture(position: LngLat, scenario: Scenario, pump: PumpState, vehicle: VehicleClass = "car"): Promise<LatestDeparture> {
   const [graph, hours, node] = await Promise.all([loadRoadGraph(), closingHoursCached(scenario, pump), snap(position)]);
   if (node === null) return { kind: "outside" };
-  return latestDepartureFor(graph, hours.car, node);
+  return latestDepartureFor(graph, hours[vehicle], node);
 }

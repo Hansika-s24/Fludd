@@ -89,6 +89,6 @@ export function rescueReach(
 }
 
 /** "Move your car by" hour and the dry parking it leads to (null hour and parking = no move needed). */
-export function latestDeparture(position: LngLat, scenario: Scenario, pump: PumpState): Promise<LatestDeparture> {
-  return run({ name: "latestDeparture", args: [position, scenario, pump] }, () => engine.latestDeparture(position, scenario, pump));
+export function latestDeparture(position: LngLat, scenario: Scenario, pump: PumpState, vehicle: VehicleClass = "car"): Promise<LatestDeparture> {
+  return run({ name: "latestDeparture", args: [position, scenario, pump, vehicle] }, () => engine.latestDeparture(position, scenario, pump, vehicle));
 }
