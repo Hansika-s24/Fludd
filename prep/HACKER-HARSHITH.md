@@ -320,7 +320,7 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 - [ ] G1n Vercel keys set: my Gemini key, Supabase URL and keys from Hansika
 
 **Lane D: map and design**
-- [ ] D1 Design direction as tokens; one screen shown at two widths
+- [x] D1 Design direction as tokens; one screen shown at two widths. Tokens in `web/app/globals.css`; map + sidebar/sheet checked at 1440 and 393 wide. MapLibre worker is copied to `public/` by predev/prebuild (bundler breaks its relative URL). Basemap is busy (bus stops, POIs): quiet it in D2
 - [ ] D2 App shell and basemap; deployed
 - [ ] D3 Water layer on the toy fixture (12:00), then on real files
 - [ ] D4 Timeline, storm selector, pump switch
