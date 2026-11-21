@@ -9,7 +9,7 @@ import { loadGold, loadLayer, loadLevels, peakBuildingDepth } from "@/lib/data";
 import { distanceM } from "@/lib/grade";
 import { findBetterOptions } from "@/lib/parcels";
 import type { BetterOption, Grade } from "@/lib/types";
-import { Icon, ListRow, useRemedies, type Place } from "./shared";
+import { CountIn, Icon, ListRow, LoadingRows, stagger, useRemedies, type Place } from "./shared";
 
 const HISTORY_RADIUS_M = 400;
 
@@ -118,19 +118,20 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
               icon={Icon.history}
               tone={history.milton > 0 ? "warn" : "safe"}
               label={`Hurricane Milton damage within ${HISTORY_RADIUS_M} m`}
-              value={history.milton === 0 ? "None recorded" : `${history.milton} damaged ${history.milton === 1 ? "property" : "properties"}`}
+              value={history.milton === 0 ? "None recorded" : <><CountIn value={history.milton} /> damaged {history.milton === 1 ? "property" : "properties"}</>}
               detail={history.nearestMiltonM !== null ? `Nearest recorded damage: ${miles(history.nearestMiltonM)} away` : undefined}
             />
             <ListRow
               icon={Icon.home}
               tone={history.knownFlooding > 0 ? "warn" : "safe"}
               label={`City's known-flooding parcels within ${HISTORY_RADIUS_M} m`}
-              value={history.knownFlooding === 0 ? "None listed" : `${history.knownFlooding} listed`}
+              value={history.knownFlooding === 0 ? "None listed" : <><CountIn value={history.knownFlooding} /> listed</>}
+              i={1}
               last
             />
           </>
         ) : (
-          <p className="px-4 py-3 text-subhead text-label-2">Checking past floods…</p>
+          <LoadingRows text="Checking past floods…" rows={2} />
         )}
       </Group>
 
@@ -147,38 +148,40 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
               icon={Icon.door}
               tone={drainage.inlets150 === 0 ? "warn" : "tint"}
               label="Street inlets within 150 m"
-              value={drainage.inlets150 === 0 ? "None mapped" : `${drainage.inlets150}`}
+              value={drainage.inlets150 === 0 ? "None mapped" : <CountIn value={drainage.inlets150} />}
               detail="Keep them clear of leaves before a storm. Turn the drainage layer on to see the network."
+              i={1}
             />
             <ListRow
               icon={Icon.truck}
               label="Nearest pump station"
               value={drainage.pump ? `${drainage.pump.name.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ").replace(/ St Street$/, " St")}` : "None mapped"}
               detail={drainage.pump ? `${miles(drainage.pump.distanceM)} away. If it loses power, nearby low ground fills faster.` : undefined}
+              i={2}
               last
             />
           </>
         ) : (
-          <p className="px-4 py-3 text-subhead text-label-2">Mapping the drains around you…</p>
+          <LoadingRows text="Mapping the drains around you…" rows={3} />
         )}
       </Group>
 
       {profile?.done && <SituationAdvice profile={profile} letter={grade.letter} />}
 
       <Group title="Make it safer">
-        {remedies === null && <p className="px-4 py-3 text-subhead text-label-2">Working out what helps here…</p>}
+        {remedies === null && <LoadingRows text="Working out what helps here…" rows={2} />}
         {remedies?.length === 0 && (
-          <p className="px-4 py-3 text-subhead text-label-2">Suggestions are unavailable right now.</p>
+          <p className="swap-in px-4 py-3 text-subhead text-label-2">Suggestions are unavailable right now.</p>
         )}
         {remedies?.map((s, i) => (
-          <ListRow key={i} icon={Icon.wrench} label={`Step ${i + 1}`} value={<span className="text-subhead font-normal">{s}</span>} last={i === remedies.length - 1} />
+          <ListRow key={i} icon={Icon.wrench} label={`Step ${i + 1}`} value={<span className="text-subhead font-normal">{s}</span>} i={i} last={i === remedies.length - 1} />
         ))}
       </Group>
 
       <Group title="Similar homes nearby with a better grade">
-        {options === null && <p className="px-4 py-3 text-subhead text-label-2">Looking at homes within a mile…</p>}
+        {options === null && <LoadingRows text="Looking at homes within a mile…" rows={2} />}
         {options?.length === 0 && (
-          <p className="px-4 py-3 text-subhead text-label-2">
+          <p className="swap-in px-4 py-3 text-subhead text-label-2">
             {grade.letter === "A" ? "This address already has the best grade." : "No similar homes with a better grade within a mile."}
           </p>
         )}
@@ -187,7 +190,8 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
             key={o.address}
             type="button"
             onClick={() => onPick({ label: o.address, position: o.position })}
-            className={`pressable flex w-full items-center gap-3 px-4 py-3 text-left active:bg-fill ${i < all.length - 1 ? "border-b border-separator" : ""}`}
+            className={`pressable rise-in flex w-full items-center gap-3 px-4 py-3 text-left active:bg-fill ${i < all.length - 1 ? "border-b border-separator" : ""}`}
+            style={stagger(i)}
           >
             <span className="w-7 text-center text-headline font-bold text-safe" aria-label={`Grade ${o.grade}`}>{o.grade}</span>
             <span className="min-w-0 flex-1">

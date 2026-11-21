@@ -5,7 +5,7 @@ import { ReportFlow } from "@/components/report/report-flow";
 import { Group } from "@/components/ui/surface";
 import { loadGold, loadLevels, peakBuildingDepth } from "@/lib/data";
 import type { Grade } from "@/lib/types";
-import { BAND_WORDS, bandOf, Icon, ListRow, type Place } from "./shared";
+import { BAND_WORDS, bandOf, Icon, ListRow, LoadingRows, type Place } from "./shared";
 
 interface Replay {
   pumpOn: number;
@@ -54,11 +54,12 @@ export function AfterPanel({ place, onReplay }: { place: Place; grade: Grade; on
               label="If the pump stations had lost power"
               value={BAND_WORDS[bandOf(replay.pumpOff)]}
               detail={pumpMattered ? "The pumps made the difference here. Ask the city about backup power." : "The pumps made little difference at this address."}
+              i={1}
               last
             />
           </>
         ) : (
-          <p className="px-4 py-3 text-subhead text-label-2">Replaying Milton…</p>
+          <LoadingRows text="Replaying Milton…" rows={2} />
         )}
         <div className="border-t border-separator px-4 py-3">
           <button
@@ -72,10 +73,13 @@ export function AfterPanel({ place, onReplay }: { place: Place; grade: Grade; on
       </Group>
 
       <Group title="Report what you saw">
+        {/* The form and the prompt trade places: distinct keys remount each one so its swap-in plays. */}
         {reporting ? (
-          <ReportFlow onClose={() => setReporting(false)} />
+          <div key="flow" className="swap-in">
+            <ReportFlow onClose={() => setReporting(false)} />
+          </div>
         ) : (
-          <div className="px-4 py-3">
+          <div key="prompt" className="swap-in px-4 py-3">
             <p className="text-subhead text-label-2">
               Photos of flooding help us check the model. A person reviews every photo before it appears on the map.
             </p>

@@ -112,7 +112,7 @@ export function SituationAdvice({ profile, letter }: { profile: Profile; letter:
   return (
     <Group title="For your situation">
       {items.map((a, i) => (
-        <ListRow key={a.id} icon={a.icon} label={a.label} value={a.title} detail={a.detail} last={i === items.length - 1} />
+        <ListRow key={a.id} icon={a.icon} label={a.label} value={a.title} detail={a.detail} i={i} last={i === items.length - 1} />
       ))}
     </Group>
   );
