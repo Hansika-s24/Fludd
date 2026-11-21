@@ -1,21 +1,30 @@
-// Address search through the Hillsborough County composite locator, with fetch mocked.
+// Address and place search: the Hillsborough County address locator, plus ArcGIS World for named places. fetch mocked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAddress, suggestAddresses } from "@/lib/address";
 import { clearDataCache } from "@/lib/data";
 import { diskFetch } from "../data/fixture-fetch";
 
 const LOCATOR = "https://maps.hillsboroughcounty.org/arcgis/rest/services/Geocoding/Composite_Address_Locator_Overall/GeocodeServer";
+const WORLD = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
+/** County calls only, in order. World calls are kept apart so the county assertions read as before. */
 let calls: string[] = [];
-function mockCounty(handler: (url: URL) => unknown, status = 200) {
+let worldCalls: string[] = [];
+function mockCounty(handler: (url: URL) => unknown, status = 200, world: (url: URL) => unknown = () => ({ suggestions: [], candidates: [] }), worldStatus = 200) {
   vi.stubGlobal("fetch", diskFetch((u) => {
+    const url = new URL(u);
+    if (url.host === "geocode.arcgis.com") {
+      worldCalls.push(u);
+      return new Response(JSON.stringify(world(url)), { status: worldStatus });
+    }
     calls.push(u);
-    return new Response(JSON.stringify(handler(new URL(u))), { status });
+    return new Response(JSON.stringify(handler(url)), { status });
   }));
 }
 
 beforeEach(() => {
   calls = [];
+  worldCalls = [];
   clearDataCache();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -43,13 +52,37 @@ describe("suggestAddresses", () => {
     expect(calls).toHaveLength(0);
   });
 
+  it("adds named places from ArcGIS World after the county's addresses, kept to the Tampa area", async () => {
+    mockCounty(
+      () => ({ suggestions: [{ text: "13700 Avalon Heights Blvd, Tampa", magicKey: "C1", isCollection: false }] }),
+      200,
+      () => ({
+        suggestions: [
+          { text: "Avalon Heights, Tampa, FL, USA", magicKey: "W1", isCollection: false },
+          { text: "13700 Avalon Heights Blvd, Tampa, FL, 33613, USA", magicKey: "W2", isCollection: false },
+        ],
+      }),
+    );
+    const s = await suggestAddresses("Avalon Heights");
+    expect(s.map((x) => x.label)).toEqual(["13700 Avalon Heights Blvd, Tampa", "Avalon Heights, Tampa, FL, USA"]);
+    const w = new URL(worldCalls[0]);
+    expect(`${w.origin}${w.pathname}`).toBe(`${WORLD}/suggest`);
+    expect(w.searchParams.get("searchExtent")).toBeTruthy();
+    expect(w.searchParams.get("countryCode")).toBe("USA");
+  });
+
+  it("still offers places when the county locator is down", async () => {
+    mockCounty(() => ({}), 503, () => ({ suggestions: [{ text: "University Square, Tampa, FL, USA", magicKey: "W1", isCollection: false }] }));
+    expect((await suggestAddresses("University Square")).map((x) => x.label)).toEqual(["University Square, Tampa, FL, USA"]);
+  });
+
   it("throws a clear error when the locator fails", async () => {
-    mockCounty(() => ({}), 503);
+    mockCounty(() => ({}), 503, undefined, 503);
     await expect(suggestAddresses("4202")).rejects.toThrow(/address suggest.*503/i);
   });
 
   it("throws when the locator answers with an ArcGIS error body", async () => {
-    mockCounty(() => ({ error: { code: 400, message: "Invalid" } }));
+    mockCounty(() => ({ error: { code: 400, message: "Invalid" } }), 200, () => ({ error: { code: 400, message: "Invalid" } }));
     await expect(suggestAddresses("4202")).rejects.toThrow(/Invalid/);
   });
 });
@@ -79,6 +112,22 @@ describe("resolveAddress", () => {
   it("marks a match outside the manifest bbox as not inside", async () => {
     mockCounty(() => ({ candidates: [{ address: "1 Far Rd", location: { x: -82.5, y: 28.1 }, score: 100 }] }));
     expect(await resolveAddress("KEY9|1 Far Rd")).toEqual({ label: "1 Far Rd", position: [-82.5, 28.1], inside: false });
+  });
+
+  it("resolves a named place through ArcGIS World", async () => {
+    mockCounty(
+      () => ({ suggestions: [] }),
+      200,
+      (url) => url.pathname.endsWith("/suggest")
+        ? { suggestions: [{ text: "University Square, Tampa, FL, USA", magicKey: "W1", isCollection: false }] }
+        : { candidates: [{ address: "University Square", location: { x: -82.4139475455857, y: 28.061936669896859 }, score: 100 }] },
+    );
+    const [s] = await suggestAddresses("University Square");
+    const m = await resolveAddress(s.id);
+    const url = new URL(worldCalls[1]);
+    expect(`${url.origin}${url.pathname}`).toBe(`${WORLD}/findAddressCandidates`);
+    expect(url.searchParams.get("magicKey")).toBe("W1");
+    expect(m).toEqual({ label: "University Square", position: [-82.4139475455857, 28.061936669896859], inside: true });
   });
 
   it("returns null when there is no candidate", async () => {
