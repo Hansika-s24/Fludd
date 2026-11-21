@@ -153,7 +153,7 @@ export function BeforePanel({ place, grade, onPick }: { place: Place; grade: Gra
             <ListRow
               icon={Icon.truck}
               label="Nearest pump station"
-              value={drainage.pump ? `${drainage.pump.name.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}` : "None mapped"}
+              value={drainage.pump ? `${drainage.pump.name.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ").replace(/ St Street$/, " St")}` : "None mapped"}
               detail={drainage.pump ? `${miles(drainage.pump.distanceM)} away. If it loses power, nearby low ground fills faster.` : undefined}
               last
             />

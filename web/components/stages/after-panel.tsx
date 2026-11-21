@@ -5,7 +5,7 @@ import { ReportFlow } from "@/components/report/report-flow";
 import { Group } from "@/components/ui/surface";
 import { loadGold, loadLevels, peakBuildingDepth } from "@/lib/data";
 import type { Grade } from "@/lib/types";
-import { BAND_WORDS, bandOf, Icon, ListRow, useRemedies, type Place } from "./shared";
+import { BAND_WORDS, bandOf, Icon, ListRow, type Place } from "./shared";
 
 interface Replay {
   pumpOn: number;
@@ -13,11 +13,10 @@ interface Replay {
   depth100: number;
 }
 
-/** After a flood: what Milton did here, what the pumps changed, and what to improve. */
-export function AfterPanel({ place, grade, onReplay }: { place: Place; grade: Grade; onReplay: () => void }) {
+/** After a flood: what Milton did here, and what the pumps changed. Fixes live in the Before panel. */
+export function AfterPanel({ place, onReplay }: { place: Place; grade: Grade; onReplay: () => void }) {
   const [replay, setReplay] = useState<Replay | null>(null);
   const [reporting, setReporting] = useState(false);
-  const remedies = useRemedies(grade, replay?.depth100 ?? null);
 
   useEffect(() => {
     let stale = false;
@@ -70,14 +69,6 @@ export function AfterPanel({ place, grade, onReplay }: { place: Place; grade: Gr
             Replay Milton on the map
           </button>
         </div>
-      </Group>
-
-      <Group title="What you can improve">
-        {remedies === null && <p className="px-4 py-3 text-subhead text-label-2">Working out what helps here…</p>}
-        {remedies?.length === 0 && <p className="px-4 py-3 text-subhead text-label-2">Suggestions are unavailable right now.</p>}
-        {remedies?.map((s, i) => (
-          <ListRow key={i} icon={Icon.wrench} label={`Step ${i + 1}`} value={<span className="text-subhead font-normal">{s}</span>} last={i === remedies.length - 1} />
-        ))}
       </Group>
 
       <Group title="Report what you saw">
