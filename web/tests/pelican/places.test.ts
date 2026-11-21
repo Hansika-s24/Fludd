@@ -46,8 +46,30 @@ describe("nearestPlaces", () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
+  it("falls back to ArcGIS category search when Overpass is down", async () => {
+    const f = vi.fn(async (url: string | URL | Request) =>
+      String(url).includes("overpass")
+        ? new Response("busy", { status: 502 })
+        : Response.json({
+          candidates: [
+            { address: "Winn Dixie", location: { x: -82.4286, y: 28.0563 } },
+            { address: "Publix Super Markets", location: { x: -82.4119, y: 28.0684 } },
+            { address: "Far Away", location: { x: -82.0, y: 28.0 } },
+          ],
+        }),
+    );
+    const places = await nearestPlaces("grocery", USF, BBOX, "ua", f);
+    expect(places.map((p) => p.name)).toEqual(["Publix Super Markets", "Winn Dixie"]);
+    expect(String(f.mock.calls[1][0])).toContain("category=Grocery");
+  });
+
   it("throws on an Overpass error and does not cache it", async () => {
     await expect(nearestPlaces("pharmacy", USF, BBOX, "ua", fakeFetch({}, 504))).rejects.toThrow(/504/);
+    // Within the back-off, Overpass is skipped: only the fallback is asked.
+    const skip = fakeFetch({ candidates: [] });
+    await nearestPlaces("pharmacy", USF, BBOX, "ua", skip);
+    expect(String(skip.mock.calls[0][0])).toContain("arcgis");
+    clearPlacesCache();
     const ok = await nearestPlaces("pharmacy", USF, BBOX, "ua", fakeFetch({ elements: [elements[0]] }));
     expect(ok).toHaveLength(1);
   });
