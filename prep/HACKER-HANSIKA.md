@@ -347,7 +347,7 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [x] E1a Depth at a point and depth at a building
 - [x] E3 Address lookup; "outside validated area" (county geocoder)
 - [x] E2 Grade rules: a test per row, per notch, per cap. Real-data smoke: a Milton flood point grades F, USF centre grades A
-- [ ] E2a Grade range from low and high variants; "low confidence"
+- [x] E2a Grade range from low and high variants; "low confidence". On real homes: 1,259 of 13,837 get a range wider than one letter, 506 are low confidence
 
 **Lane F: backend half**
 - [ ] F1 Supabase table, private bucket, access rules; refusals shown
@@ -522,3 +522,5 @@ Added for the two-person setup (not in PLAN.md):
 - 12:45 Real road graph is in (`graph.bin`, `graph.json`, `segments.json` in `web/public/data/`), so routing now runs on real data with `NEXT_PUBLIC_DATA_SET=real`. Example: Milton replay, pump failing, at the flooded point [-82.441134, 28.074075]: "move your car by" hour 9 (about 21:00 Oct 9), to "High ground at junction 2490". Format limits: every road two-way; speed is 40 mph arterials / 25 mph the rest.
 - 12:45 New real files: `levels/<scenario>-<low|high>-pump-on.json` (grade range, 4 design storms) and `parcels.json` (13,837 residential homes with assessed value, beds, baths, living area, type and precomputed building depth per storm). The grade range and `findBetterOptions` are being finished now; I will tell you when they are real.
 - 12:45 Data folder is now 66 MB (levels 41 MB, rounded to the centimetre). Each levels file is ~2.3 MB: load one scenario at a time.
+- 13:00 Now real: the grade **range** and **lowConfidence** (from `levels/<storm>-<low|high>-pump-on.json`), and **`findBetterOptions(position)`** (real data only: on the toy data set it throws "parcels.json HTTP 404", so catch it and hide the panel). It returns `[]` outside the box, for an address already graded A, or with no homes within 300 m; results best letter first, then nearest; `distanceM` in whole metres. Example at the flooded point [-82.441134, 28.074075]: grade F; first options are A-graded multi-family homes on E 142nd Ave, 149 to 163 m away. First call ~1.6 s (loads parcels.json, 7.7 MB), then ~7 ms.
+- 13:00 Gemini works with my key but `gemini-4-hydrogen` took 97 s for one sentence (12:50). The route times out at 25 s and shows the fallback text. For the demo: switch to a faster model (GEMINI_MODEL in env) or pre-generate the demo address's remedies.
