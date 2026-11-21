@@ -1,14 +1,8 @@
 "use client";
 
 import { Fraunces } from "next/font/google";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { BootFilm, FPS, FRAMES } from "./boot-film";
 import { signalBootDone } from "./boot-signal";
 import "./boot-intro.css";
 
@@ -21,13 +15,15 @@ const wordmarkFont = Fraunces({
 const WORDMARK = "Fludd";
 const CAPTION = "Be a pelican.\nWatch the water, then move.";
 const SEEN_KEY = "fludd-boot-seen";
-/** If the video has not started by now, give up on it. A slow network must never block the app. */
-const START_TIMEOUT_MS = 1500;
 const FADE_MS = 520;
+/** The wordmark starts typing at 2.15 s, one letter every 0.1 s; the caption follows at 2.6 s. */
+const TYPE_FROM = 64;
+const FRAMES_PER_LETTER = 3;
+const CAPTION_FROM = 78;
 
 type Phase = "showing" | "leaving" | "done";
 /** What this page load should do, decided once in the browser. "pending" is the server render. */
-type Mode = "pending" | "skip" | "desktop" | "phone";
+type Mode = "pending" | "skip" | "show";
 
 let decided: Mode | null = null;
 
@@ -40,26 +36,41 @@ function decideMode(): Mode {
     seen = false;
   }
   // The admin screen is a work tool: no intro there.
-  if (seen || window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-    decided = "skip";
-  else
-    decided =
-      window.innerHeight > window.innerWidth * 1.15 ? "phone" : "desktop";
+  decided =
+    seen || window.location.pathname.startsWith("/admin") || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "skip" : "show";
   return decided;
 }
 
 const subscribeNever = () => () => {};
 const serverMode = (): Mode => "pending";
 
+function subscribeResize(onChange: () => void) {
+  window.addEventListener("resize", onChange);
+  return () => window.removeEventListener("resize", onChange);
+}
+const screenSize = () => `${window.innerWidth}x${window.innerHeight}`;
+const serverSize = () => "0x0";
+
+/** Where the logo and the words sit on this screen: one centred block, a little above the middle. */
+function layout(w: number, h: number) {
+  const size = Math.min(320, w * 0.62, h * 0.34);
+  const word = size * 0.29;
+  const caption = Math.max(15, size * 0.09);
+  const block = size + word * 1.1 + caption * 0.3 + caption * 1.3 * 2;
+  const top = Math.max(h * 0.06, (h - block) / 2 - h * 0.04);
+  return { size, cx: w / 2, cy: top + size / 2, textTop: top + size, word, caption };
+}
+
 /**
  * Full-screen intro shown once per browser session. The app renders underneath and is never blocked:
- * the intro can be skipped, skips itself if the video does not start, and is not shown at all when
- * the visitor prefers reduced motion or has already seen it this session.
+ * the intro can be skipped, and is not shown at all when the visitor prefers reduced motion or has
+ * already seen it this session. It is drawn live, so it fits any screen and needs no video.
  */
 export function BootIntro() {
   const mode = useSyncExternalStore(subscribeNever, decideMode, serverMode);
+  const [w, h] = useSyncExternalStore(subscribeResize, screenSize, serverSize).split("x").map(Number);
   const [phase, setPhase] = useState<Phase>("showing");
-  const [started, setStarted] = useState(false);
+  const [frame, setFrame] = useState(0);
   const leftRef = useRef(false);
 
   const leave = useCallback(() => {
@@ -76,90 +87,59 @@ export function BootIntro() {
     window.setTimeout(() => setPhase("done"), FADE_MS);
   }, []);
 
-  // React sets `muted` as a property after insertion, which browsers treat as unmuted and block autoplay.
-  // Mute on the element and start it explicitly; if play() is refused, the give-up timer skips.
-  // Stable identity: an inline ref would run again on every render and restart the film as it leaves.
-  const startVideo = useCallback((el: HTMLVideoElement | null) => {
-    if (!el) return;
-    el.muted = true;
-    el.play().catch(() => {});
-  }, []);
-
   // Not shown at all (already seen this session, or reduced motion): the app can arrive now.
   useEffect(() => {
     if (mode === "skip") signalBootDone();
   }, [mode]);
 
+  // The film's clock. It steps on twos so the paper moves like stop motion, and leaves when the film ends.
   useEffect(() => {
-    if (mode !== "desktop" && mode !== "phone") return;
-    const giveUp = window.setTimeout(() => {
-      if (
-        !document.querySelector<HTMLVideoElement>("[data-boot-video]")
-          ?.currentTime
-      )
+    if (mode !== "show") return;
+    let raf = 0;
+    let start: number | null = null;
+    let last = 0;
+    const tick = (now: number) => {
+      start ??= now;
+      const f = Math.floor((((now - start) / 1000) * FPS) / 2) * 2;
+      if (f !== last) {
+        last = f;
+        setFrame(Math.min(f, FRAMES));
+      }
+      if (f >= FRAMES) {
         leave();
-    }, START_TIMEOUT_MS);
-    return () => window.clearTimeout(giveUp);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [mode, leave]);
 
   if (mode === "skip") return null;
   if (phase === "done") return null;
 
-  // During the server render the layer is a plain page-coloured cover; the video mounts in the browser.
-  const tall = mode === "phone";
-  const variant = mode === "phone" ? "phone" : "desktop";
+  const at = layout(w, h);
+  const letters = frame < TYPE_FROM ? 0 : Math.floor((frame - TYPE_FROM) / FRAMES_PER_LETTER) + 1;
+  // During the server render the layer is a plain night-coloured cover; the film mounts in the browser.
   return (
-    <div
-      className={`boot-layer ${phase === "leaving" ? "boot-leaving" : ""}`}
-      onClick={leave}
-      role="presentation"
-    >
-      <div
-        className={`boot-stage ${tall ? "boot-tall" : ""} ${started ? "boot-started" : ""}`}
-      >
-        {mode !== "pending" && (
-          <video
-            key={variant}
-            data-boot-video
-            ref={startVideo}
-            className="boot-video"
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            poster={`/boot/boot-${variant}.jpg`}
-            aria-hidden="true"
-            onPlaying={() => setStarted(true)}
-            onEnded={leave}
-            onError={leave}
-          >
-            <source src={`/boot/boot-${variant}.webm`} type="video/webm" />
-            <source src={`/boot/boot-${variant}.mp4`} type="video/mp4" />
-          </video>
-        )}
-        <div className="boot-text">
-          <p
-            className={`boot-word ${wordmarkFont.className}`}
-            aria-label={WORDMARK}
-          >
-            {WORDMARK.split("").map((letter, i) => (
-              <span
-                key={i}
-                className="boot-letter"
-                style={{ "--i": i } as CSSProperties}
-                aria-hidden="true"
-              >
-                {letter}
-                <span
-                  className={`boot-caret ${i === WORDMARK.length - 1 ? "boot-last" : ""}`}
-                  style={{ "--i": i } as CSSProperties}
-                />
-              </span>
-            ))}
-          </p>
-          <p className="boot-caption">{CAPTION}</p>
+    <div className={`boot-layer ${phase === "leaving" ? "boot-leaving" : ""}`} onClick={leave} role="presentation">
+      {mode === "show" && w > 0 && (
+        <div className="boot-stage">
+          <BootFilm frame={frame} w={w} h={h} cx={at.cx} cy={at.cy} size={at.size} />
+          <div className="boot-text" style={{ top: at.textTop }}>
+            <p className={`boot-word ${wordmarkFont.className}`} style={{ fontSize: at.word }} aria-label={WORDMARK}>
+              {WORDMARK.split("").map((letter, i) => (
+                <span key={i} aria-hidden="true" style={{ opacity: i < letters ? 1 : 0 }}>
+                  {letter}
+                </span>
+              ))}
+            </p>
+            <p className={`boot-caption ${frame >= CAPTION_FROM ? "boot-on" : ""}`} style={{ fontSize: at.caption, marginTop: at.caption * 0.3 }}>
+              {CAPTION}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       <button
         type="button"
         className="boot-skip"

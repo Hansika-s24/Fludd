@@ -47,7 +47,7 @@ All fetched on 2026-11-21, no keys required. Full list with filters and counts i
 - **Pipeline:** Python 3.11 with uv, NumPy, SciPy, Numba, Rasterio, Pillow, Requests.
 - **Tests:** Vitest, pytest, Playwright.
 - **Backend:** Supabase (Postgres, storage, auth, realtime). Hosting on Vercel.
-- **Boot animation:** Remotion (React), encoded with FFmpeg.
+- **Boot animation:** drawn live in the browser as SVG from React; no video.
 
 ## How AI was used
 
@@ -71,7 +71,7 @@ We used AI throughout and say so plainly, because the rules require it and becau
 
 **Before the event (before 11:00).** Research and planning only, with Claude Code: the notes in `prep/` (plan, research, team guides) and the public Claude Code skills in `.claude/`. No code, no design assets and no data were prepared before 11:00.
 
-**Boot animation.** Designed with an AI design tool. The final paper-cut version was written by Claude Code as a Remotion composition (`design/boot/papercut/`) and rendered frame by frame, under our direction. An earlier Blender version (`design/boot/build_boot.py`) is kept for reference.
+**Boot animation.** Designed with an AI design tool. The final paper-cut version was written by Claude Code and is drawn live in the browser (`web/components/boot/boot-film.tsx`), under our direction. Earlier rendered versions (Blender, `design/boot/build_boot.py`, then a Remotion film) were replaced because a phone can refuse to autoplay video.
 
 **Inside the product.**
 - **Gemini's jobs:** it reads resident flood photos (water present, depth range, reference object), writes plain-language guidance and remedies from our numbers, and turns an "Ask Pelican" request into a destination type.
@@ -116,4 +116,4 @@ CI runs lint, typecheck, both test suites and a secret scan on every push.
 - `supabase/`: reports table, private photo storage, access rules.
 - `docs/contracts.md`: the boundary between the logic and the interface.
 - `prep/`: planning and research notes written before the event. They contain no code.
-- `design/boot/`: the boot animation's references, the paper-cut source (`papercut/`) and the earlier Blender build.
+- `design/boot/`: the boot animation's references and the earlier Blender build. The shipped intro is `web/components/boot/`.
