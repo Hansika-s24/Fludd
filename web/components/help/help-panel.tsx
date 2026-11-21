@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Group } from "@/components/ui/surface";
+import { CHECKED_ON, FOOD_SITES } from "./food-sites";
 import type { LngLat } from "@/lib/types";
 
 const OVERPASS = "https://overpass-api.de/api/interpreter";
@@ -117,6 +118,7 @@ export function HelpPanel({ position }: { position: LngLat }) {
         From OpenStreetMap. Hours change in a storm: call before you go, and never drive into floodwater to get there.
       </p>
 
+      <FoodSites position={position} />
       <FoodCampaigns />
 
       <Group title="Call for help">
@@ -171,40 +173,61 @@ function FoodCampaigns() {
     };
   }, []);
 
+  // Only when the live search found something: the standing sites above already cover the rest.
+  if (state === "loading" || state === "failed" || state.campaigns.length === 0) return null;
   return (
     <>
-      <Group title="Food distributions">
-        {state === "loading" ? (
-          <div className="space-y-2 px-4 py-3" aria-busy>
-            <p className="text-footnote text-label-2">Searching county, city and food bank pages…</p>
-            <div className="shimmer h-5 w-3/4 rounded-md" />
-            <div className="shimmer h-5 w-2/3 rounded-md" />
-          </div>
-        ) : state === "failed" || state.campaigns.length === 0 ? (
-          <p className="px-4 py-3 text-subhead text-label-2">
-            {state === "failed" ? "The search is busy right now." : "No upcoming distributions found online."} Call 211 for today&apos;s food sites.
-          </p>
-        ) : (
-          state.campaigns.map((c, i, all) => (
-            <a
-              key={`${c.title}-${c.when}`}
-              href={c.url}
-              target="_blank"
-              rel="noreferrer"
-              style={{ ["--i" as string]: i }}
-              className={`rise-in pressable block px-4 py-3 ${i < all.length - 1 ? "border-b border-separator" : ""}`}
-            >
-              <span className="block text-body font-semibold">{c.title}</span>
-              <span className="block text-subhead text-label-2">{c.organizer} · {c.when}</span>
-              <span className="block text-footnote text-label-2">{c.where}</span>
-              {c.details && <span className="mt-0.5 block text-footnote text-label-3">{c.details}</span>}
-              <span className="mt-1 block text-footnote font-medium text-tint">Check the source</span>
-            </a>
-          ))
-        )}
+      <Group title="Food distributions this week">
+        {state.campaigns.map((c, i, all) => (
+          <a
+            key={`${c.title}-${c.when}`}
+            href={c.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{ ["--i" as string]: i }}
+            className={`rise-in pressable block px-4 py-3 ${i < all.length - 1 ? "border-b border-separator" : ""}`}
+          >
+            <span className="block text-body font-semibold">{c.title}</span>
+            <span className="block text-subhead text-label-2">{c.organizer} · {c.when}</span>
+            <span className="block text-footnote text-label-2">{c.where}</span>
+            {c.details && <span className="mt-0.5 block text-footnote text-label-3">{c.details}</span>}
+            <span className="mt-1 block text-footnote font-medium text-tint">Check the source</span>
+          </a>
+        ))}
+      </Group>
+      <p className="px-5 pt-2 text-footnote text-label-3">Found on the web by Fludd&apos;s search agent. Plans change in storms: confirm on the source page.</p>
+    </>
+  );
+}
+
+/** Standing free-food sites, nearest first: always shown, so this works without the live search. */
+function FoodSites({ position }: { position: LngLat }) {
+  const sites = [...FOOD_SITES].sort((a, b) =>
+    a.position && b.position ? metres(position, a.position) - metres(position, b.position) : a.position ? -1 : 1,
+  );
+  return (
+    <>
+      <Group title="Free food in Tampa">
+        {sites.map((s, i) => (
+          <a
+            key={s.name}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className={`pressable block px-4 py-3 ${i < sites.length - 1 ? "border-b border-separator" : ""}`}
+          >
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-body font-semibold">{s.name}</span>
+              {s.position && <span className="shrink-0 text-subhead tabular-nums text-label-2">{miles(metres(position, s.position))}</span>}
+            </span>
+            <span className="block text-footnote text-label-2">{s.org} · {s.when}</span>
+            <span className="mt-0.5 block text-subhead">{s.what}</span>
+            <span className="mt-0.5 block text-footnote text-label-3">{s.where}</span>
+          </a>
+        ))}
       </Group>
       <p className="px-5 pt-2 text-footnote text-label-3">
-        Found on the web by Fludd&apos;s search agent and refreshed every 6 hours. Plans change in storms: confirm on the source page or with 211.
+        Checked against each organisation&apos;s page on {CHECKED_ON}. Hours change, especially in storms: tap a place to confirm, or call 211.
       </p>
     </>
   );
