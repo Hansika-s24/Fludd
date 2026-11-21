@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { StepIllustration } from "@/components/illustrations";
 import { AddressSearch } from "@/components/report-card/address-search";
 import {
   currentPosition,
@@ -150,6 +151,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     case "welcome":
       body = (
         <div className="flex flex-1 flex-col justify-center pb-16">
+          <StepIllustration step="welcome" className="mb-6 -ml-2 self-start" />
           <p className="text-[3.5rem] font-bold leading-none tracking-[-0.045em] text-tint">Fludd</p>
           <h1 id={titleId} className="mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
             Know what the water will do before it does.
@@ -422,6 +424,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
 
         <main key={current} className={`flex flex-1 flex-col ${dir === "forward" ? "ob-forward" : "ob-back"}`}>
           <div className={`flex flex-1 flex-col ${current === "welcome" ? "" : "pt-10"}`}>
+            {current !== "welcome" && <StepIllustration step={current} size={132} className="mb-5 -ml-2 self-start" />}
             {body}
             {error && (
               <p role="alert" className="mt-4 rounded-[var(--radius-control)] bg-group px-4 py-3 text-subhead">
