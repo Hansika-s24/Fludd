@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { CountUp } from "@/components/ui/count-up";
 import type { DepthBand, Grade, LngLat } from "@/lib/types";
 
 export interface Place {
@@ -32,9 +33,67 @@ export function aboutTime(hourZero: string, hour: number): string {
   return `about ${t.toLocaleString("en-US", { hour: "numeric", timeZone: "America/New_York" }).replace(" AM", " am").replace(" PM", " pm")}`;
 }
 
-/** One list row: small coloured icon, label, value. The value carries meaning in words, never colour alone. */
+/** Stagger position for the motion kit, capped so a long list does not crawl in. */
+export function stagger(i: number): CSSProperties {
+  return { "--i": Math.min(i, 6) } as CSSProperties;
+}
+
+/** Still waiting on an answer: three thinking dots. The "…" stays for screen readers. */
+export const Thinking = (
+  <>
+    <span className="typing" aria-hidden><i /><i /><i /></span>
+    <span className="sr-only">…</span>
+  </>
+);
+
+const prefersStill = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * A number that has just arrived counts in from zero. CountUp only counts when its value changes,
+ * so this hands it zero for the first frame. With reduced motion it shows the value straight away.
+ */
+export function CountIn({ value, decimals = 0, className }: { value: number; decimals?: number; className?: string }) {
+  const [live, setLive] = useState(prefersStill);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setLive(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return <CountUp value={live ? value : 0} decimals={decimals} className={className} />;
+}
+
+const SKELETON_WIDTHS = ["w-40", "w-28", "w-36"];
+
+/**
+ * Waiting on data: placeholder rows shaped like the rows that will arrive, so the group barely moves
+ * when they do. The first row keeps the waiting message as its label.
+ */
+export function LoadingRows({ text, rows = 1 }: { text: string; rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }, (_, r) => (
+        <div key={r} className={`flex gap-3 px-4 py-3 ${r === rows - 1 ? "" : "border-b border-separator"}`}>
+          <span className="shimmer mt-0.5 size-7 shrink-0 rounded-[8px]" aria-hidden />
+          <div className="min-w-0 flex-1">
+            {r === 0 ? (
+              <p className="text-subhead text-label-2">{text}</p>
+            ) : (
+              <span className="shimmer my-1 block h-3 w-24 rounded-full" aria-hidden />
+            )}
+            <span className={`shimmer mt-1.5 block h-4 rounded-full ${SKELETON_WIDTHS[r % SKELETON_WIDTHS.length]}`} aria-hidden />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/**
+ * One list row: small coloured icon, label, value. The value carries meaning in words, never colour alone.
+ * The row rises in (`i` staggers it among its siblings) and a value that changes in place swaps in.
+ */
 export function ListRow({
-  icon, tone = "tint", label, value, detail, last,
+  icon, tone = "tint", label, value, detail, last, i = 0,
 }: {
   icon: ReactNode;
   tone?: "tint" | "safe" | "warn" | "late";
@@ -42,11 +101,14 @@ export function ListRow({
   value: ReactNode;
   detail?: ReactNode;
   last?: boolean;
+  i?: number;
 }) {
   const bg = { tint: "bg-tint", safe: "bg-safe", warn: "bg-warn", late: "bg-late" }[tone];
   const fg = { tint: "text-label", safe: "text-label", warn: "text-label", late: "text-late" }[tone];
+  // A new key remounts the value line, which replays its swap-in whenever the words change.
+  const valueKey = typeof value === "string" || typeof value === "number" ? value : "node";
   return (
-    <div className={`flex gap-3 px-4 py-3 ${last ? "" : "border-b border-separator"}`}>
+    <div className={`rise-in flex gap-3 px-4 py-3 ${last ? "" : "border-b border-separator"}`} style={stagger(i)}>
       <span className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-[8px] text-white ${bg}`} aria-hidden>
         {icon}
       </span>
@@ -54,7 +116,7 @@ export function ListRow({
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-subhead text-label-2">{label}</p>
         </div>
-        <p className={`text-headline font-semibold ${fg}`}>{value}</p>
+        <p key={valueKey} className={`swap-in text-headline font-semibold ${fg}`}>{value}</p>
         {detail && <p className="mt-0.5 text-footnote text-label-2">{detail}</p>}
       </div>
     </div>
