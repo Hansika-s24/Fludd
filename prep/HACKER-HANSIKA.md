@@ -350,15 +350,15 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [x] E2a Grade range from low and high variants; "low confidence". On real homes: 1,259 of 13,837 get a range wider than one letter, 506 are low confidence
 
 **Lane F: backend half**
-- [ ] F1 Supabase table, private bucket, access rules; refusals shown
-- [ ] F1a Admin sign-in and typed queries; demo admin user created
+- [x] F1 Supabase table, private bucket, access rules; refusals shown. Migrations in `supabase/migrations/`. Live check: anon refused on reports, moderation_log, photo list and photo download. Grants migration (`20261121131500`) still to run
+- [x] F1a Admin sign-in and typed queries; demo admin user created (Hansika's account is in `public.admins`). 27 tests. Commit 734d3ac
 - [ ] F0 Health route
-- [ ] F2 Report intake route: metadata stripped, public position snapped, model depth recorded
+- [x] F2 Report intake route: metadata stripped, public position snapped, model depth recorded (Milton pump-off peak). Unit-tested; live write waits for the URL fix and grants. Commit 9242ebd
 - [ ] F8 Plain form upload works on the live site; Harshith told
-- [ ] F3 Gemini provider and photo reading with fixed schema; rate-limit path
-- [ ] F4 Moderation route with append-only log
-- [ ] F5 Approved reports route and live feed
-- [ ] F6 Calibration pairs and running error figure
+- [x] F3 Gemini provider and photo reading with fixed schema; rate-limit path (manual review when unreadable)
+- [x] F4 Moderation route with append-only log (trigger blocks update/delete even for the service role)
+- [x] F5 Approved reports route and live feed (street-level `public_reports`, realtime)
+- [x] F6 Calibration pairs and running error figure (`getCalibration`)
 - [x] F7 Guidance text route with the numbers check (also remedies route). 52 tests. Real Gemini calls got 503 high demand at 12:15; fallback text works. Retry later
 - [ ] F9 Weather proxy (stretch, after 15:00 only)
 
@@ -525,3 +525,5 @@ Added for the two-person setup (not in PLAN.md):
 - 13:00 Now real: the grade **range** and **lowConfidence** (from `levels/<storm>-<low|high>-pump-on.json`), and **`findBetterOptions(position)`** (real data only: on the toy data set it throws "parcels.json HTTP 404", so catch it and hide the panel). It returns `[]` outside the box, for an address already graded A, or with no homes within 300 m; results best letter first, then nearest; `distanceM` in whole metres. Example at the flooded point [-82.441134, 28.074075]: grade F; first options are A-graded multi-family homes on E 142nd Ave, 149 to 163 m away. First call ~1.6 s (loads parcels.json, 7.7 MB), then ~7 ms.
 - 13:00 Gemini works with my key but `gemini-4-hydrogen` took 97 s for one sentence (12:50). The route times out at 25 s and shows the fallback text. For the demo: switch to a faster model (GEMINI_MODEL in env) or pre-generate the demo address's remedies.
 - 13:05 Gemini is fast now: default model `gemini-3.5-flash-lite` (fallback `gemini-4-hydrogen`), and checked answers are cached per server instance. Real remedies request: 0.99 s with a real Gemini answer, repeat 1 ms. **Action for you:** `.env.example` still says `GEMINI_MODEL=gemini-4-hydrogen` and `GEMINI_FALLBACK_MODEL=gemini-3.8-flash`; if Vercel has those set, change them to `gemini-3.5-flash-lite` and `gemini-4-hydrogen` (or delete them to use the defaults in `web/lib/config.ts`). At 12:45 the two bigger models were returning 503 "high demand" or taking 97 s.
+- 13:15 Reports are real in code (not yet live-verified): `POST /api/reports` multipart `photo`, `lat`, `lng`, `source` (`gps`|`pin`, default `pin`), `takenAt` (ISO, optional) -> 201 `{ id, status: "waiting", aiReading }` (`aiReading` null = manual review); errors 400 `bad_request`/`outside_area`, 413 over 10 MB, 415 not JPEG/PNG, 502 storage, 503 not configured. `GET /api/reports?status=approved` -> `{ reports: PublicReport[] }`. `POST /api/reports/<id>/moderate` needs `Authorization: Bearer <token from adminAccessToken()>`, body `{ decision, depthM? }` (approve without depth uses the AI midpoint; edit needs depthM) -> `{ id, status, finalDepthM }`; 401/403/404/400. Browser: `adminSignIn` returns `{ isAdmin: false }` instead of throwing; also `adminAccessToken()`, `adminSignOut()`; `getQueue`/`getCalibration` throw on query failure (try/catch); queue photo links last 1 hour; feed sends `[]` when Supabase is not configured.
+- 13:15 For you: (1) the Shortcut must convert HEIC to JPEG and resize (Vercel rejects bodies over ~4.5 MB); (2) `web/next.config.ts` probably needs `outputFileTracingIncludes: { "/api/reports": ["./public/data/**"] }` because the route reads the graph and grids from disk on Vercel; (3) stripping EXIF also drops the rotation tag, so some photos may appear rotated in the admin queue (CSS `image-orientation` will not help once the tag is gone).
