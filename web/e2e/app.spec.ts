@@ -14,7 +14,7 @@ const PROFILE = {
 async function openAsResident(page: Page) {
   await page.addInitScript((p) => localStorage.setItem("fludd-profile-v1", JSON.stringify(p)), PROFILE);
   await page.goto("/");
-  await expect(page.getByText("Flood grade")).toBeAttached();
+  await expect(page.getByText("Flood grade").first()).toBeAttached();
   // Phone: the sheet rests at peek; raise it like a resident would.
   if ((page.viewportSize()?.width ?? 1440) < 768) await page.getByRole("button", { name: "Resize panel" }).click();
 }
@@ -77,7 +77,9 @@ test("one address before, during and after a flood", async ({ page }) => {
 
 test("shortcuts open each section and close back to home", async ({ page }) => {
   await openAsResident(page);
-  await page.getByRole("button", { name: "Live" }).click();
+  // Phones open storm mode from the chip under the search bar; wide screens from the Live shortcut.
+  const phone = (page.viewportSize()?.width ?? 1440) < 768;
+  await page.getByRole("button", { name: phone ? "Storm mode" : "Live", exact: true }).click();
   await expect(page.getByRole("tab", { name: /Storm mode/ })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Food & help" }).click();
   await expect(page.getByRole("heading", { name: "Food & help" })).toBeVisible();
@@ -119,7 +121,9 @@ test("no tab bar: the map and one sheet", async ({ page }) => {
   await openAsResident(page);
   await expect(page.getByRole("tablist", { name: "Sections" })).toHaveCount(0);
   await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
-  await expect(page.getByRole("main").getByText("Fludd", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+  // Phones: search floats on the map, like Maps. Wide screens: the wordmark tops the sidebar.
+  if ((page.viewportSize()?.width ?? 1440) < 768) await expect(page.getByRole("search").filter({ visible: true }).first()).toBeVisible();
+  else await expect(page.getByRole("main").getByText("Fludd", { exact: true }).filter({ visible: true }).first()).toBeVisible();
 });
 
 test("the reports route validates uploads", async ({ request }) => {

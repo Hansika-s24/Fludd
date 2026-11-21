@@ -4,11 +4,12 @@ import { useEffect, useId, useState } from "react";
 import { resolveAddress, suggestAddresses } from "@/lib/address";
 import { resolveCommunity, suggestCommunities } from "@/components/report-card/communities";
 import type { AddressMatch, AddressSuggestion } from "@/lib/types";
-import { SHEET_FULL_EVENT, SHEET_HALF_EVENT } from "@/components/ui/sheet";
+import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
 
 const DEBOUNCE_MS = 250;
 
-export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null, error?: string) => void }) {
+/** `floating`: sits inside the phone's top search bar, so the field is borderless and the list drops below the bar. */
+export function AddressSearch({ onPick, floating = false }: { onPick: (match: AddressMatch | null, error?: string) => void; floating?: boolean }) {
   const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [active, setActive] = useState(-1);
@@ -56,7 +57,7 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
   return (
     <form
       role="search"
-      className="relative mt-3"
+      className={floating ? "relative" : "relative mt-3"}
       onSubmit={(e) => {
         e.preventDefault();
         const s = shown[active >= 0 ? active : 0];
@@ -82,8 +83,6 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
         }}
         onFocus={() => {
           setOpen(true);
-          // In the sheet, searching raises it to full so suggestions have room (no-op on onboarding and desktop).
-          window.dispatchEvent(new Event(SHEET_FULL_EVENT));
         }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         onKeyDown={(e) => {
@@ -91,11 +90,15 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
           if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(-1, a - 1)); }
           if (e.key === "Escape") setOpen(false);
         }}
-        className="h-11 w-full rounded-[var(--radius-control)] bg-fill px-3.5 text-body text-label
-          placeholder:text-label-3 outline-none focus-visible:ring-2 focus-visible:ring-tint"
+        className={`w-full rounded-[var(--radius-control)] text-body text-label ${floating ? "h-10 bg-transparent px-1" : "h-11 bg-fill px-3.5"}
+          placeholder:text-label-3 outline-none focus-visible:ring-2 focus-visible:ring-tint`}
       />
       {showList && (
-        <ul id={listId} role="listbox" className="mt-2 overflow-hidden rounded-[var(--radius-group)] bg-group">
+        <ul
+          id={listId}
+          role="listbox"
+          className={`overflow-hidden rounded-[var(--radius-group)] bg-group ${floating ? "absolute -left-10 -right-12 top-full z-40 mt-3 shadow-[0_8px_24px_rgb(0_0_0/0.18)]" : "mt-2"}`}
+        >
           {shown.map((s, i) => (
             <li
               key={s.id}

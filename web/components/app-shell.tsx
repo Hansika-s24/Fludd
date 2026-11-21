@@ -19,12 +19,12 @@ import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
 import { motion, useReducedMotion } from "motion/react";
-import { PEEK_PX, SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
-import { Logo, PelicanMark } from "@/components/ui/logo";
+import { PEEK_PX, SHEET_HALF_EVENT, Sheet, useNarrow } from "@/components/ui/sheet";
+import { Logo, LogoMark, PelicanMark } from "@/components/ui/logo";
 import { STORM_WORDS } from "@/components/ui/storm-words";
 import { clockLabel } from "@/components/map/storm-controls";
 import { depthAtBuilding } from "@/lib/data";
-import { WeatherCard } from "@/components/weather/weather-card";
+import { WeatherCard, WeatherChip } from "@/components/weather/weather-card";
 import { HelpPanel } from "@/components/help/help-panel";
 import { WeeklyHighlight } from "@/components/help/weekly-highlight";
 import { Group } from "@/components/ui/surface";
@@ -47,6 +47,8 @@ const DRAINAGE: LayerName[] = ["storm-pipes", "ponds", "drains", "outfalls", "pu
 /** Where each stage card sits across the row: the reveal circle grows from there. */
 const STAGE_X: Record<Stage, string> = { before: "17%", during: "50%", after: "83%" };
 
+const LETTER_BG: Record<string, string> = { A: "bg-safe", B: "bg-safe", C: "bg-warn", D: "bg-late", F: "bg-late" };
+
 /** Weather for the USF area until an address is chosen. */
 const USF_AREA: LngLat = [-82.4139, 28.0587];
 
@@ -68,6 +70,7 @@ export function AppShell() {
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("home");
   const [stage, setStage] = useState<Stage>("before");
+  const narrow = useNarrow();
   const reduceMotion = useReducedMotion();
   const [scenario, setScenario] = useState<Scenario>("100yr");
   const [pump, setPump] = useState<PumpState>("on");
@@ -77,6 +80,11 @@ export function AppShell() {
   const [graded, setGraded] = useState<Graded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [arrived, setArrived] = useState(false);
+  // Phones: the floating search and chips own the top edge, so the map's locate button moves below them.
+  useEffect(() => {
+    const ctrl = document.querySelector<HTMLElement>(".maplibregl-ctrl-top-right");
+    if (ctrl) ctrl.style.top = narrow ? "calc(env(safe-area-inset-top) + 6.5rem)" : "";
+  }, [narrow, arrived]);
   const [drainage, setDrainage] = useState(false);
   const [route, setRoute] = useState<LngLat[] | null>(null);
   const onError = useCallback((m: string) => setError(m), []);
@@ -235,8 +243,27 @@ export function AppShell() {
   };
 
   // Maps-style: a search field with your avatar, round shortcuts under it; a section opens as a card with a close button.
+  const letter = ok?.grade.letter ?? null;
   const section =
-    tab === "home" ? (
+    tab === "home" && narrow ? (
+      // Phone, like Google Maps: search and chips float at the top; the resting sheet is one line and the weather.
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new Event(SHEET_HALF_EVENT))}
+        className="flex w-full items-center gap-3 px-4 pb-3 text-left"
+      >
+        {letter && (
+          <span className={`grid size-10 shrink-0 place-items-center rounded-full text-headline font-bold text-white ${LETTER_BG[letter] ?? "bg-late"}`}>
+            {letter}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-headline font-semibold">{place ? (ok ? `Flood grade ${letter}` : "Checking this place…") : "Explore Tampa"}</span>
+          <span className="block truncate text-subhead text-label-2">{place ? place.label.split(",")[0] : "Search a place, or tap any building"}</span>
+        </span>
+        <WeatherChip position={place?.position ?? USF_AREA} />
+      </button>
+    ) : tab === "home" ? (
       <>
         <div className="flex items-start gap-2 px-4">
           <div className="min-w-0 flex-1">
@@ -277,17 +304,42 @@ export function AppShell() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
-      <p
-        translate="no"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-9 items-center rounded-full pl-1.5 pr-3 md:hidden"
-      >
-        <Logo size={22} />
-      </p>
+      {/* Phone: floating search with the mark and your avatar, chips underneath, like Google Maps. */}
+      <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-30 md:hidden">
+        <div className="material-glass flex items-center gap-1.5 rounded-full py-1 pl-2.5 pr-1 shadow-[0_4px_16px_rgb(0_0_0/0.14)]">
+          <LogoMark size={26} />
+          <div className="min-w-0 flex-1">
+            <AddressSearch onPick={onPick} floating />
+          </div>
+          <button type="button" aria-label="You" onClick={() => open("you")} className="pressable grid size-10 shrink-0 place-items-center rounded-full bg-fill text-tint">
+            {ICONS.you}
+          </button>
+        </div>
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {[
+            { label: "Storm mode", on: tab === "home" && stage === "during", act: () => open("live"), icon: ICONS.live },
+            { label: "Food & help", on: tab === "help", act: () => open("help"), icon: ICONS.help },
+            { label: "Drainage", on: drainage, act: () => setDrainage((d) => !d), icon: null },
+          ].map((c) => (
+            <button
+              key={c.label}
+              type="button"
+              aria-pressed={c.on}
+              onClick={c.act}
+              className={`pressable flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-subhead font-medium shadow-[0_2px_8px_rgb(0_0_0/0.12)] [&_svg]:size-4
+                ${c.on ? "bg-tint text-white" : "material-glass text-label"}`}
+            >
+              {c.icon}
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {/* Key for the floodwater colours: shallow to deep. Lakes stay the basemap's pale blue. */}
       <div
         aria-label="Floodwater depth: 6 inches to over 4 feet"
         role="img"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+3.4rem)] z-10 rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px] md:top-4"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+3.4rem)] z-10 hidden rounded-[0.75rem] px-2.5 py-1.5 md:left-[412px] md:top-4 md:block"
       >
         <p className="text-[0.6875rem] font-semibold text-label-2">Floodwater</p>
         <div className="mt-1 flex h-2 w-28 overflow-hidden rounded-full">
@@ -326,7 +378,7 @@ export function AppShell() {
         type="button"
         aria-pressed={drainage}
         onClick={() => setDrainage((d) => !d)}
-        className={`pressable fixed right-3 top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 h-11 rounded-full px-4 text-subhead font-semibold
+        className={`pressable fixed right-3 top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 hidden h-11 rounded-full px-4 text-subhead font-semibold md:block
           ${drainage ? "bg-tint text-white" : "material-glass text-label"}`}
       >
         Drainage

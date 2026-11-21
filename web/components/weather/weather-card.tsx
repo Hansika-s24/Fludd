@@ -131,3 +131,40 @@ export function WeatherCard({ position }: { position: LngLat }) {
     </Group>
   );
 }
+
+/** Google-Maps-style chip for the resting sheet: temperature and air quality, from the same cached forecast. */
+export function WeatherChip({ position }: { position: LngLat }) {
+  const key = position.join(",");
+  const [f, setF] = useState<{ key: string; forecast: Forecast } | null>(() => {
+    const hit = recent.get(key);
+    return hit ? { key, forecast: hit.forecast } : null;
+  });
+  useEffect(() => {
+    let stale = false;
+    getForecast(position).then(
+      (forecast) => {
+        recent.set(key, { at: Date.now(), forecast });
+        if (!stale) setF({ key, forecast });
+      },
+      () => undefined,
+    );
+    return () => {
+      stale = true;
+    };
+    // key stands for position.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const now = f?.key === key ? f.forecast : null;
+  if (!now) return null;
+  return (
+    <span className="swap-in shrink-0 rounded-[0.75rem] bg-fill px-2.5 py-1 text-right leading-tight">
+      <span className="block text-subhead font-semibold tabular-nums">{now.tempF}°</span>
+      {now.aqi !== null && (
+        <span className="block text-[0.6875rem] text-label-2">
+          <span className={`mr-1 inline-block size-1.5 rounded-full align-middle ${now.aqi <= 50 ? "bg-safe" : now.aqi <= 100 ? "bg-warn" : "bg-late"}`} />
+          Air {Math.round(now.aqi)}
+        </span>
+      )}
+    </span>
+  );
+}

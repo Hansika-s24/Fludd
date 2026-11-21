@@ -4,7 +4,7 @@ import { animate, motion, useMotionValue } from "motion/react";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 /** Peek shows only the search field, like Maps, so the map keeps most of the screen. Exported for the floating buttons. */
-export const PEEK_PX = 92;
+export const PEEK_PX = 84;
 /** Fired on window to move the phone sheet to half height. */
 export const SHEET_HALF_EVENT = "fludd:sheet-half";
 /** Fired on window to raise the phone sheet to full height (search focused, like Maps). */
