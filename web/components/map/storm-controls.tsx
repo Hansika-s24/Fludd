@@ -43,6 +43,11 @@ export function StormControls({ scenario, pump, hour, hours, hourZero, onScenari
 
   return (
     <div className="space-y-3 px-4 py-3">
+      {/* Most days there is no storm: say plainly that this plays one, so nobody reads it as a live forecast. */}
+      <p className="flex items-start gap-2 text-footnote text-label-2">
+        <span className="mt-0.5 shrink-0 rounded-full bg-fill px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-label-2">Simulation</span>
+        <span>No flood is happening now. Pick a storm and press play to see what the water would do here. Real alerts appear above when there are any.</span>
+      </p>
       <div role="radiogroup" aria-label="Storm" className="grid grid-cols-5 gap-0.5 rounded-[var(--radius-control)] bg-fill p-0.5">
         {STORMS.map((s) => (
           <button
