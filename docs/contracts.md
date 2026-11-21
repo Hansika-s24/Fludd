@@ -13,16 +13,30 @@ The boundary between the interface (Harshith) and the logic (Hansika). Changes n
 
 ## Decisions from the 11:00 talk
 
-Proposed by the scaffold. A line marked **to be agreed** is open until Hansika confirms it.
+Agreed with Hansika 12:05, updated 12:20.
 
-1. Function names and shapes: the table "Exact names" below. **to be agreed**
-2. Scenario names: `10yr`, `25yr`, `100yr`, `500yr`, `milton`. Pump `on` / `off`. Level files `levels/<scenario>-pump-<on|off>.json`. Low and high variants for the grade range: **to be agreed** (proposal: `<scenario>-low` and `<scenario>-high`, grade-only, not in the manifest list)
-3. Hours: integer steps from `manifest.hourZero` (ISO time with offset); `manifest.hours` per scenario. Toy: 25 hours from 08:00. Real values: **to be agreed**
-4. Depth at a building ring width; Milton "nearby" cap distance: **to be agreed**
+1. Function names and shapes: the table "Exact names" below. Agreed
+2. Scenario names: `10yr`, `25yr`, `100yr`, `500yr`, `milton`. Pump `on` / `off`. Level files `levels/<scenario>-pump-<on|off>.json`. Low and high variants for the grade range: `<scenario>-low` and `<scenario>-high`, grade-only, not in the manifest list
+3. Hours: integer steps from hour zero; `manifest.hours` = **48 for every scenario**. Design storms: 24 h rain + 24 h draining from `manifest.hourZero` (today 08:00 local). Milton's own start is `manifest.hourZeroByScenario.milton` = `2024-10-09T12:00:00-04:00`; use `hourZeroByScenario[scenario]` for clock labels. Toy fixture: 25 hours from 08:00
+4. Depth at a building: 90th percentile over cells within 3 cells (about 9 m at 3 m cells). Milton "nearby" cap: 100 m
 5. Grade answer: `Grade` in `types.ts`. Before low/high variants exist, `range` equals `[letter, letter]` and `lowConfidence` is false
 6. Error shape: `{ "error": { "code": string, "message": string } }` with a 4xx/5xx status (`web/lib/api.ts`). Shortcut upload to `POST /api/reports`: multipart fields `photo`, `lat`, `lng`, `source` (`gps` | `pin`), `takenAt`
 7. Data-folder switch: `NEXT_PUBLIC_DATA_SET`, above
 8. Stub replaced: Hansika adds a line under "Notes for my teammate" in `prep/HACKER-HANSIKA.md` and says it out loud. Stubs are marked `STUB` at the top of each file
+
+## Field notes (12:20)
+
+- **FEMA zones:** real `fema-zones` features carry FEMA's fields `FLD_ZONE`, `ZONE_SUBTY`, `SFHA_TF`, `STATIC_BFE`. The toy fixture uses `zone`. The grade reads both
+- **Routing special values:** `lastHour`, `untilHour`, `moveByHour` = the last whole hour still open. `-1` = already too late at hour 0. `moveByHour: -1, parking: null` = no dry parking reachable. `moveByHour: null, parking: null` = no move needed. Parking is named "High ground at junction N" (there is no parking layer)
+- **Gemini:** guidance answers `{ text }`, remedies `{ sentences }`. Request bodies are in `web/lib/gemini/schemas.ts`; remedies takes `letter`, `depthByStorm`, `femaZone`, `miltonPointNearby`, `pumpDependent`, `depthAtBuilding100yrM`. Response header `x-fludd-text-source` = `gemini` / `fallback` / `off`
+- **Pump stations:** Duck Pond East has `approximate: true` (the county record says it needs GPS)
+- **Extra loader:** `depthAtBuilding` in `lib/data`, alongside `depthAt`
+
+## Stub status (12:20)
+
+| Real | Still a stub |
+|---|---|
+| `loadGold`, `loadLevels`, `loadLayer`, `depthAt`, `depthAtBuilding`, `suggestAddresses`, `resolveAddress`, `gradeFor`; the five routing functions (on the toy graph only, real road graph not built yet); `POST /api/gemini/guidance`, `POST /api/gemini/remedies` | `loadValidation` (no `validation.json` yet), everything in `lib/supabase`, reports routes, weather, `findBetterOptions` |
 
 ## Exact names (`web/lib/`)
 

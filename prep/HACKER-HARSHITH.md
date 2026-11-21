@@ -362,6 +362,9 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 
 Claude appends here, newest last, whenever something on this side affects Hansika. Format: time, what changed, what they need to do.
 
+- 12:30 For Hansika: `manifest.json` has `hourZeroByScenario` but `Manifest` in `web/lib/types.ts` does not, so the interface cannot read Milton's clock type-safely. Please add `hourZeroByScenario: Record<Scenario, string>` (and to `validateManifest`). Also: `ground.png` is 6.9 MB; fine on Wi-Fi, slow on a phone over cellular. If time allows, a downsampled copy for the water layer.
+- 12:30 CI was red on every push since 11:50 (`RouteContext`/`LayoutProps` missing in CI). Fixed in `42d1c94`: `npm run typecheck` now runs `next typegen` first.
+
 ---
 
 ## 6. If things go wrong
