@@ -95,7 +95,7 @@ function QueueRow({ item, last, onDecided }: { item: QueueItem; last: boolean; o
           />
         </a>
       ) : (
-        <div className="flex aspect-[4/3] shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-fill text-footnote text-label-2 sm:w-48">
+        <div className="flex aspect-[4/3] w-full shrink-0 self-start items-center justify-center rounded-[var(--radius-control)] bg-fill text-footnote text-label-2 sm:w-48">
           Photo unavailable
         </div>
       )}

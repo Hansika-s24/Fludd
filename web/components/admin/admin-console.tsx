@@ -53,7 +53,9 @@ export function AdminConsole() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <main
+      className={`mx-auto w-full ${session === "signedIn" ? "max-w-3xl" : "max-w-md"} pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]`}
+    >
       <header className="flex items-center justify-between gap-3 px-4">
         <div className="px-3">
           <h1 className="text-title font-bold">Review reports</h1>
@@ -82,14 +84,12 @@ export function AdminConsole() {
       {session === "checking" && <p className="px-7 pt-6 text-subhead text-label-2">Checking sign-in</p>}
 
       {session === "signedOut" && (
-        <div className="mx-auto max-w-md">
-          <SignInForm
-            onSignedIn={() => {
-              setSession("signedIn");
-              void load();
-            }}
-          />
-        </div>
+        <SignInForm
+          onSignedIn={() => {
+            setSession("signedIn");
+            void load();
+          }}
+        />
       )}
 
       {session === "signedIn" && (
