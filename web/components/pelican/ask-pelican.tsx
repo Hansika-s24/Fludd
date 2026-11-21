@@ -4,7 +4,7 @@
 // The server only reads the request and looks up real places; every route and time comes from bestRoute
 // on the road graph, here in the browser. Pelican never calls a road safe.
 import { useId, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import { aboutTime } from "@/components/stages/shared";
 import { bestRoute } from "@/lib/routing";
 import type { LngLat, PumpState, Scenario } from "@/lib/types";
@@ -52,6 +52,8 @@ const CHIPS: { label: string; text: string }[] = [
 ];
 
 const mins = (m: number) => Math.max(1, Math.round(m));
+/** Place in a staggered entrance, read by the motion kit classes. Always set, so nothing inherits a parent's place. */
+const at = (i: number) => ({ "--i": i }) as CSSProperties;
 
 function errorText(body: unknown): string {
   if (body && typeof body === "object" && "error" in body) {
@@ -150,23 +152,35 @@ export function AskPelican({
   }
 
   return (
-    <section aria-label="Ask Pelican" className="flex flex-col gap-3 rounded-group bg-group p-3">
+    <section aria-label="Ask Pelican" className="rise-in flex flex-col gap-3 rounded-group bg-group p-3" style={at(0)}>
       {turns.length > 0 && (
         <ol className="flex flex-col gap-2" aria-live="polite">
           {turns.map((turn) => (
             <li key={turn.id} className="flex flex-col gap-2">
-              <p className="max-w-[85%] self-end rounded-[18px] bg-tint px-3.5 py-2 text-body text-white">{turn.ask}</p>
-              <div className="max-w-[92%] self-start rounded-[18px] bg-fill px-3.5 py-2 text-body text-label">
-                {turn.reply === null ? (
-                  <p className="text-label-2" role="status">Pelican is checking the roads…</p>
-                ) : turn.reply.kind === "text" ? (
-                  <>
-                    <p>{turn.reply.text}</p>
-                    <p className="mt-1.5 text-footnote text-label-2">{SAFETY_LINE}</p>
-                  </>
-                ) : (
-                  <RouteReply reply={turn.reply} onRoute={onRoute} />
-                )}
+              <p className="rise-in max-w-[85%] self-end rounded-[18px] bg-tint px-3.5 py-2 text-body text-white" style={at(0)}>
+                {turn.ask}
+              </p>
+              {/* The wrapper brings Pelican's bubble in once. The bubble itself only moves to nudge when it has to say no. */}
+              <div className="rise-in max-w-[92%] self-start" style={at(2)}>
+                <div className={`rounded-[18px] bg-fill px-3.5 py-2 text-body text-label ${turn.reply?.kind === "text" ? "nudge" : ""}`}>
+                  {turn.reply === null ? (
+                    <p className="text-label-2" role="status">
+                      <span className="sr-only">Pelican is checking the roads…</span>
+                      <span className="typing" aria-hidden>
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    </p>
+                  ) : turn.reply.kind === "text" ? (
+                    <>
+                      <p>{turn.reply.text}</p>
+                      <p className="mt-1.5 text-footnote text-label-2">{SAFETY_LINE}</p>
+                    </>
+                  ) : (
+                    <RouteReply reply={turn.reply} onRoute={onRoute} />
+                  )}
+                </div>
               </div>
             </li>
           ))}
@@ -188,20 +202,21 @@ export function AskPelican({
         <button
           type="submit"
           disabled={busy || !text.trim()}
-          className="h-11 shrink-0 rounded-control bg-tint px-4 text-headline font-semibold text-white transition-colors active:bg-tint-pressed disabled:opacity-40"
+          className="pressable h-11 shrink-0 rounded-control bg-tint px-4 text-headline font-semibold text-white active:bg-tint-pressed disabled:opacity-40"
         >
           Ask
         </button>
       </form>
 
       <div className="flex flex-wrap gap-1">
-        {CHIPS.map((c) => (
+        {CHIPS.map((c, i) => (
           <button
             key={c.label}
             type="button"
             disabled={busy}
             onClick={() => void send(c.text)}
-            className="min-h-11 rounded-control px-3 text-subhead font-medium text-tint active:bg-fill disabled:opacity-40"
+            className="pop-in pressable min-h-11 rounded-control px-3 text-subhead font-medium text-tint active:bg-fill disabled:opacity-40"
+            style={at(i + 2)}
           >
             {c.label}
           </button>
@@ -215,21 +230,22 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
   const { best, others, mode, when } = reply;
   return (
     <>
-      <p>
-        <button type="button" onClick={() => onRoute(best.line)} className="text-left font-semibold">
+      <p className="rise-in" style={at(0)}>
+        <button type="button" onClick={() => onRoute(best.line)} className="pressable text-left font-semibold">
           {best.name}
         </button>
         , about {mins(best.minutes)} min {mode}, on roads the model keeps open at {when}.
       </p>
       {others.length > 0 && (
-        <div className="mt-2 overflow-hidden rounded-control bg-group">
+        <div className="rise-in mt-2 overflow-hidden rounded-control bg-group" style={at(1)}>
           <p className="px-3 pt-2 text-footnote text-label-2">Other open routes</p>
           {others.map((o, i) => (
             <button
               key={`${o.name}-${i}`}
               type="button"
               onClick={() => onRoute(o.line)}
-              className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left active:bg-fill ${i < others.length - 1 ? "border-b border-separator" : ""}`}
+              className={`rise-in pressable flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left active:bg-fill ${i < others.length - 1 ? "border-b border-separator" : ""}`}
+              style={at(i + 2)}
             >
               <span className="min-w-0 truncate text-subhead text-label">{o.name}</span>
               <span className="shrink-0 text-subhead text-label-2">about {mins(o.minutes)} min</span>
@@ -237,7 +253,10 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
           ))}
         </div>
       )}
-      <p className="mt-1.5 text-footnote text-label-2">{SAFETY_LINE}</p>
+      {/* The warning arrives with the route, never after it. */}
+      <p className="rise-in mt-1.5 text-footnote text-label-2" style={at(0)}>
+        {SAFETY_LINE}
+      </p>
     </>
   );
 }
