@@ -117,6 +117,8 @@ export function HelpPanel({ position }: { position: LngLat }) {
         From OpenStreetMap. Hours change in a storm: call before you go, and never drive into floodwater to get there.
       </p>
 
+      <FoodCampaigns />
+
       <Group title="Call for help">
         <a href="tel:911" className="pressable flex min-h-14 items-center justify-between gap-3 border-b border-separator px-4 py-2.5">
           <span><span className="block text-body font-semibold text-late">911</span><span className="block text-footnote text-label-2">Water rising inside, or someone in danger</span></span>
@@ -132,6 +134,70 @@ export function HelpPanel({ position }: { position: LngLat }) {
           they appear, so neighbours in need can find them.
         </p>
       </Group>
+    </>
+  );
+}
+
+interface Campaign {
+  title: string;
+  organizer: string;
+  when: string;
+  where: string;
+  details: string;
+  url: string;
+}
+
+/** Food distributions by the county, city, food banks and churches, found on the web by the search agent. */
+function FoodCampaigns() {
+  const [state, setState] = useState<{ campaigns: Campaign[] } | "loading" | "failed">("loading");
+  useEffect(() => {
+    let stale = false;
+    fetch("/api/food-campaigns")
+      .then((r) => (r.ok ? (r.json() as Promise<{ campaigns: Campaign[] }>) : Promise.reject(new Error(String(r.status)))))
+      .then(
+        (b) => !stale && setState({ campaigns: b.campaigns }),
+        () => !stale && setState("failed"),
+      );
+    return () => {
+      stale = true;
+    };
+  }, []);
+
+  return (
+    <>
+      <Group title="Food distributions">
+        {state === "loading" ? (
+          <div className="space-y-2 px-4 py-3" aria-busy>
+            <p className="text-footnote text-label-2">Searching county, city and food bank pages…</p>
+            <div className="shimmer h-5 w-3/4 rounded-md" />
+            <div className="shimmer h-5 w-2/3 rounded-md" />
+          </div>
+        ) : state === "failed" || state.campaigns.length === 0 ? (
+          <p className="px-4 py-3 text-subhead text-label-2">
+            {state === "failed" ? "The search is busy right now." : "No upcoming distributions found online."} Call 211 for today&apos;s food sites.
+          </p>
+        ) : (
+          state.campaigns.map((c, i, all) => (
+            <a
+              key={`${c.title}-${c.when}`}
+              href={c.url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ ["--i" as string]: i }}
+              className={`rise-in pressable block px-4 py-3 ${i < all.length - 1 ? "border-b border-separator" : ""}`}
+            >
+              <span className="block text-body font-semibold">{c.title}</span>
+              <span className="block text-subhead text-label-2">{c.organizer} · {c.when}</span>
+              <span className="block text-footnote text-label-2">{c.where}</span>
+              {c.details && <span className="mt-0.5 block text-footnote text-label-3">{c.details}</span>}
+              <span className="mt-1 block text-footnote font-medium text-tint">Check the source</span>
+            </a>
+          ))
+        )}
+      </Group>
+      <p className="px-5 pt-2 text-footnote text-label-3">
+        Found on the web by Fludd&apos;s search agent and refreshed every 6 hours. Plans change in storms: confirm on the source page or with 211.
+      </p>
     </>
   );
 }
