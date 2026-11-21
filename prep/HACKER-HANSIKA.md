@@ -389,6 +389,13 @@ Gaps in PLAN.md itself, to raise with Harshith:
 4. **Newer elevation exists.** File 02 B3: a 2025 lidar DEM (2.5 ft pixels) was published 2026-11-05. The plan uses 2011 3DEP (~3 m). Stay with 3DEP for speed; mention the newer data as a next step.
 5. **Off the Grid** stays a tick-only track. Only one prize can be won; Home Turf is the target.
 
+**11:45 Property values for "similar price, lower flood risk nearby" (checked live)**
+
+- Source: Hillsborough County parcels, `https://maps.hillsboroughcounty.org/arcgis/rest/services/InfoLayers/HC_ParcelsPublic/FeatureServer/0`. No key. 1,000 records per request, so page with `resultOffset`.
+- In the study box: 16,808 parcels; 16,804 have `MARKET_VAL` above zero.
+- Useful fields: `SITE_ADDR`, `MARKET_VAL`, `JUST`, `S_AMT` and `S_DATE` (last sale; many are 0 or old), `tBEDS`, `tBATHS`, `HEAT_AR` (living area, sq ft), `LU_GRP` (for example SINGLE FAMILY, MOBILE HOMES), `FOLIO`.
+- Privacy: the layer also carries owner names and mailing addresses (`OWNER`, `ADDR_1`...). Never request those fields.
+
 ### Notes for my teammate
 
 Claude appends here, newest last, whenever something on this side affects Harshith. Format: time, what changed, what they need to do.
