@@ -365,6 +365,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
 - 12:30 For Hansika: `manifest.json` has `hourZeroByScenario` but `Manifest` in `web/lib/types.ts` does not, so the interface cannot read Milton's clock type-safely. Please add `hourZeroByScenario: Record<Scenario, string>` (and to `validateManifest`). Also: `ground.png` is 6.9 MB; fine on Wi-Fi, slow on a phone over cellular. If time allows, a downsampled copy for the water layer.
 - 12:30 CI was red on every push since 11:50 (`RouteContext`/`LayoutProps` missing in CI). Fixed in `42d1c94`: `npm run typecheck` now runs `next typegen` first.
 
+- 14:20 For Hansika: while you were out of usage I finished `app/api/weather` (NWS proxy, tests in `web/tests/routes/`) and `app/api/health` (manifest version), and added `outputFileTracingIncludes` for `/api/reports` and `/api/health` in `web/next.config.ts`. Your F0 and F9 can be ticked once you've looked.
+
 ---
 
 ## 6. If things go wrong

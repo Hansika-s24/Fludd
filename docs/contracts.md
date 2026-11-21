@@ -32,34 +32,11 @@ Agreed with Hansika 12:05, updated 12:20.
 - **Pump stations:** Duck Pond East has `approximate: true` (the county record says it needs GPS)
 - **Extra loader:** `depthAtBuilding` in `lib/data`, alongside `depthAt`
 
-## Stub status (12:20)
+## Stub status (14:20)
 
-| Real | Still a stub |
-|---|---|
-| `loadGold`, `loadLevels`, `loadLayer`, `depthAt`, `depthAtBuilding`, `suggestAddresses`, `resolveAddress`, `gradeFor`; the five routing functions (on the toy graph only, real road graph not built yet); `POST /api/gemini/guidance`, `POST /api/gemini/remedies` | `loadValidation` (no `validation.json` yet), everything in `lib/supabase`, reports routes, weather, `findBetterOptions` |
+Everything in "Exact names" is real. Routing runs on the real OSM road graph (6,481 junctions, 9,064 segments). `findBetterOptions` works on real data only and throws on the toy set. `/api/weather` proxies NWS active alerts; `/api/health` returns the manifest version (both finished by Harshith's session at 14:15 while Hansika was out of usage).
 
-## Exact names (`web/lib/`)
-
-| What | Function | Returns |
-|---|---|---|
-| Load the gold files | `loadGold()` in `lib/data` | `GoldData` (decoded grids + texture URLs) |
-| Load a scenario's levels | `loadLevels(scenario, pump)` in `lib/data` | `Levels` |
-| Load a map layer | `loadLayer(name)` in `lib/data` | GeoJSON `FeatureCollection` |
-| Validation figures | `loadValidation()` in `lib/data` | `Validation` |
-| Depth at a point | `depthAt(position, scenario, pump, hour)` in `lib/data` | `DepthResult` |
-| Find an address | `suggestAddresses(text)`, `resolveAddress(id)` in `lib/address` | `AddressSuggestion[]`, `AddressMatch \| null` |
-| Grade | `gradeFor(position)` in `lib/grade` | `GradeResult` |
-| Closing hours | `closingHours(scenario, pump)` in `lib/routing` | `ClosingHours` (65535 = never) |
-| Best route now | `bestRoute(from, to, vehicle, scenario, pump, startHour)` in `lib/routing` | `RouteResult` |
-| Cut-off time | `cutoffTime(position, vehicle, scenario, pump)` in `lib/routing` | `CutoffResult` |
-| Rescue reach | `rescueReach(position, vehicle, scenario, pump, hour)` in `lib/routing` | `RescueReach` |
-| Latest safe departure | `latestDeparture(position, scenario, pump)` in `lib/routing` | `LatestDeparture` |
-| Approved reports feed | `subscribeApprovedReports(onChange)` in `lib/supabase` | unsubscribe function |
-| Admin sign-in and queue | `adminSignIn(email, password)`, `getQueue()` in `lib/supabase` | `{ isAdmin }`, `QueueItem[]` |
-| Calibration | `getCalibration()` in `lib/supabase` | `Calibration` |
-| Better options nearby (extra) | `findBetterOptions(position)` in `lib/parcels` | `BetterOption[]`, best first |
-
-Extra route: `POST /api/gemini/remedies` takes the numbers for one address, returns `{ sentences: string[] }` (2 to 4). Gemini may not add numbers; the app works with it off.
+**Validation (`validation.json`):** the model catches 286 of 547 Milton damage points (52.3%), including 136 of the 207 that sit outside FEMA high-risk zones. FEMA's zones hold 62% but cover 9.07 km² against the model's 3.54 km².
 
 ---
 
