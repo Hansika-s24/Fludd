@@ -7,6 +7,7 @@ import { StormControls } from "@/components/map/storm-controls";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
 import { AddressSearch } from "@/components/report-card/address-search";
+import { ValidationPanel } from "@/components/report-card/validation-panel";
 import { AfterPanel } from "@/components/stages/after-panel";
 import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
@@ -16,7 +17,7 @@ import { Greeting } from "@/components/ui/greeting";
 import { Group, Surface } from "@/components/ui/surface";
 import { loadGold } from "@/lib/data";
 import { gradeFor } from "@/lib/grade";
-import type { AddressMatch, GradeResult, Hour, Manifest, PumpState, Scenario } from "@/lib/types";
+import type { AddressMatch, GradeResult, Hour, LayerName, LngLat, Manifest, PumpState, Scenario } from "@/lib/types";
 
 // Wording from prep/04-depth-model-and-routing.md section 5.3. Shown on every card.
 const SAFETY_FOOTNOTE =
@@ -24,6 +25,9 @@ const SAFETY_FOOTNOTE =
 
 // ponytail: hourZeroByScenario is in the real manifest but not yet in the Manifest type (note left for Hansika).
 type ManifestWithClocks = Manifest & { hourZeroByScenario?: Partial<Record<Scenario, string>> };
+
+/** Drainage network layers shown by the map's Drainage button. */
+const DRAINAGE: LayerName[] = ["pump-stations", "drains", "ponds"];
 
 /** Longest the map waits for the boot intro before flying in anyway. */
 const INTRO_FALLBACK_MS = 6000;
@@ -41,6 +45,8 @@ export function AppShell() {
   const [graded, setGraded] = useState<Graded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [arrived, setArrived] = useState(false);
+  const [drainage, setDrainage] = useState(false);
+  const [route, setRoute] = useState<LngLat[] | null>(null);
   const onError = useCallback((m: string) => setError(m), []);
 
   useEffect(() => {
@@ -102,8 +108,19 @@ export function AppShell() {
         focus={searched?.position ?? null}
         pins={{ home: profile?.home?.position ?? null, car: profile?.car?.position ?? null }}
         arrived={arrived}
+        overlays={drainage ? DRAINAGE : []}
+        route={route}
         onError={onError}
       />
+      <button
+        type="button"
+        aria-pressed={drainage}
+        onClick={() => setDrainage((d) => !d)}
+        className={`material-glass pressable fixed right-3 top-[calc(env(safe-area-inset-top)+3.25rem)] z-10 h-11 rounded-[var(--radius-control)] px-3.5 text-subhead font-medium
+          ${drainage ? "text-tint" : "text-label"}`}
+      >
+        Drainage {drainage ? "on" : "off"}
+      </button>
       <Surface className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
         <Greeting
           homeLabel={profile?.home?.label.split(",")[0] ?? null}
@@ -168,6 +185,7 @@ export function AppShell() {
               {current?.grade.kind === "ok" && stage === "before" && (
                 <BeforePanel key={placeKey} place={current.place} grade={current.grade} onPick={(p) => setSearched(p)} />
               )}
+              {stage === "before" && <ValidationPanel />}
               {current?.grade.kind === "ok" && stage === "during" && (
                 <DuringPanel key={placeKey} place={current.place} car={profile?.car ?? null} grade={current.grade} controls={controls} />
               )}

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
-import { loadGold, loadLevels } from "@/lib/data";
-import type { GoldData, Hour, LngLat, PumpState, Scenario } from "@/lib/types";
+import { loadGold, loadLayer, loadLevels } from "@/lib/data";
+import type { GoldData, Hour, LayerName, LngLat, PumpState, Scenario } from "@/lib/types";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
 setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -63,10 +63,14 @@ export interface MapViewProps {
   pins: { home: LngLat | null; car: LngLat | null };
   /** false while the intro plays: the map waits zoomed out, then flies in when this turns true. */
   arrived: boolean;
+  /** Map layers to show (drainage network etc.); [] hides them all. */
+  overlays: LayerName[];
+  /** A suggested route to draw in the tint colour, or null. */
+  route: LngLat[] | null;
   onError: (message: string) => void;
 }
 
-export function MapView({ scenario, pump, hour, focus, pins, arrived, onError }: MapViewProps) {
+export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onError }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -162,6 +166,66 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, onError }:
     // focus is read, not watched: an address picked later flies on its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrived]);
+
+  // Overlay layers (drainage). Each source gets line, point and fill sublayers filtered by geometry type.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    let stale = false;
+    (async () => {
+      await ready.current;
+      if (stale || !map.current) return;
+      const shown = new Set(overlays);
+      for (const layer of m.getStyle().layers) {
+        const name = layer.id.match(/^overlay-(.+)-(line|point|fill)$/)?.[1];
+        if (name) m.setLayoutProperty(layer.id, "visibility", shown.has(name as LayerName) ? "visible" : "none");
+      }
+      for (const name of overlays) {
+        if (m.getSource(`overlay-${name}`)) continue;
+        const data = await loadLayer(name);
+        if (stale || m.getSource(`overlay-${name}`)) return;
+        m.addSource(`overlay-${name}`, { type: "geojson", data });
+        const color = name === "pump-stations" ? "#e8964a" : name === "ponds" ? "#5b8fd6" : "#23467f";
+        m.addLayer({ id: `overlay-${name}-fill`, type: "fill", source: `overlay-${name}`, filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": color, "fill-opacity": 0.25 } });
+        m.addLayer({ id: `overlay-${name}-line`, type: "line", source: `overlay-${name}`, filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": color, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1, 17, 3], "line-dasharray": [2, 1] } });
+        m.addLayer({
+          id: `overlay-${name}-point`, type: "circle", source: `overlay-${name}`, filter: ["==", ["geometry-type"], "Point"],
+          paint: {
+            "circle-color": color,
+            "circle-radius": name === "pump-stations" ? 7 : ["interpolate", ["linear"], ["zoom"], 13, 1.5, 17, 4],
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": name === "pump-stations" ? 2 : 0.5,
+          },
+        });
+      }
+    })().catch((e: unknown) => onError(e instanceof Error ? e.message : "A map layer failed to load"));
+    return () => {
+      stale = true;
+    };
+  }, [overlays, onError]);
+
+  // Suggested route.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    (async () => {
+      await ready.current;
+      const data: GeoJSON.Feature = { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: route ?? [] } };
+      const src = m.getSource("pelican-route") as { setData?: (d: GeoJSON.Feature) => void } | undefined;
+      if (src?.setData) src.setData(data);
+      else {
+        m.addSource("pelican-route", { type: "geojson", data });
+        m.addLayer({ id: "pelican-route-casing", type: "line", source: "pelican-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9 } });
+        m.addLayer({ id: "pelican-route", type: "line", source: "pelican-route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#0a6cff", "line-width": 5 } });
+      }
+      if (route && route.length > 1) {
+        let [w, s, e, n] = [route[0][0], route[0][1], route[0][0], route[0][1]];
+        for (const [x, y] of route) { w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); }
+        const narrow = window.matchMedia("(max-width: 767px)").matches;
+        m.fitBounds([[w, s], [e, n]], { padding: narrow ? { top: 40, left: 40, right: 40, bottom: window.innerHeight * 0.5 } : { top: 60, right: 60, bottom: 60, left: 440 }, maxZoom: 16.5 });
+      }
+    })().catch(() => undefined);
+  }, [route]);
 
   // Home and car pins.
   useEffect(() => {
