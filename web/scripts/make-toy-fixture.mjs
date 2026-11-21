@@ -129,6 +129,9 @@ write("layers/fire-stations.geojson", fc([pt(4, 4, { name: "Toy fire station" })
 write("layers/hospitals.geojson", fc([pt(44, 4, { name: "Toy hospital" })]));
 write("layers/milton-damage.geojson", fc([pt(13, 18, {}), pt(15, 19, {}), pt(33, 17, {}), pt(35, 18, {}), pt(20, 30, {})]));
 write("layers/known-flooding.geojson", fc([pt(14, 17, { source: "city" }), pt(34, 19, { source: "city" })]));
+const line = (pts, props) => ({ type: "Feature", properties: props, geometry: { type: "LineString", coordinates: pts.map(([x, y]) => toLngLat(x, y)) } });
+write("layers/storm-pipes.geojson", fc([line([[12, 17], [24, 18]], { kind: "pipe", diameterIn: 24 }), line([[24, 18], [34, 18]], { kind: "culvert", diameterIn: 36 })]));
+write("layers/outfalls.geojson", fc([pt(34, 18, { kind: "outfall" })]));
 
 write("validation.json", { hitRate: 0.8, hits: 4, total: 5, falseAlarmAreaKm2: 0.02, femaBaseline: { insideHighRisk: 2, total: 5 }, computedAt: "2026-11-21T11:10:00-05:00" });
 

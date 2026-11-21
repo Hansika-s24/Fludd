@@ -23,6 +23,8 @@ export const LAYER_NAMES = [
   "hospitals",
   "milton-damage",
   "known-flooding",
+  "storm-pipes",
+  "outfalls",
 ] as const;
 export type LayerName = (typeof LAYER_NAMES)[number];
 

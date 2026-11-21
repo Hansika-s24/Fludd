@@ -1,0 +1,45 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "pipe",
+    "diameterIn": 24
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -82.416875,
+      28.059625
+     ],
+     [
+      -82.413875,
+      28.059375
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "culvert",
+    "diameterIn": 36
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -82.413875,
+      28.059375
+     ],
+     [
+      -82.411375,
+      28.059375
+     ]
+    ]
+   }
+  }
+ ]
+}
