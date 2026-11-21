@@ -26,8 +26,15 @@ const rubberband = (over: number, dim: number, c = 0.55) => (over * dim * c) / (
  * The one structural surface. Phone: a bottom sheet that tracks the finger 1:1, projects the flick and snaps to
  * peek, half or full with a spring (damping 0.8, response 0.3). Desktop: a fixed sidebar.
  */
-export function Sheet({ children, header, className = "" }: { children: ReactNode; header: ReactNode; className?: string }) {
+export function Sheet({
+  children, header, className = "", scrollKey,
+}: { children: ReactNode; header: ReactNode; className?: string; scrollKey?: string }) {
   const narrow = useNarrow();
+  const body = useRef<HTMLDivElement>(null);
+  // A new tab starts at its top, like a native tab bar.
+  useEffect(() => {
+    body.current?.scrollTo(0, 0);
+  }, [scrollKey]);
   const [vh, setVh] = useState(800);
   const y = useMotionValue(0);
   const drag = useRef<{ startY: number; startOffset: number; samples: { y: number; t: number }[] } | null>(null);
@@ -62,7 +69,7 @@ export function Sheet({ children, header, className = "" }: { children: ReactNod
         className={`material-thick fixed left-4 top-4 z-10 flex max-h-[calc(100dvh-2rem)] w-[380px] flex-col overflow-hidden rounded-[var(--radius-surface)] ${className}`}
       >
         {header}
-        <div className="flex-1 overflow-y-auto pb-4 [scrollbar-width:none]">{children}</div>
+        <div ref={body} className="flex-1 overflow-y-auto pb-4 [scrollbar-width:none]">{children}</div>
       </aside>
     );
   }
@@ -113,7 +120,7 @@ export function Sheet({ children, header, className = "" }: { children: ReactNod
         </button>
         {header}
       </div>
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none]">{children}</div>
+      <div ref={body} className="flex-1 overflow-y-auto overscroll-contain pb-6 [scrollbar-width:none]">{children}</div>
     </motion.aside>
   );
 }

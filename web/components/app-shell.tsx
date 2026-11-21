@@ -205,7 +205,7 @@ export function AppShell() {
         Drainage {drainage ? "on" : "off"}
       </button>
 
-      <Sheet header={header} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
+      <Sheet header={header} scrollKey={tab} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
         <div key={tab} id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="tab-enter" aria-live="polite">
           {tab === "home" && (
             <>
