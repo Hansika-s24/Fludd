@@ -323,30 +323,30 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 **Lane A: data**
 - [x] A1 Elevation downloaded; source, date, resolution, licence in manifest. 3DEP 2011 lidar, 2146 x 2125 px at 3.06 m, EPSG:26917, 2.94 to 27.09 m, 0 gaps
 - [ ] A2 FEMA, roads, drainage, stations, hospitals, Milton points, parcels downloaded; counts checked. Done, counts match research 03: FEMA zones 90, Milton flood points 547, known-flooding parcels 1,016, police street-flooding 159, county pumps 5, catch basins 1,325, channels 621, ponds 106, city detention 37, inlets 1,110, city pump/lift stations 4, open drains 258, parcels 16,808 (owner fields excluded). Not yet: roads, fire stations, hospitals (routing is "if time" under the buyer focus), NFIP claims. Raw files in `pipeline/data/bronze/` (49 MB, not in git); manifest there lists each URL, filter, count and time
-- [ ] A3 Clipped, reprojected, validated; quarantine folder in use
-- [ ] A4 Layers and manifest exported; fixture and real export pass the same contract test
+- [x] A3 Clipped, reprojected, validated; quarantine folder in use. Elevation reprojected to a lat/lng grid (2146 x 2125, 3.00 x 3.02 m, 0 gaps). Quarantine not needed: every layer downloaded complete (count checked against the service's id list)
+- [x] A4 Layers and manifest exported; fixture and real export pass the same contract test (`web/tests/contract/real-export.test.ts`). Commit 96a7556
 
 **Lane B: depth model**
-- [ ] B1 Runoff tests and code
-- [ ] B2 Bowls tests and code
-- [ ] B3 Water movement tests and code; volume conserved
-- [ ] B4 Runs on real elevation (13:00: full model or top-level cascade, say which)
+- [x] B1 Runoff tests and code. 12 tests
+- [x] B2 Bowls tests and code. 5 tests; real sweep 2 s, 8,612 bowls after the noise filter (>= 0.10 m deep, >= 3 cells)
+- [x] B3 Water movement tests and code; volume conserved. 7 tests incl. random-storm mass balance and monotonicity
+- [x] B4 Runs on real elevation: the FULL model (fill-spill-merge), not the cascade. About 1.5 s per storm
 - [ ] B5 Milton replay; `validation.json` written; figures in notes
-- [ ] B6 Four storm sizes, pump on and off; low and high variants
+- [ ] B6 Four storm sizes, pump on and off; low and high variants. Storms and pump on/off done (export 22 s); low/high variants not yet. Pump drains the Duck Pond watershed (county polygon, 3,026 leaf bowls) at an assumed 70 cfs
 
 **Lane C: routing**
-- [ ] C1 Graph loads; shortest path correct
-- [ ] C2 Closing hours per vehicle class
-- [ ] C3 Time-aware route
-- [ ] C4 Cut-off time, rescue reach, latest safe departure
+- [x] C1 Graph loads; shortest path correct (toy fixture)
+- [x] C2 Closing hours per vehicle class (toy)
+- [x] C3 Time-aware route (toy)
+- [x] C4 Cut-off time, rescue reach, latest safe departure (toy). 36 routing tests. Commit 44c8dbf
 - [ ] C5 Worker; benchmark on real graph recorded; routing stubs all real (14:00); Harshith told
 - [ ] C6 Approved reports override a segment (only if 15:00 goes ahead)
 
 **Lane E: logic half**
-- [ ] E1 Loaders validate every gold file; pass on fixture and real export
-- [ ] E1a Depth at a point and depth at a building
-- [ ] E3 Address lookup; "outside validated area"
-- [ ] E2 Grade rules: a test per row, per notch, per cap
+- [x] E1 Loaders validate every gold file; pass on fixture and real export. Commit 5470819
+- [x] E1a Depth at a point and depth at a building
+- [x] E3 Address lookup; "outside validated area" (county geocoder)
+- [x] E2 Grade rules: a test per row, per notch, per cap. Real-data smoke: a Milton flood point grades F, USF centre grades A
 - [ ] E2a Grade range from low and high variants; "low confidence"
 
 **Lane F: backend half**
@@ -359,7 +359,7 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 - [ ] F4 Moderation route with append-only log
 - [ ] F5 Approved reports route and live feed
 - [ ] F6 Calibration pairs and running error figure
-- [ ] F7 Guidance text route with the numbers check
+- [x] F7 Guidance text route with the numbers check (also remedies route). 52 tests. Real Gemini calls got 503 high demand at 12:15; fallback text works. Retry later
 - [ ] F9 Weather proxy (stretch, after 15:00 only)
 
 **End of day**
@@ -453,6 +453,14 @@ Claude appends here, newest last, whenever something on this side affects Harshi
   3. Hours: 36 steps for `10yr`, `25yr`, `100yr`, `500yr` (24 h rain plus 12 h draining). `milton`: 48 steps, `hourZero` = `2024-10-09T12:00:00-04:00`, covering the Duck Pond outage (about 03:00 Oct 10 to 10:00 Oct 11). Design storms have no real date: suggest `hourZero` = today 08:00 local, so "before about 9 pm" reads naturally.
   4. Depth at a building: ring radius 3 cells (~9 m at 3 m cells). Milton "nearby" cap: 100 m.
   These are in `pipeline/config.py`. Data lane A is downloaded (13 layers plus elevation, counts in the checklist).
+- 12:20 **Real data is in** (`web/public/data/`). Set `NEXT_PUBLIC_DATA_SET=real` to use it. Real now, same names as the stubs: `loadGold`, `loadLevels`, `loadLayer`, `depthAt` (+ `depthAtBuilding`), `suggestAddresses`, `resolveAddress`, `gradeFor`, and the five routing functions (on the toy graph only: the real road graph is not built yet, so keep routing on toy for now). Routes real: `POST /api/gemini/remedies`, `POST /api/gemini/guidance`. Still stubs: `loadValidation` (no `validation.json` yet), Supabase, reports, weather, `findBetterOptions`.
+- 12:20 Things for `docs/contracts.md`, please:
+  1. **Hours changed to 48 for every scenario** (the contract has one `hours`). Design storms: 24 h rain + 24 h draining from `hourZero`. Milton's own start is in a new manifest field `hourZeroByScenario.milton` = `2024-10-09T12:00:00-04:00`; use it for Milton's clock labels.
+  2. Real `fema-zones` features use FEMA's fields `FLD_ZONE`, `ZONE_SUBTY`, `SFHA_TF`, `STATIC_BFE` (the toy fixture uses `zone`). The grade code reads both.
+  3. Routing special values: `lastHour`/`untilHour`/`moveByHour` = last whole hour still open; `-1` = already too late at hour 0; `moveByHour: -1, parking: null` = no dry parking reachable; `moveByHour: null, parking: null` = no move needed. Parking is named "High ground at junction N" (no parking layer).
+  4. Gemini: guidance answers `{ text }`, remedies `{ sentences }` (as your stubs had). Request bodies are in `web/lib/gemini/schemas.ts`: remedies takes `letter`, `depthByStorm`, `femaZone`, `miltonPointNearby`, `pumpDependent`, `depthAtBuilding100yrM`. Header `x-fludd-text-source` says gemini / fallback / off.
+  5. Layer `pump-stations` has `approximate: true` on Duck Pond East (county record says it needs GPS).
+- 12:20 `npm run typecheck` shows 2 errors in your files: `RouteContext` in `app/api/reports/[id]/moderate/route.ts` and `LayoutProps` in `app/layout.tsx` (Next's generated types, probably need `next build` or `next typegen`). All 164 tests and lint pass.
 
 ---
 
