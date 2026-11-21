@@ -117,6 +117,7 @@ function LogoSheet({ size, lift, style, children }: { size: number; lift: number
         left: 0,
         top: 0,
         overflow: "visible",
+        willChange: "transform",
         filter: `drop-shadow(${lift * 0.5}px ${lift}px ${lift * 1.4}px rgba(8,16,34,0.3))`,
         ...style,
       }}
@@ -127,7 +128,7 @@ function LogoSheet({ size, lift, style, children }: { size: number; lift: number
 }
 
 export type BootFilmProps = {
-  /** Frame at 30 fps. The caller steps it by two, so the paper moves like stop motion. */
+  /** Time in 30-per-second frames. It may be fractional: the caller draws once per screen refresh. */
   frame: number;
   w: number;
   h: number;
@@ -146,7 +147,8 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
   const hitY = ly + 186 * k;
   const diag = Math.hypot(Math.max(hitX, W - hitX), Math.max(hitY, H - hitY)) + 80;
   const seaTop = H - 96 * u;
-  const jig = (seed: string, amount: number) => (rand(`${seed}${Math.floor(f / 4)}`) - 0.5) * 2 * amount;
+  // A slow drift per piece, so cut paper never sits perfectly still. Smooth, so it holds up at full frame rate.
+  const jig = (seed: string, amount: number) => Math.sin(f / 18 + rand(seed) * Math.PI * 2) * amount;
 
   // Shapes that never change for a given screen.
   const still = useMemo(() => {
@@ -164,8 +166,6 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
         len: (46 + rand(`l${i}`) * 50) * u,
         y0: rand(`y${i}`) * (H + 300),
         x0: rand(`x${i}`) * (W + 200) - 100,
-        w: (5 + rand(`w${i}`) * 4) * u,
-        o: 0.5 + rand(`o${i}`) * 0.5,
       })),
       crown: Array.from({ length: 11 }, (_, i) => ({
         angle: -Math.PI * (0.12 + (i / 10) * 0.76),
@@ -210,12 +210,23 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
       <svg className="boot-full" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
         <Cut d={still.cloudA} fill={CLOUD_A} transform={`translate(0 ${cloudIn * 0.6})`} shade="rgba(4,10,24,0.3)" />
         {rainOn > 0 && (
-          <g opacity={rainOn} fill={HILITE}>
-            {still.streaks.map((s, i) => {
-              const y = ((s.y0 + f * s.speed) % span) - 150;
-              const x = s.x0 - y * 0.16;
-              return <rect key={i} x={x} y={y} width={s.w} height={s.len} rx={s.w / 2} opacity={s.o} transform={`rotate(9 ${x} ${y})`} />;
-            })}
+          // All the streaks are two paths, not a hundred rectangles: one DOM update per picture keeps it smooth.
+          <g opacity={rainOn} fill="none" stroke={HILITE} strokeLinecap="round">
+            {[0, 1].map((layer) => (
+              <path
+                key={layer}
+                strokeWidth={(layer ? 7.5 : 5.5) * u}
+                opacity={layer ? 0.9 : 0.6}
+                d={still.streaks
+                  .filter((_, i) => i % 2 === layer)
+                  .map((s) => {
+                    const y = ((s.y0 + f * s.speed) % span) - 150;
+                    const x = s.x0 - y * 0.16;
+                    return `M${x.toFixed(1)} ${y.toFixed(1)}l${(-s.len * 0.156).toFixed(1)} ${(s.len * 0.988).toFixed(1)}`;
+                  })
+                  .join("")}
+              />
+            ))}
           </g>
         )}
         <Cut d={still.cloudB} fill={CLOUD_B} transform={`translate(${jig("cb", 1.2)} ${cloudIn})`} shade="rgba(4,10,24,0.3)" />
@@ -273,7 +284,7 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
           ))}
       </svg>
 
-      <div aria-hidden="true" style={{ position: "absolute", left: lx, top: ly, width: size, height: size, transform: `translateY(${idle * 1.6 * k}px)` }}>
+      <div aria-hidden="true" style={{ position: "absolute", left: lx, top: ly, width: size, height: size, willChange: "transform", transform: `translateY(${idle * 1.6 * k}px)` }}>
         <LogoSheet size={size} lift={6} style={{ transformOrigin: "50% 100%", transform: `scaleY(${curl})`, opacity: f >= HIT + 6 ? 1 : 0 }}>
           <g transform="translate(0 40)">
             <path d={WAVE} fill={DEEP} />
@@ -319,8 +330,8 @@ export function BootFilm({ frame: f, w: W, h: H, cx, cy, size }: BootFilmProps) 
         </LogoSheet>
       </div>
 
-      {/* paper grain, re-seated as the film steps */}
-      <div className="boot-grain" style={{ backgroundPosition: `${Math.round(rand(`g${f}`) * 160)}px ${Math.round(rand(`h${f}`) * 160)}px` }} />
+      {/* paper grain, re-seated 15 times a second like film grain */}
+      <div className="boot-grain" style={{ backgroundPosition: `${Math.round(rand(`g${Math.floor(f / 2)}`) * 160)}px ${Math.round(rand(`h${Math.floor(f / 2)}`) * 160)}px` }} />
     </>
   );
 }

@@ -80,19 +80,16 @@ export function BootIntro() {
     if (mode === "skip") signalBootDone();
   }, [mode]);
 
-  // The film's clock. It steps on twos so the paper moves like stop motion, and leaves when the film ends.
+  // The film's clock: one picture per screen refresh (60 a second on most screens, 120 where the display does
+  // that), measured in the film's own 30-per-second frames so its timings stay readable. Leaves when it ends.
   useEffect(() => {
     if (mode !== "show") return;
     let raf = 0;
     let start: number | null = null;
-    let last = 0;
     const tick = (now: number) => {
       start ??= now;
-      const f = Math.floor((((now - start) / 1000) * FPS) / 2) * 2;
-      if (f !== last) {
-        last = f;
-        setFrame(Math.min(f, FRAMES));
-      }
+      const f = ((now - start) / 1000) * FPS;
+      setFrame(Math.min(f, FRAMES));
       if (f >= FRAMES) {
         leave();
         return;
