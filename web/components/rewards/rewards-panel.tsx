@@ -185,7 +185,7 @@ const WAYS: Way[] = [
         <circle cx="12" cy="13" r="3.5" />
       </svg>
     ),
-    action: "Send a photo from the After tab",
+    action: "Send a photo from Home, under Report what you saw",
     rule: "each photo",
   },
   {

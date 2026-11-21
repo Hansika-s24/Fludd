@@ -7,6 +7,8 @@ import { StormControls } from "@/components/map/storm-controls";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
 import { AskPelican } from "@/components/pelican/ask-pelican";
+import { recordContribution } from "@/components/rewards/contributions";
+import { RewardsPanel } from "@/components/rewards/rewards-panel";
 import { AddressSearch } from "@/components/report-card/address-search";
 import { ValidationPanel } from "@/components/report-card/validation-panel";
 import { AfterPanel } from "@/components/stages/after-panel";
@@ -173,7 +175,14 @@ export function AppShell() {
   return (
     <main className="relative h-dvh w-full overflow-hidden">
       {/* First open: full-screen onboarding, after the intro has handed over so it never sits under the video. */}
-      {arrived && onboarding && <OnboardingScreen onFinish={() => setSearched(null)} />}
+      {arrived && onboarding && (
+        <OnboardingScreen
+          onFinish={() => {
+            setSearched(null);
+            recordContribution("onboarded");
+          }}
+        />
+      )}
       <MapView
         scenario={scenario}
         pump={pump}
@@ -252,11 +261,7 @@ export function AppShell() {
             </Group>
           )}
 
-          {tab === "rewards" && (
-            <Group>
-              <p className="px-4 py-5 text-center text-subhead text-label-2">Rewards are on their way.</p>
-            </Group>
-          )}
+          {tab === "rewards" && <RewardsPanel />}
 
           {tab === "you" && profile && (
             <>
