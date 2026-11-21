@@ -49,6 +49,13 @@ async function readInput<T>(request: Request, schema: z.ZodType<T>): Promise<{ o
   return { ok: true, data: parsed.data };
 }
 
+/**
+ * Checked answers, per provider, keyed by prompt and facts. Gemini on the free tier can take
+ * 10 s or more, so the same address answers instantly the second time. Failures are not cached.
+ */
+const answerCache = new WeakMap<TextProvider, Map<string, string[]>>();
+const CACHE_LIMIT = 500;
+
 /** Asks the provider and checks the answer. Returns null if anything is wrong. */
 async function sentencesFrom(
   provider: TextProvider,
@@ -58,6 +65,31 @@ async function sentencesFrom(
   maxItems: number,
 ): Promise<string[] | null> {
   const input = JSON.stringify(facts, null, 2);
+  const key = `${system}
+${input}`;
+  let cache = answerCache.get(provider);
+  if (!cache) {
+    cache = new Map();
+    answerCache.set(provider, cache);
+  }
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const fresh = await askAndCheck(provider, system, facts, input, minItems, maxItems);
+  if (fresh) {
+    if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
+    cache.set(key, fresh);
+  }
+  return fresh;
+}
+
+async function askAndCheck(
+  provider: TextProvider,
+  system: string,
+  facts: object,
+  input: string,
+  minItems: number,
+  maxItems: number,
+): Promise<string[] | null> {
   let raw: string;
   try {
     raw = await provider.generate({ system, input, minItems, maxItems });

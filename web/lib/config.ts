@@ -12,7 +12,8 @@ export const serverConfig = () => ({
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   aiProvider: process.env.AI_PROVIDER ?? "gemini",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
-  geminiModel: process.env.GEMINI_MODEL ?? "gemini-4-hydrogen",
-  geminiFallbackModel: process.env.GEMINI_FALLBACK_MODEL ?? "gemini-3.8-flash",
+  // Flash-Lite answered in 10 to 14 s at 12:45 while the larger models returned 503 "high demand".
+  geminiModel: process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
+  geminiFallbackModel: process.env.GEMINI_FALLBACK_MODEL ?? "gemini-4-hydrogen",
   nwsUserAgent: process.env.NWS_USER_AGENT ?? "fludd.app (hackathon demo)",
 });
