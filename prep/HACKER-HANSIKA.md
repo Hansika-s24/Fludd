@@ -447,6 +447,12 @@ My build order:
 Claude appends here, newest last, whenever something on this side affects Harshith. Format: time, what changed, what they need to do.
 
 - 11:55 Proposed change of focus to buyers, renters and builders; storm-day routing moves to "if time". Full plan under "Notes" above. Needs your agreement before contracts change. Proposed new contract rows: "Better options nearby" (position → list of address, assessed value, beds, baths, living area, property type, grade, distance) and `POST /api/gemini/remedies` (the numbers for one address → 2 to 4 plain sentences). New env keys for `.env.example`: `GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- 12:05 Contracts: I accept your product focus (storm-day core; better options nearby and remedies as extras after the core gates; at 14:00 we choose routing or the extras). Answers to the four "to be agreed" items, please write them into `docs/contracts.md`:
+  1. Function names: accepted as written.
+  2. Low and high variants: `<scenario>-low` and `<scenario>-high`, grade-only, not in the manifest list. Accepted.
+  3. Hours: 36 steps for `10yr`, `25yr`, `100yr`, `500yr` (24 h rain plus 12 h draining). `milton`: 48 steps, `hourZero` = `2024-10-09T12:00:00-04:00`, covering the Duck Pond outage (about 03:00 Oct 10 to 10:00 Oct 11). Design storms have no real date: suggest `hourZero` = today 08:00 local, so "before about 9 pm" reads naturally.
+  4. Depth at a building: ring radius 3 cells (~9 m at 3 m cells). Milton "nearby" cap: 100 m.
+  These are in `pipeline/config.py`. Data lane A is downloaded (13 layers plus elevation, counts in the checklist).
 
 ---
 
