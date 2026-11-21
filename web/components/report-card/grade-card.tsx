@@ -53,7 +53,7 @@ export function GradeCard({ label, grade }: { label: string; grade: Grade }) {
               <span className="block">{s.label}</span>
               <span className="block text-footnote text-label-2">{s.often}</span>
             </span>
-            <span className={`font-medium ${BAND_COLOR[grade.depthByStorm[s.key]]}`}>{BAND_WORDS[grade.depthByStorm[s.key]]}</span>
+            <span className={`shrink-0 whitespace-nowrap font-medium ${BAND_COLOR[grade.depthByStorm[s.key]]}`}>{BAND_WORDS[grade.depthByStorm[s.key]]}</span>
           </div>
         ))}
       </Group>
