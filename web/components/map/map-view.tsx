@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
 import { loadGold, loadLayer, loadLevels } from "@/lib/data";
 import type { GoldData, Hour, LayerName, LngLat, PumpState, Scenario } from "@/lib/types";
-import { SHEET_HALF_EVENT, TAB_BAR_PX } from "@/components/ui/sheet";
+import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
 setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -236,7 +236,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
         if (narrow) window.dispatchEvent(new Event(SHEET_HALF_EVENT));
         // flyTo leaves its padding on the map and fitBounds adds to it: clear it so the fit is the same every time.
         m.setPadding({ top: 0, right: 0, bottom: 0, left: 0 });
-        m.fitBounds([[w, s], [e, n]], { padding: narrow ? { top: 100, left: 40, right: 40, bottom: window.innerHeight * 0.5 + TAB_BAR_PX + 24 } : { top: 60, right: 60, bottom: 60, left: 440 }, maxZoom: 16, pitch: 0 });
+        m.fitBounds([[w, s], [e, n]], { padding: narrow ? { top: 100, left: 40, right: 40, bottom: window.innerHeight * 0.5 + 24 } : { top: 60, right: 60, bottom: 60, left: 440 }, maxZoom: 16, pitch: 0 });
       }
     })().catch(() => undefined);
   }, [route]);

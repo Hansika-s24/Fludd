@@ -16,10 +16,9 @@ import { AfterPanel } from "@/components/stages/after-panel";
 import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
-import { Greeting } from "@/components/ui/greeting";
-import { Sheet, useNarrow } from "@/components/ui/sheet";
+import { SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
 import { Group } from "@/components/ui/surface";
-import { TabBar, type Tab } from "@/components/ui/tab-bar";
+import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
 import { gradeFor } from "@/lib/grade";
 import type { AddressMatch, GradeResult, Hour, LayerName, LngLat, Manifest, PumpState, Scenario } from "@/lib/types";
@@ -50,7 +49,6 @@ type Graded = { place: Place; grade: GradeResult };
 
 export function AppShell() {
   const profile = useProfile();
-  const narrow = useNarrow();
   const [tab, setTab] = useState<Tab>("home");
   const [scenario, setScenario] = useState<Scenario>("100yr");
   const [pump, setPump] = useState<PumpState>("on");
@@ -157,21 +155,44 @@ export function AppShell() {
     </>
   );
 
-  const header = (
-    <>
-      {!narrow && <TabBar tab={tab} onChange={setTab} narrow={false} />}
-      {tab === "home" ? (
-        <>
-          <Greeting homeLabel={profile?.home?.label.split(",")[0] ?? null} homeLetter={!searched && ok ? ok.grade.letter : null} />
-          <div className="px-4 pb-2">
+  // Home shows your home again: drop a searched address if there is a home to go back to.
+  const open = (t: Tab) => {
+    if (t === "home" && profile?.home) setSearched(null);
+    else if (t !== "home") window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    setTab(t);
+  };
+
+  // Maps-style: a search field with your avatar, round shortcuts under it; a section opens as a card with a close button.
+  const header =
+    tab === "home" ? (
+      <>
+        <div className="flex items-start gap-2 px-4">
+          <div className="min-w-0 flex-1">
             <AddressSearch onPick={onPick} />
           </div>
-        </>
-      ) : (
-        <h1 className="px-5 pb-2 pt-3 text-title font-bold">{TITLES[tab]}</h1>
-      )}
-    </>
-  );
+          <button
+            type="button"
+            aria-label="You"
+            onClick={() => open("you")}
+            className="pressable mt-3 grid size-11 shrink-0 place-items-center rounded-full bg-fill text-tint"
+          >
+            {ICONS.you}
+          </button>
+        </div>
+        <Shortcuts tab={tab} onOpen={open} homeLetter={!searched && ok ? ok.grade.letter : null} />
+      </>
+    ) : (
+      <div className="flex items-center justify-between gap-3 pb-2 pl-5 pr-2 pt-1">
+        <h1 className="text-title font-bold">{TITLES[tab]}</h1>
+        <button type="button" aria-label="Close" onClick={() => open("home")} className="pressable grid size-11 place-items-center">
+          <span className="grid size-[1.875rem] place-items-center rounded-full bg-fill text-label-2" aria-hidden>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="m2 2 8 8M10 2l-8 8" />
+            </svg>
+          </span>
+        </button>
+      </div>
+    );
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
@@ -206,7 +227,7 @@ export function AppShell() {
       </button>
 
       <Sheet header={header} scrollKey={tab} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
-        <div key={tab} id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="tab-enter" aria-live="polite">
+        <div key={tab} id="tab-panel" role="region" aria-label={TITLES[tab]} className="tab-enter" aria-live="polite">
           {tab === "home" && (
             <>
               {placeState}
@@ -300,7 +321,6 @@ export function AppShell() {
           <p className="px-7 pt-4 text-footnote text-label-3">{SAFETY_FOOTNOTE}</p>
         </div>
       </Sheet>
-      {narrow && <TabBar tab={tab} onChange={setTab} narrow />}
     </main>
   );
 }

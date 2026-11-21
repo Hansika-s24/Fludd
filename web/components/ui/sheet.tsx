@@ -3,10 +3,9 @@
 import { animate, motion, useMotionValue } from "motion/react";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
-/** Height of the phone tab bar above the home indicator. */
-export const TAB_BAR_PX = 58;
-const PEEK_PX = 200;
-/** Fired on window to lower the phone sheet to half height, if it is higher. */
+/** Peek shows the search field and the shortcuts, above the home indicator. */
+const PEEK_PX = 196;
+/** Fired on window to move the phone sheet to half height. */
 export const SHEET_HALF_EVENT = "fludd:sheet-half";
 
 const narrowQuery = "(max-width: 767px)";
@@ -38,11 +37,20 @@ export function Sheet({
     body.current?.scrollTo(0, 0);
   }, [scrollKey]);
   const [vh, setVh] = useState(800);
+  const [inset, setInset] = useState(0);
   const y = useMotionValue(0);
   const drag = useRef<{ startY: number; startOffset: number; samples: { y: number; t: number }[] } | null>(null);
 
   useEffect(() => {
-    const set = () => setVh(window.innerHeight);
+    const set = () => {
+      setVh(window.innerHeight);
+      // env() is CSS-only: read the home-indicator inset off a probe.
+      const probe = document.createElement("div");
+      probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+      document.body.appendChild(probe);
+      setInset(parseFloat(getComputedStyle(probe).paddingBottom) || 0);
+      probe.remove();
+    };
     set();
     window.addEventListener("resize", set);
     return () => window.removeEventListener("resize", set);
@@ -50,24 +58,24 @@ export function Sheet({
 
   const height = Math.round(vh * 0.9);
   // Offsets from the top of the sheet's travel: full = 0, half, peek.
-  const snaps = [0, height - Math.round(vh * 0.5), height - PEEK_PX];
+  const peek = PEEK_PX + inset;
+  const snaps = [0, height - Math.round(vh * 0.5), height - peek];
   const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Start at peek; re-snap when the viewport changes.
   useEffect(() => {
-    y.set(height - PEEK_PX);
-  }, [height, y]);
+    y.set(height - peek);
+  }, [height, peek, y]);
 
-  // Something drawn on the map (a Pelican route) asks for the sheet at half so it shows above it.
+  // A section opening, or a Pelican route drawn on the map, asks for the sheet at half.
   const half = snaps[1];
   useEffect(() => {
-    const lower = () => {
-      if (y.get() >= half) return;
+    const toHalf = () => {
       if (reduce) y.set(half);
       else animate(y, half, { type: "spring", bounce: 0.2, duration: 0.3 });
     };
-    window.addEventListener(SHEET_HALF_EVENT, lower);
-    return () => window.removeEventListener(SHEET_HALF_EVENT, lower);
+    window.addEventListener(SHEET_HALF_EVENT, toHalf);
+    return () => window.removeEventListener(SHEET_HALF_EVENT, toHalf);
   }, [half, reduce, y]);
 
   function settle(velocity: number) {
@@ -90,8 +98,8 @@ export function Sheet({
 
   return (
     <motion.aside
-      style={{ y, height, bottom: `calc(${TAB_BAR_PX}px + env(safe-area-inset-bottom))` }}
-      className={`material-thick fixed inset-x-0 z-10 flex flex-col overflow-hidden rounded-t-[var(--radius-surface)] ${className}`}
+      style={{ y, height, bottom: 0, paddingBottom: "env(safe-area-inset-bottom)" }}
+      className={`material-thick fixed inset-x-0 z-20 flex flex-col overflow-hidden rounded-t-[var(--radius-surface)] ${className}`}
     >
       <div
         className="shrink-0 cursor-grab touch-none select-none active:cursor-grabbing"
