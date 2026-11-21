@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { MapView } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
+import { AskPelican } from "@/components/pelican/ask-pelican";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
 import { AddressSearch } from "@/components/report-card/address-search";
@@ -87,6 +88,7 @@ export function AppShell() {
     if (err) return setError(err);
     if (!match) return setError("We couldn't find that address. Try the street number and name.");
     setSearched({ label: match.label, position: match.position });
+    setRoute(null);
   }
 
   const hours = manifest?.hours ?? 48;
@@ -96,7 +98,10 @@ export function AppShell() {
   const onboarding = profile !== null && !profile.done;
   const controls = {
     scenario, pump, hour: safeHour, hours, hourZero,
-    onScenario: setScenario, onPump: setPump, onHour: setHour,
+    // A suggested route belongs to one storm, pump state and hour: drop it when they change.
+    onScenario: (s: Scenario) => { setScenario(s); setRoute(null); },
+    onPump: (p: PumpState) => { setPump(p); setRoute(null); },
+    onHour: (h: Hour) => { setHour(h); setRoute(null); },
   };
 
   return (
@@ -188,6 +193,19 @@ export function AppShell() {
               {stage === "before" && <ValidationPanel />}
               {current?.grade.kind === "ok" && stage === "during" && (
                 <DuringPanel key={placeKey} place={current.place} car={profile?.car ?? null} grade={current.grade} controls={controls} />
+              )}
+              {stage === "during" && (
+                <Group title="Ask Pelican">
+                  <AskPelican
+                    key={`${placeKey}-${scenario}-${pump}-${safeHour}`}
+                    from={profile?.car?.position ?? place?.position ?? null}
+                    scenario={scenario}
+                    pump={pump}
+                    hour={safeHour}
+                    hourZero={hourZero}
+                    onRoute={setRoute}
+                  />
+                </Group>
               )}
               {current?.grade.kind === "ok" && stage === "after" && (
                 <AfterPanel

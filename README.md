@@ -35,7 +35,8 @@ All fetched on 2026-11-21, no keys required. Full list with filters and counts i
 | Street-flooding reports | City of Tampa flooding spots |
 | Parcels (value, beds, baths; no owner fields) | Hillsborough County parcels |
 | Fire stations, hospitals | Hillsborough County |
-| Roads | OpenStreetMap via Overpass |
+| Roads; places for Ask Pelican | OpenStreetMap via Overpass |
+| Places for Ask Pelican when Overpass is busy | Esri ArcGIS World Geocoder (category search, keyless) |
 | Address search | Hillsborough County address locator |
 | Weather alerts | National Weather Service API |
 | Basemap | OpenFreeMap "liberty" (OpenStreetMap data) |
