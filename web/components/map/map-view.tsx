@@ -367,14 +367,16 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
       if (markMarkers.current.has(k.id)) continue;
       // MapLibre positions the outer element with a transform, so the entrance animation lives on an inner one.
       const el = document.createElement("div");
+      // Styled inline so the rings never depend on a stylesheet rule surviving the build.
       const ring = document.createElement("div");
-      ring.className = "map-mark pop-in";
-      ring.style.setProperty("--mark-size", `${k.size}px`);
-      ring.style.setProperty("--mark-color", k.color);
+      ring.className = "pop-in";
+      ring.style.cssText = `position:relative;width:${k.size}px;height:${k.size}px;border-radius:999px;border:2.5px solid ${k.color};background:color-mix(in oklch, ${k.color} 28%, transparent)`;
       ring.setAttribute("role", "img");
       ring.setAttribute("aria-label", k.label);
       const caption = document.createElement("span");
       caption.textContent = k.label;
+      caption.style.cssText =
+        "position:absolute;left:50%;top:calc(100% + 4px);translate:-50% 0;white-space:nowrap;border-radius:999px;background:#fff;padding:1px 7px;font-size:11px;font-weight:600;color:var(--color-label);box-shadow:var(--shadow-control)";
       ring.appendChild(caption);
       el.appendChild(ring);
       markMarkers.current.set(k.id, new Marker({ element: el }).setLngLat(k.position).addTo(m));
@@ -390,7 +392,8 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     if (!focus) return;
     // The home already has its own pin; only a searched or tapped place gets the blue one.
     const isHome = pins.home !== null && pins.home[0] === focus[0] && pins.home[1] === focus[1];
-    if (!isHome) marker.current = new Marker({ color: "#0a6cff" }).setLngLat(focus).addTo(m);
+    // A guided demo that brings its own rings does not also get the blue pin in the middle of them.
+    if (!isHome && !marks?.length) marker.current = new Marker({ color: "#0a6cff" }).setLngLat(focus).addTo(m);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Keep the address clear of the surface: the sheet covers the bottom 46% on phones, the sidebar 396 px on desktop.
     const narrow = window.matchMedia("(max-width: 767px)").matches;

@@ -28,6 +28,7 @@ Type any address near USF and get a flood report card: a letter grade, where the
   - **Before:** grade, flood history nearby, drainage network, steps that fit your home (own or rent, floor) and similar homes nearby with a better grade. For an address you do not live at yet, a checklist for buying, renting or building there, made from the same report.
   - **During:** water at the door hour by hour, move-your-car time, fire truck reach, last way out, live National Weather Service alerts, and "Ask Pelican" for a trip that avoids roads the model closes.
   - **After:** what Milton did at the address, what the pumps changed, and resident photo reports checked by a person before they appear.
+- **Guided demos** (`/demo`): three short walks on the real map and model. Neighbours' reports landing on the map and set against the model (the reports are simulated and labelled so on screen); two real addresses compared for someone moving or building; a spare phone at a parking spot used as a water gauge (the camera readings are simulated and labelled). Model values in the demos are read from the model at run time.
 - **Privacy:** your home, car spot, insurance details and camera link stay in your browser (localStorage). They are never sent to our server. Reports carry no identity and photos are stripped of metadata; see `docs/privacy.md`.
 
 ## Data sources

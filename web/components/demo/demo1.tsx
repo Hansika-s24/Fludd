@@ -109,7 +109,7 @@ export function Demo1() {
       body: (
         <>
           <p>
-            This is what Fludd&apos;s model draws for {storm.name.toLowerCase()} (the 100-year storm), pumps running, {DEMO_HOUR} hours in. The pin is a
+            This is what Fludd&apos;s model draws for {storm.name.toLowerCase()}, pumps running, {DEMO_HOUR} hours in. The pin is a
             crossing on {DEMO_PLACE}.
           </p>
           <p className="rounded-[var(--radius-control)] bg-group px-3 py-2">

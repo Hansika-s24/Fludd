@@ -264,7 +264,7 @@ export function Demo3() {
             {model.kind === "ok" && (
               <span className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-[2px] bg-label" aria-hidden />
-                Model at this spot, 100-year storm
+                Model at this spot, hurricane-level rain
               </span>
             )}
           </div>
