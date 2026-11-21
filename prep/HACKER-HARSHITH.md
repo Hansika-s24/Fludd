@@ -309,10 +309,10 @@ Claude ticks these and adds a note after each (commit id, what was cut).
 - [ ] G1c Hansika added as collaborator; URL sent
 - [ ] G1d `.claude/` tooling committed (36 skills, 9 agents)
 - [ ] G1e `prep/` committed: PLAN, both hacker docs, research 01 to 05 (or kept local by organizer ruling)
-- [ ] G1f `docs/contracts.md` written, with "What the interface can call"
+- [x] G1f `docs/contracts.md` written, with "What the interface can call". Done 11:55 with exact names; items 1 to 4 marked "to be agreed"
 - [ ] G1g Scaffold with all packages installed; CI green
-- [ ] G1h Toy fixture committed; path in `docs/contracts.md`
-- [ ] G1i Stubs in `web/lib/` and placeholder routes in `web/app/api/`
+- [x] G1h Toy fixture committed; path in `docs/contracts.md`. `web/public/data/toy/`, 6 contract tests
+- [x] G1i Stubs in `web/lib/` and placeholder routes in `web/app/api/`. All rows incl. real-estate extras (`findBetterOptions`, `/api/gemini/remedies`)
 - [ ] G1j "Scaffold pushed" said; those folders handed to Hansika
 - [ ] G1k Empty shell live on Vercel; live URL in `docs/contracts.md`
 - [ ] G1l `fludd.app` bought and attached to Vercel (before noon)
