@@ -4,6 +4,15 @@
 
 Type any address near USF and get a flood report card: a letter grade, where the water goes hour by hour, when to move your car, whether a fire truck can still reach you, and what to fix. Built at HackJam '26 (SHPE USF, an MLH event) on November 21, 2026 by Harshith and Hansika.
 
+**Live:** [fludd.app](https://fludd.app) · **Guided demos:** [fludd.app/demo](https://fludd.app/demo)
+
+![A flood grade for one address: grade F on the map, with the model's water around it](docs/img/grade.jpg)
+
+| | | |
+|---|---|---|
+| ![Storm mode: water at the door hour by hour, pump stations on or off](docs/img/storm.jpg) **Storm mode.** Play the water hour by hour; switch the pump stations off. | ![Ask Pelican finds a pharmacy on roads the model keeps open](docs/img/pelican.jpg) **Ask Pelican.** A route that only uses roads the model keeps open. | ![Two homes on the same street, both Zone X: grade A and grade F](docs/img/two-homes.jpg) **Same street, same zone.** One home grades A, the other F. |
+| ![Simulated neighbour reports arriving on the real map](docs/img/reports.jpg) **Neighbours report.** Each reading set against the model (demo, simulated reports). | ![A camera at a kerb reading the water depth](docs/img/camera.jpg) **Camera as a gauge.** A camera you own reads the water at your kerb (demo, simulated camera). | ![The validation panel: 52.3% of Milton's damage points](docs/img/validation.jpg) **Checked against Milton.** 286 of 547 damage points. |
+
 **Fludd is four things in one map:**
 
 | | For | What it does |
