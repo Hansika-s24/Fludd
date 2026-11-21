@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { StepIllustration } from "@/components/illustrations";
 import { AddressSearch } from "@/components/report-card/address-search";
+import { WORDMARK_CLASS } from "@/components/ui/logo";
 import {
   currentPosition,
   EMPTY_PROFILE,
@@ -152,7 +153,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
       body = (
         <div className="flex flex-1 flex-col justify-center pb-16">
           <StepIllustration step="welcome" className="mb-6 -ml-2 self-start" />
-          <p className="text-[3.5rem] font-bold leading-none tracking-[-0.045em] text-tint">Fludd</p>
+          <p translate="no" className={`${WORDMARK_CLASS} text-[3.5rem] leading-none tracking-[-0.03em]`}>Fludd</p>
           <h1 id={titleId} className="mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
             Know what the water will do before it does.
           </h1>

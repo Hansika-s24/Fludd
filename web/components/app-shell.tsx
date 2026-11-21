@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { onBootDone } from "@/components/boot/boot-signal";
 import { FloodCamera } from "@/components/camera/flood-camera";
+import { EmptyAddressIllustration } from "@/components/illustrations";
 import { MapView } from "@/components/map/map-view";
 import { StormControls } from "@/components/map/storm-controls";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
@@ -18,6 +19,7 @@ import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
 import { SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
+import { Logo } from "@/components/ui/logo";
 import { Group } from "@/components/ui/surface";
 import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
@@ -128,7 +130,8 @@ export function AppShell() {
       )}
       {!place && (
         <Group>
-          <div className="px-4 py-5 text-center">
+          <div className="flex flex-col items-center px-4 py-5 text-center">
+            <EmptyAddressIllustration size={120} className="mb-3" />
             <p className="text-headline font-semibold">No address yet</p>
             <p className="mt-1 text-subhead text-label-2">Search for one, or set up your home.</p>
             {profile && !profile.home && (
@@ -220,12 +223,9 @@ export function AppShell() {
     <main className="relative h-dvh w-full overflow-hidden">
       <p
         translate="no"
-        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-11 items-center gap-1.5 rounded-full pl-2.5 pr-4 text-[1.25rem] font-bold tracking-[-0.03em] text-tint md:left-[412px]"
+        className="material-glass pointer-events-none fixed left-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-10 flex h-11 items-center rounded-full pl-2 pr-4 md:left-[412px]"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M12 2.5c3.6 4.3 6.5 8 6.5 11.5a6.5 6.5 0 0 1-13 0c0-3.5 2.9-7.2 6.5-11.5Z" />
-        </svg>
-        Fludd
+        <Logo size={30} />
       </p>
       {/* First open: full-screen onboarding, after the intro has handed over so it never sits under the video. */}
       {arrived && onboarding && (
