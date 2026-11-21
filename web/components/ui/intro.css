@@ -1,0 +1,103 @@
+/* First impression: the surface materializes as the boot intro zooms away, one light sweep crosses it,
+   and the greeting rises word by word. Every effect plays once and leaves nothing behind (fill mode
+   backwards), so the material's backdrop-filter is untouched once the entrance is over. */
+
+/* (b) The surface arrives: scale on a spring, opacity and blur on a plain ease-out (a spring would
+   overshoot the blur below zero). */
+.surface-arrive {
+  transform-origin: 50% 100%;
+  animation:
+    surface-arrive-scale 500ms var(--ease-spring) backwards,
+    surface-arrive-fade 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@media (min-width: 48rem) {
+  .surface-arrive {
+    transform-origin: 0 0;
+  }
+}
+
+/* (a) One diagonal sweep of soft light over the material. The pseudo-element covers the visible box
+   (the surface is at scroll top when it arrives), is clipped by the surface's own overflow and radius,
+   and never takes pointer events, so scrolling and taps are unaffected. */
+.surface-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.06) 45%,
+    rgb(255 255 255 / 0.42) 50%,
+    rgb(255 255 255 / 0.06) 55%,
+    transparent 60%
+  );
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  background-position: 100% 0;
+  opacity: 0;
+  animation: surface-shine 900ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+/* Together with the arrival, the light waits until the surface has landed. */
+.surface-arrive.surface-shine::after {
+  animation-delay: 280ms;
+}
+
+/* Greeting words: a small rise, staggered by --i. */
+.intro-word {
+  display: inline-block;
+  animation: intro-word-up 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms + 120ms);
+}
+.intro-word-wait {
+  display: inline-block;
+  opacity: 0;
+}
+
+@keyframes surface-arrive-scale {
+  from {
+    transform: scale(0.96);
+  }
+}
+@keyframes surface-arrive-fade {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+@keyframes surface-shine {
+  0% {
+    opacity: 1;
+    background-position: 100% 0;
+  }
+  100% {
+    opacity: 1;
+    background-position: 0 0;
+  }
+}
+@keyframes intro-word-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-arrive {
+    animation: intro-fade 200ms ease-out backwards;
+  }
+  .surface-shine::after {
+    animation: none;
+    display: none;
+  }
+  .intro-word {
+    animation: intro-fade 200ms ease-out backwards;
+  }
+}
