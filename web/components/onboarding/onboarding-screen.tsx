@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { StepIllustration } from "@/components/illustrations";
 import { AddressSearch } from "@/components/report-card/address-search";
 import { WORDMARK_CLASS } from "@/components/ui/logo";
@@ -69,6 +69,9 @@ const YES_NO: { key: "yes" | "no"; label: string }[] = [
   { key: "no", label: "No" },
 ];
 
+/** Place in the step's entrance stagger: picture 0, heading 1, helper text 2, answers 3, buttons 4. */
+const at = (i: number) => ({ "--i": i }) as CSSProperties;
+
 const FLOOD_WORDS: Record<FloodCover, string> = {
   nfip: "Flood policy through the NFIP",
   private: "Private flood policy",
@@ -84,6 +87,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
   const [dir, setDir] = useState<"forward" | "back">("forward");
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nudging, setNudging] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
 
@@ -101,6 +105,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     const i = list.indexOf(current);
     const to = list[Math.min(list.length - 1, i + 1)];
     setError(null);
+    setNudging(false);
     setDir("forward");
     setHistory((h) => [...h, current]);
     setCurrent(to);
@@ -109,6 +114,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     const prev = history[history.length - 1];
     if (!prev) return;
     setError(null);
+    setNudging(false);
     setDir("back");
     setHistory((h) => h.slice(0, -1));
     setCurrent(prev);
@@ -135,29 +141,41 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     }
   }
 
-  const heading = (text: string) => (
-    <h1 id={titleId} ref={headingRef} tabIndex={-1} className="text-[2rem] font-bold leading-[1.12] tracking-[-0.025em] text-balance outline-none">
+  const heading = (text: string, entrance: "rise-in" | "pop-in" = "rise-in") => (
+    <h1
+      id={titleId}
+      ref={headingRef}
+      tabIndex={-1}
+      style={at(1)}
+      className={`${entrance} origin-left text-[2rem] font-bold leading-[1.12] tracking-[-0.025em] text-balance outline-none`}
+    >
       {text}
     </h1>
   );
-  const lede = (text: ReactNode) => <p className="mt-3 text-body text-label-2 text-pretty">{text}</p>;
+  const lede = (text: ReactNode) => <p style={at(2)} className="rise-in mt-3 text-body text-label-2 text-pretty">{text}</p>;
+  /** The answer block shakes once when Continue is pressed while it is still switched off. */
+  const answer = { nudging, onNudgeEnd: () => setNudging(false) };
 
   let body: ReactNode = null;
   let footer: ReactNode = null;
   const continueBtn = (enabled: boolean, label = "Continue") => (
-    <Primary onClick={() => next()} disabled={!enabled}>{label}</Primary>
+    <div onPointerDown={enabled ? undefined : () => setNudging(true)}>
+      <Primary onClick={() => next()} disabled={!enabled}>{label}</Primary>
+    </div>
   );
 
   switch (current) {
     case "welcome":
       body = (
         <div className="flex flex-1 flex-col justify-center pb-16">
-          <StepIllustration step="welcome" className="mb-6 -ml-2 self-start" />
-          <p translate="no" className={`${WORDMARK_CLASS} text-[3.5rem] leading-none tracking-[-0.03em]`}>Fludd</p>
-          <h1 id={titleId} className="mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
+          <div style={at(0)} className="rise-in mb-6 -ml-2 flex self-start">
+            <StepIllustration step="welcome" />
+          </div>
+          <p translate="no" style={at(1)} className={`rise-in ${WORDMARK_CLASS} text-[3.5rem] leading-none tracking-[-0.03em]`}>Fludd</p>
+          <h1 id={titleId} style={at(2)} className="rise-in mt-5 text-[1.625rem] font-semibold leading-[1.2] tracking-[-0.02em] text-balance">
             Know what the water will do before it does.
           </h1>
-          <p className="mt-3 text-body text-label-2">A few quick questions make your flood report about your home. Everything stays on this device.</p>
+          <p style={at(3)} className="rise-in mt-3 text-body text-label-2">A few quick questions make your flood report about your home. Everything stays on this device.</p>
         </div>
       );
       footer = (
@@ -174,6 +192,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {heading("Do you own or rent?")}
           {lede("Owners and renters protect different things in a flood.")}
           <Choices
+            {...answer}
             labelledBy={titleId}
             options={TENURE}
             value={p.housing.tenure}
@@ -189,6 +208,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
         <>
           {heading("What kind of home?")}
           <Choices
+            {...answer}
             labelledBy={titleId}
             options={HOME_TYPES}
             value={p.housing.type}
@@ -207,6 +227,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {heading("Which floor do you live on?")}
           {lede("Water reaches the ground floor first. Higher up, your car and your way out matter most.")}
           <Choices
+            {...answer}
             labelledBy={titleId}
             options={FLOORS}
             value={p.housing.floor === null ? null : Math.min(4, p.housing.floor)}
@@ -222,17 +243,19 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
         <>
           {heading("Where do you live?")}
           {lede("Your home gets a flood grade, and we watch the water around it.")}
-          <div className="mt-6">
-            <AddressSearch
-              onPick={(match, err) => {
-                if (err || !match) return setError(err ?? "We couldn't find that address. Try the street number and name.");
-                if (!match.inside) return setError(`${match.label.split(",")[0]} is outside the area around USF we cover. Try an address closer to campus.`);
-                next(save({ home: { label: match.label, position: match.position } }));
-              }}
-            />
+          <div style={at(3)} className="rise-in mt-6">
+            <Nudge {...answer}>
+              <AddressSearch
+                onPick={(match, err) => {
+                  if (err || !match) return setError(err ?? "We couldn't find that address. Try the street number and name.");
+                  if (!match.inside) return setError(`${match.label.split(",")[0]} is outside the area around USF we cover. Try an address closer to campus.`);
+                  next(save({ home: { label: match.label, position: match.position } }));
+                }}
+              />
+            </Nudge>
           </div>
           {p.home && (
-            <p className="mt-4 text-subhead text-label-2">
+            <p style={at(4)} className="rise-in mt-4 text-subhead text-label-2">
               Saved: <span className="text-label">{p.home.label}</span>
             </p>
           )}
@@ -247,7 +270,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {heading("Where do you park?")}
           {lede("Go stand next to your car, then tap. We'll tell you when to move it before the water gets there.")}
           {p.car && (
-            <p className="mt-4 text-subhead text-label-2">
+            <p style={at(3)} className="rise-in mt-4 text-subhead text-label-2">
               Saved: <span className="text-label">{p.car.label}</span>
             </p>
           )}
@@ -274,7 +297,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
       body = (
         <>
           {heading("How often do you drive?")}
-          <Choices labelledBy={titleId} options={DRIVES} value={p.drives} onPick={(drives) => save({ drives })} />
+          <Choices {...answer} labelledBy={titleId} options={DRIVES} value={p.drives} onPick={(drives) => save({ drives })} />
         </>
       );
       footer = continueBtn(p.drives !== null);
@@ -286,6 +309,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {heading("Do you have flood insurance?")}
           {lede("Standard home and renters policies don't cover flood damage. It's a separate policy.")}
           <Choices
+            {...answer}
             labelledBy={titleId}
             options={FLOOD}
             value={p.insurance.flood}
@@ -302,6 +326,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {heading("Do you have renters insurance?")}
           {lede("Renters (contents) insurance covers your belongings, not the building.")}
           <Choices
+            {...answer}
             labelledBy={titleId}
             options={YES_NO}
             value={p.insurance.contents === null ? null : p.insurance.contents ? "yes" : "no"}
@@ -317,12 +342,12 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
         <>
           {heading("Save your policy for a flood day")}
           {lede("Saved on this device only. Handy when you need to file a claim.")}
-          <div className="mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
+          <div style={at(3)} className="rise-in mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
             <Field label="Insurance company" value={p.insurance.carrier} onChange={(carrier) => save({ insurance: { ...p.insurance, carrier } })} />
             <Field label="Policy number" value={p.insurance.policyNumber} onChange={(policyNumber) => save({ insurance: { ...p.insurance, policyNumber } })} />
             <Field label="Renewal date" type="date" value={p.insurance.renewal} onChange={(renewal) => save({ insurance: { ...p.insurance, renewal } })} last />
           </div>
-          <p className="mt-3 px-1 text-footnote text-label-3">Optional. You can leave these blank.</p>
+          <p style={at(4)} className="rise-in mt-3 px-1 text-footnote text-label-3">Optional. You can leave these blank.</p>
         </>
       );
       footer = continueBtn(true);
@@ -335,7 +360,7 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
           {lede(
             "Completely optional. Prop an old phone in a window facing the street and Fludd can check how deep the water is during a storm, one still photo at a time. Nothing is recorded, and you set it up later under You.",
           )}
-          <div className="mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
+          <div style={at(3)} className="rise-in mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
             <label className="flex min-h-14 items-center justify-between gap-4 px-4 py-2">
               <span className="text-body">I&apos;d like a flood camera</span>
               <input
@@ -356,9 +381,9 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
     case "done":
       body = (
         <>
-          {heading("You're set.")}
+          {heading("You're set.", "pop-in")}
           {lede("Here's what Fludd saved on this device. You can change it any time.")}
-          <dl className="mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
+          <dl style={at(3)} className="rise-in mt-6 overflow-hidden rounded-[var(--radius-group)] bg-group">
             <Summary label="Home" value={p.home?.label ?? "Not set"} />
             <Summary label="Car" value={p.drives === "no_car" ? "No car" : (p.car?.label ?? "Not set")} />
             <Summary
@@ -410,13 +435,13 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
                 aria-valuemax={screens.length - 1}
                 aria-valuenow={index}
               >
-                <span className="block h-full rounded-full bg-tint" style={{ width: `${Math.round(progress * 100)}%` }} />
+                <span className="block h-full rounded-full bg-tint" style={{ transform: `scaleX(${progress.toFixed(4)})` }} />
               </div>
             )}
           </div>
           <div className="flex w-11 shrink-0 justify-end">
             {showChrome && current !== "done" && (
-              <button type="button" onClick={() => next()} className="-mr-2 min-h-11 px-2 text-body text-label-2">
+              <button type="button" onClick={() => next()} className="pressable -mr-2 min-h-11 rounded-[0.625rem] px-2 text-body text-label-2 active:bg-fill">
                 Skip
               </button>
             )}
@@ -425,15 +450,19 @@ export function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
 
         <main key={current} className={`flex flex-1 flex-col ${dir === "forward" ? "ob-forward" : "ob-back"}`}>
           <div className={`flex flex-1 flex-col ${current === "welcome" ? "" : "pt-10"}`}>
-            {current !== "welcome" && <StepIllustration step={current} size={132} className="mb-5 -ml-2 self-start" />}
+            {current !== "welcome" && (
+              <div style={at(0)} className="rise-in mb-5 -ml-2 flex self-start">
+                <StepIllustration step={current} size={132} />
+              </div>
+            )}
             {body}
             {error && (
-              <p role="alert" className="mt-4 rounded-[var(--radius-control)] bg-group px-4 py-3 text-subhead">
+              <p role="alert" className="rise-in mt-4 rounded-[var(--radius-control)] bg-group px-4 py-3 text-subhead">
                 {error}
               </p>
             )}
           </div>
-          <div className="mt-8 flex shrink-0 flex-col gap-1">{footer}</div>
+          <div style={at(4)} className="rise-in mt-8 flex shrink-0 flex-col gap-1">{footer}</div>
         </main>
       </div>
     </div>
@@ -446,7 +475,7 @@ function Primary({ children, onClick, disabled }: { children: ReactNode; onClick
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="pressable h-[3.25rem] w-full rounded-[0.875rem] bg-tint text-body font-semibold text-white active:bg-tint-pressed disabled:bg-fill disabled:text-label-3"
+      className="pressable ob-primary h-[3.25rem] w-full rounded-[0.875rem] bg-tint text-body font-semibold text-white active:bg-tint-pressed disabled:bg-fill disabled:text-label-3"
     >
       {children}
     </button>
@@ -461,44 +490,65 @@ function Secondary({ children, onClick }: { children: ReactNode; onClick: () => 
   );
 }
 
+/** Shakes its content once while `nudging` is on, then reports back so the next refusal can shake again. */
+function Nudge({ nudging, onNudgeEnd, children }: { nudging: boolean; onNudgeEnd: () => void; children: ReactNode }) {
+  return (
+    <div
+      className={nudging ? "nudge" : undefined}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget) onNudgeEnd();
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Choices<K extends string | number>({
-  options, value, onPick, labelledBy,
+  options, value, onPick, labelledBy, nudging, onNudgeEnd,
 }: {
   options: { key: K; label: string; hint?: string }[];
   value: K | null;
   onPick: (k: K) => void;
   labelledBy: string;
+  nudging: boolean;
+  onNudgeEnd: () => void;
 }) {
   return (
-    <div role="radiogroup" aria-labelledby={labelledBy} className="mt-7 overflow-hidden rounded-[var(--radius-group)] bg-group">
-      {options.map((o) => {
-        const on = value === o.key;
-        return (
-          <button
-            key={String(o.key)}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            onClick={() => onPick(o.key)}
-            className="flex min-h-14 w-full items-center gap-3 border-b border-separator px-4 py-3 text-left transition-colors duration-100 last:border-b-0 active:bg-fill"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-body">{o.label}</span>
-              {o.hint && <span className="block text-footnote text-label-2">{o.hint}</span>}
-            </span>
-            <span
-              aria-hidden
-              className={`grid size-6 shrink-0 place-items-center rounded-full transition-colors duration-150 ${on ? "bg-tint text-white" : "border-[1.5px] border-label-3/60"}`}
-            >
-              {on && (
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m5 12 5 5 9-10" />
-                </svg>
-              )}
-            </span>
-          </button>
-        );
-      })}
+    <div style={at(3)} className="rise-in mt-7">
+      <Nudge nudging={nudging} onNudgeEnd={onNudgeEnd}>
+        <div role="radiogroup" aria-labelledby={labelledBy} className="overflow-hidden rounded-[var(--radius-group)] bg-group">
+          {options.map((o) => {
+            const on = value === o.key;
+            return (
+              <button
+                key={String(o.key)}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => onPick(o.key)}
+                className="pressable ob-option flex min-h-14 w-full items-center gap-3 border-b border-separator px-4 py-3 text-left last:border-b-0 active:bg-fill"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body">{o.label}</span>
+                  {o.hint && <span className="block text-footnote text-label-2">{o.hint}</span>}
+                </span>
+                {/* The ring stays put; the filled tick is always mounted so it can scale in and out. */}
+                <span
+                  aria-hidden
+                  className={`relative size-6 shrink-0 rounded-full border-[1.5px] transition-colors duration-150 ${on ? "border-transparent" : "border-label-3/60"}`}
+                >
+                  <span className={`ob-check absolute -inset-[1.5px] grid place-items-center rounded-full bg-tint text-white ${on ? "ob-check-on" : ""}`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m5 12 5 5 9-10" />
+                    </svg>
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Nudge>
     </div>
   );
 }

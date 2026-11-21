@@ -1,15 +1,36 @@
-/* Full-screen onboarding: screens slide with the spring ease, cross-fade with reduced motion. */
+/* Full-screen onboarding. Only transform, opacity and colour move, and nothing here waits on input. */
 .ob-layer { background: oklch(0.975 0.004 260); }
 
-.ob-forward { animation: ob-from-right var(--spring-response) var(--ease-spring) both; }
-.ob-back { animation: ob-from-left var(--spring-response) var(--ease-spring) both; }
-@keyframes ob-from-right { from { opacity: 0; transform: translateX(48px); } to { opacity: 1; transform: none; } }
-@keyframes ob-from-left { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
+/* Step change: forward arrives from the right, back from the left. Same distance, same curve, no overshoot. */
+.ob-forward { animation: ob-from-right 360ms var(--ease-calm) both; }
+.ob-back { animation: ob-from-left 360ms var(--ease-calm) both; }
+@keyframes ob-from-right { from { opacity: 0; transform: translateX(40px); } }
+@keyframes ob-from-left { from { opacity: 0; transform: translateX(-40px); } }
 
-.ob-progress > span { transition: width var(--spring-response) var(--ease-spring); }
+/* Progress: a full-width fill scaled from the left edge, so the bar glides between steps. */
+.ob-progress > span {
+  transform-origin: left center;
+  transition: transform 350ms var(--ease-calm);
+  animation: ob-progress-in 350ms var(--ease-calm);
+}
+@keyframes ob-progress-in { from { transform: scaleX(0); } }
+
+/* Answer rows: press feedback from .pressable, plus a tint that fades in behind the chosen row. */
+.pressable.ob-option { transition: transform 100ms ease-out, background-color 150ms ease-out; }
+.ob-option[aria-checked="true"] { background-color: color-mix(in oklch, var(--color-tint) 7%, transparent); }
+.ob-option[aria-checked="true"]:active { background-color: color-mix(in oklch, var(--color-tint) 13%, transparent); }
+
+/* The tick lands with a light bounce (the person chose it) and leaves quickly when another row is chosen. */
+.ob-check { opacity: 0; transform: scale(0.6); transition: transform 120ms ease-out, opacity 120ms ease-out; }
+.ob-check-on { opacity: 1; transform: none; transition: transform 180ms var(--ease-spring), opacity 180ms ease-out; }
+
+/* Continue: colour eases in when it becomes available; the press itself stays quick. */
+.pressable.ob-primary { transition: transform 100ms ease-out, background-color 200ms ease-out, color 200ms ease-out; }
+.pressable.ob-primary:active { transition-duration: 100ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .ob-forward, .ob-back { animation: ob-fade 200ms ease both; }
-  .ob-progress > span { transition: none; }
-  @keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
+  .ob-progress > span { transition: none; animation: none; }
+  .ob-check, .ob-check-on { transform: none; transition: opacity 120ms ease; }
+  @keyframes ob-fade { from { opacity: 0; } }
 }
