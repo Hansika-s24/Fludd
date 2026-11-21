@@ -8,16 +8,63 @@ import type { LngLat } from "@/lib/types";
  * are sensitive, so they are never sent to our server or stored in Supabase.
  */
 export type DriveHabit = "daily" | "weekly" | "rarely" | "no_car";
+export type Tenure = "own" | "rent";
+export type HomeType = "house" | "apartment" | "condo" | "townhouse" | "mobile_home";
+export type FloodCover = "nfip" | "private" | "none" | "unsure";
+
+export interface Housing {
+  tenure: Tenure | null;
+  type: HomeType | null;
+  /** which floor they live on (1 = ground); asked only for apartments and condos */
+  floor: number | null;
+}
+export interface Insurance {
+  flood: FloodCover | null;
+  /** renters (contents) insurance; asked only when renting */
+  contents: boolean | null;
+  /** optional free text, kept on this device so it is at hand on a flood day */
+  carrier: string;
+  policyNumber: string;
+  renewal: string;
+}
+export interface Camera {
+  optIn: boolean;
+  snapshotUrl: string;
+}
+
 export interface Profile {
   home: { label: string; position: LngLat } | null;
   car: { label: string; position: LngLat } | null;
   drives: DriveHabit | null;
+  housing: Housing;
+  insurance: Insurance;
+  camera: Camera;
   /** true once onboarding was finished or skipped */
   done: boolean;
 }
 
 const KEY = "fludd-profile-v1";
-const EMPTY: Profile = { home: null, car: null, drives: null, done: false };
+export const EMPTY_PROFILE: Profile = {
+  home: null,
+  car: null,
+  drives: null,
+  housing: { tenure: null, type: null, floor: null },
+  insurance: { flood: null, contents: null, carrier: "", policyNumber: "", renewal: "" },
+  camera: { optIn: false, snapshotUrl: "" },
+  done: false,
+};
+const EMPTY = EMPTY_PROFILE;
+
+/** Fill in defaults, including nested groups, so profiles saved before a field existed still read whole. */
+export function withDefaults(saved: Partial<Profile>): Profile {
+  return {
+    ...EMPTY,
+    ...saved,
+    housing: { ...EMPTY.housing, ...saved.housing },
+    insurance: { ...EMPTY.insurance, ...saved.insurance },
+    camera: { ...EMPTY.camera, ...saved.camera },
+  };
+}
 const listeners = new Set<() => void>();
 let cache: Profile | null = null;
 
@@ -25,7 +72,7 @@ function read(): Profile {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    cache = raw ? { ...EMPTY, ...(JSON.parse(raw) as Partial<Profile>) } : EMPTY;
+    cache = raw ? withDefaults(JSON.parse(raw) as Partial<Profile>) : EMPTY;
   } catch {
     cache = EMPTY; // storage blocked (private mode): onboarding simply runs again next visit
   }
