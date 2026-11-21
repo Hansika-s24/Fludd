@@ -30,7 +30,9 @@ describe.skipIf(!has)("grade on real data", () => {
         expect(["A", "B", "C", "D", "F"]).toContain(grade.letter);
         expect(Object.keys(grade.depthByStorm)).toHaveLength(5);
         expect(grade.officialMapSays.length).toBeGreaterThan(0);
-        console.log(position, grade.letter, grade.depthByStorm, grade.officialMapSays, "|", grade.weFound, grade.reasons.map((r) => r.text));
+        expect(["A", "B", "C", "D", "F"].indexOf(grade.range[0])).toBeLessThanOrEqual(["A", "B", "C", "D", "F"].indexOf(grade.letter));
+        expect(["A", "B", "C", "D", "F"].indexOf(grade.range[1])).toBeGreaterThanOrEqual(["A", "B", "C", "D", "F"].indexOf(grade.letter));
+        console.log(position, grade.letter, "range", grade.range, "lowConfidence", grade.lowConfidence, grade.depthByStorm, grade.officialMapSays, "|", grade.weFound, grade.reasons.map((r) => r.text));
       }
     }
   }, 60_000);

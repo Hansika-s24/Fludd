@@ -122,3 +122,49 @@ export function validateLayer(value: unknown, file: string): GeoJSON.FeatureColl
   // The shape matches a GeoJSON FeatureCollection; geometry coordinates are left to the map library.
   return value as GeoJSON.FeatureCollection;
 }
+
+// ---------- parcels.json (real-estate extra) ----------
+
+/** One residential home from parcels.json. peakDepthM keys: "<scenario>-<on|off>" and "<storm>-<low|high>-on". */
+export interface Parcel {
+  folio: string;
+  address: string;
+  position: [number, number];
+  assessedValue: number;
+  beds: number;
+  baths: number;
+  livingAreaSqft: number;
+  propertyType: string;
+  peakDepthM: Record<string, number>;
+  femaHighRisk: boolean;
+  femaShadedX: boolean;
+  miltonPointWithin100m: boolean;
+}
+
+const parcelSchema = z.object({
+  folio: z.string(),
+  address: z.string(),
+  position: lngLat,
+  assessedValue: num,
+  beds: num,
+  baths: num,
+  livingAreaSqft: num,
+  propertyType: z.string(),
+  peakDepthM: z.record(z.string(), num),
+  femaHighRisk: z.boolean(),
+  femaShadedX: z.boolean(),
+  miltonPointWithin100m: z.boolean(),
+});
+
+/** Keys every parcel's peakDepthM must have for the grade (pump on and off for the four graded storms). */
+export const PARCEL_DEPTH_KEYS = ["10yr", "25yr", "100yr", "500yr"].flatMap((s) => [`${s}-on`, `${s}-off`]);
+
+export function validateParcels(value: unknown, file: string): Parcel[] {
+  const parcels: Parcel[] = check(z.array(parcelSchema), value, file);
+  parcels.forEach((p, i) => {
+    for (const k of PARCEL_DEPTH_KEYS) {
+      if (!(k in p.peakDepthM)) throw new DataContractError(file, `${i}.peakDepthM.${k}`, "is missing");
+    }
+  });
+  return parcels;
+}

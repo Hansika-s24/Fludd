@@ -1,12 +1,14 @@
 // Flood report card grade (Hansika). Rules: prep/PLAN.md section 6 and prep/04-depth-model-and-routing.md section 5.
 // The letter says how often water is expected to reach the building; notches and caps can only lower it.
-import { cellIndex, loadGold, loadLayer, loadLevels, peakBuildingDepth } from "@/lib/data";
-import type { DepthBand, Grade, GradeReason, GradeResult, Letter, LngLat, Scenario } from "@/lib/types";
+import {
+  cellIndex, loadGold, loadLayer, loadLevels, loadLevelsVariant, peakBuildingDepth, type RainVariant,
+} from "@/lib/data";
+import type { DepthBand, Grade, GradeReason, GradeResult, Letter, Levels, LngLat, Scenario } from "@/lib/types";
 
 const LETTERS: Letter[] = ["A", "B", "C", "D", "F"];
 /** The four storms that decide the base letter, smallest first. */
-const STORMS = ["10yr", "25yr", "100yr", "500yr"] as const;
-type Storm = (typeof STORMS)[number];
+export const STORMS = ["10yr", "25yr", "100yr", "500yr"] as const;
+export type Storm = (typeof STORMS)[number];
 const STORM_WORDS: Record<Scenario, string> = {
   "10yr": "10-year", "25yr": "25-year", "100yr": "100-year", "500yr": "500-year", milton: "Milton",
 };
@@ -37,6 +39,11 @@ export interface GradeFacts {
    * null = not computed yet, and no notch is applied.
    */
   cutOffFromEveryFireStation: boolean | null;
+  /**
+   * Peak depth at the building (pump on) with rainfall at the low and high ends of NOAA Atlas 14's 90%
+   * confidence interval. Absent or null (variant files missing): range is [letter, letter], lowConfidence false.
+   */
+  rainVariants?: { low: Record<Storm, number>; high: Record<Storm, number> } | null;
 }
 
 // ---------- FEMA zone ----------
@@ -130,6 +137,9 @@ const BAND_WORDS: Record<DepthBand, string> = {
 
 const down = (l: Letter, steps = 1): Letter => LETTERS[Math.min(LETTERS.length - 1, LETTERS.indexOf(l) + steps)];
 const worse = (a: Letter, b: Letter): Letter => (LETTERS.indexOf(a) >= LETTERS.indexOf(b) ? a : b);
+const better = (a: Letter, b: Letter): Letter => (LETTERS.indexOf(a) <= LETTERS.indexOf(b) ? a : b);
+/** Negative when a is the better letter; sorts best first. */
+export const compareLetters = (a: Letter, b: Letter): number => LETTERS.indexOf(a) - LETTERS.indexOf(b);
 
 const ACTIONS: Partial<Record<Letter, string>> = {
   C: "Keep sandbags and a go-bag ready. When a big storm is forecast, move your car to higher ground before the rain peaks.",
@@ -137,58 +147,135 @@ const ACTIONS: Partial<Record<Letter, string>> = {
   F: "Water reaches this building in common storms. Move your car and valuables up before heavy rain, leave early when a storm is forecast, and never drive or walk into floodwater.",
 };
 
-export function gradeFromFacts(f: GradeFacts): Grade {
-  const wet = (m: number) => m >= WET_M;
-  const reasons: GradeReason[] = [];
+/** Evidence flags for the caps and the routing notch. */
+export interface LetterEvidence {
+  femaHighRisk: boolean;
+  femaShadedX: boolean;
+  /** FEMA zone code for the cap text, e.g. "AE"; "" or absent prints "SFHA" */
+  femaZone?: string;
+  miltonDamageWithin100m: boolean;
+  /** null = not computed, no notch (skipped when grading many homes) */
+  cutOffFromEveryFireStation: boolean | null;
+}
 
-  // Base letter: the smallest storm that wets the building.
-  const firstWet = STORMS.find((s) => wet(f.peakOn[s]));
-  let letter: Letter;
+/** Everything the letter needs: peak building depth per graded storm, plus evidence. */
+export interface LetterInput extends LetterEvidence {
+  /** Peak depth at the building, pump on, metres */
+  peakOn: Record<Storm, number>;
+  /** Same with the pump off; null skips the pump notch */
+  peakOff: Record<Storm, number> | null;
+}
+
+export interface LetterResult {
+  letter: Letter;
+  /** Base letter before notches and caps */
+  base: Letter;
+  /** Smallest storm that wets the building (pump on), or null if none */
+  firstWet: Storm | null;
+  /** Texts of the notches that applied (at most two) */
+  notches: string[];
+  /** base, then notches, then the caps that lowered the letter */
+  reasons: GradeReason[];
+}
+
+const wet = (m: number) => m >= WET_M;
+
+/** Base letter: the smallest storm (pump on) that wets the building. */
+export function baseLetter(peakOn: Record<Storm, number>): { letter: Letter; firstWet: Storm | null; reason: GradeReason } {
+  const firstWet = STORMS.find((s) => wet(peakOn[s])) ?? null;
   if (firstWet === "10yr") {
-    letter = "F";
-    reasons.push({ kind: "base", text: "F: water of 6 in or more reaches the building in a 10-year storm" });
-  } else if (firstWet === undefined) {
-    letter = "A";
-    reasons.push({ kind: "base", text: "A: the building stays dry (under 6 in) even in a 500-year storm" });
-  } else {
-    const i = STORMS.indexOf(firstWet);
-    letter = (["F", "D", "C", "B"] as const)[i];
-    reasons.push({
+    return { letter: "F", firstWet, reason: { kind: "base", text: "F: water of 6 in or more reaches the building in a 10-year storm" } };
+  }
+  if (firstWet === null) {
+    return { letter: "A", firstWet, reason: { kind: "base", text: "A: the building stays dry (under 6 in) even in a 500-year storm" } };
+  }
+  const i = STORMS.indexOf(firstWet);
+  const letter = (["F", "D", "C", "B"] as const)[i];
+  return {
+    letter, firstWet,
+    reason: {
       kind: "base",
       text: `${letter}: dry at the building in a ${STORM_WORDS[STORMS[i - 1]]} storm, 6 in or more in a ${STORM_WORDS[firstWet]} storm`,
-    });
-  }
+    },
+  };
+}
 
-  // Notches: one letter each, at most two.
+/** Notch texts that apply, at most two, in order: pump, floor, fire stations. */
+function notchesFor(input: LetterInput): string[] {
   const notches: string[] = [];
-  const pumpStorm = STORMS.find((s) => wet(f.peakOff[s]) && !wet(f.peakOn[s]));
+  const off = input.peakOff;
+  const pumpStorm = off ? STORMS.find((s) => wet(off[s]) && !wet(input.peakOn[s])) : undefined;
   if (pumpStorm) {
     notches.push(`One letter down: in a ${STORM_WORDS[pumpStorm]} storm the building stays dry only while the pump runs`);
   }
-  if (f.peakOn["100yr"] > FLOOR_M) {
+  if (input.peakOn["100yr"] > FLOOR_M) {
     notches.push("One letter down: in a 100-year storm water at the building is deep enough to come in over the floor");
   }
   // HOOK: isolation notch. lib/routing fills cutOffFromEveryFireStation once rescueReach exists.
-  if (f.cutOffFromEveryFireStation === true) {
+  if (input.cutOffFromEveryFireStation === true) {
     notches.push("One letter down: flooded roads cut the address off from every fire station");
   }
-  for (const text of notches.slice(0, MAX_NOTCHES)) {
+  return notches.slice(0, MAX_NOTCHES);
+}
+
+/** Lowers a base letter by each notch, then applies the evidence caps (each listed only when it lowers the letter). */
+function applyNotchesAndCaps(base: Letter, notches: string[], ev: LetterEvidence): { letter: Letter; reasons: GradeReason[] } {
+  let letter = base;
+  const reasons: GradeReason[] = [];
+  for (const text of notches) {
     letter = down(letter);
     reasons.push({ kind: "notch", text });
   }
-
-  // Caps from evidence: no better than the cap letter. Listed only when they lower the grade.
-  const fema = f.femaProps ? femaZoneOf(f.femaProps) : null;
   const caps: [Letter, string][] = [];
-  if (f.miltonDamageWithin100m) caps.push(["C", "No better than C: Hurricane Milton flood damage was recorded within 100 m"]);
-  if (fema?.risk === "high") caps.push(["C", `No better than C: FEMA maps this spot as a high-risk flood zone (${fema.zone || "SFHA"})`]);
-  if (fema?.risk === "shaded_x") caps.push(["B", "No better than B: FEMA maps this spot as shaded Zone X (0.2% annual chance)"]);
+  if (ev.miltonDamageWithin100m) caps.push(["C", "No better than C: Hurricane Milton flood damage was recorded within 100 m"]);
+  if (ev.femaHighRisk) caps.push(["C", `No better than C: FEMA maps this spot as a high-risk flood zone (${ev.femaZone || "SFHA"})`]);
+  if (ev.femaShadedX) caps.push(["B", "No better than B: FEMA maps this spot as shaded Zone X (0.2% annual chance)"]);
   for (const [cap, text] of caps) {
     if (worse(letter, cap) !== letter) {
       letter = cap;
       reasons.push({ kind: "cap", text });
     }
   }
+  return { letter, reasons };
+}
+
+/** The letter rule (base, notches, caps) as a pure function of per-storm building depths and evidence flags. */
+export function letterFromDepths(input: LetterInput): LetterResult {
+  const base = baseLetter(input.peakOn);
+  const notches = notchesFor(input);
+  const after = applyNotchesAndCaps(base.letter, notches, input);
+  return { letter: after.letter, base: base.letter, firstWet: base.firstWet, notches, reasons: [base.reason, ...after.reasons] };
+}
+
+/**
+ * Grade range from the rainfall variants: the base letter from the low-rain depths (best) and the high-rain
+ * depths (worst), each with the central grade's notches and caps applied. The range always contains the
+ * central letter. lowConfidence: the range spans three letters or more. No variants: [letter, letter], false.
+ */
+export function rangeFromVariants(
+  central: LetterResult,
+  evidence: LetterEvidence,
+  variants: { low: Record<Storm, number>; high: Record<Storm, number> } | null | undefined,
+): { range: [best: Letter, worst: Letter]; lowConfidence: boolean } {
+  if (!variants) return { range: [central.letter, central.letter], lowConfidence: false };
+  const at = (on: Record<Storm, number>) => applyNotchesAndCaps(baseLetter(on).letter, central.notches, evidence).letter;
+  const best = better(at(variants.low), central.letter);
+  const worst = worse(at(variants.high), central.letter);
+  return { range: [best, worst], lowConfidence: compareLetters(worst, best) >= 2 };
+}
+
+export function gradeFromFacts(f: GradeFacts): Grade {
+  const fema = f.femaProps ? femaZoneOf(f.femaProps) : null;
+  const evidence: LetterEvidence = {
+    femaHighRisk: fema?.risk === "high",
+    femaShadedX: fema?.risk === "shaded_x",
+    femaZone: fema?.zone ?? "",
+    miltonDamageWithin100m: f.miltonDamageWithin100m,
+    cutOffFromEveryFireStation: f.cutOffFromEveryFireStation,
+  };
+  const result = letterFromDepths({ ...evidence, peakOn: f.peakOn, peakOff: f.peakOff });
+  const { letter, firstWet } = result;
+  const { range, lowConfidence } = rangeFromVariants(result, evidence, f.rainVariants);
 
   const depthByStorm = {
     "10yr": depthBand(f.peakOn["10yr"]), "25yr": depthBand(f.peakOn["25yr"]), "100yr": depthBand(f.peakOn["100yr"]),
@@ -203,10 +290,9 @@ export function gradeFromFacts(f: GradeFacts): Grade {
   return {
     kind: "ok",
     letter,
-    // Low and high rainfall variants do not exist yet (contracts decision 5).
-    range: [letter, letter],
-    lowConfidence: false,
-    reasons,
+    range,
+    lowConfidence,
+    reasons: result.reasons,
     depthByStorm,
     officialMapSays: fema ? fema.label : "Not on the FEMA flood map",
     weFound,
@@ -224,15 +310,26 @@ export async function gradeFor(position: LngLat): Promise<GradeResult> {
     const d = peakBuildingDepth(gold, await loadLevels(s, pump), position);
     return d.kind === "ok" ? d.depthM : 0;
   };
-  const [on10, on25, on100, on500, onMilton, off10, off25, off100, off500, fema, milton] = await Promise.all([
+  /** Pump-on peaks for one rain variant, or null when any of its files is missing. */
+  const variantPeaks = async (v: RainVariant): Promise<Record<Storm, number> | null> => {
+    const files = await Promise.all(STORMS.map((s) => loadLevelsVariant(s, v)));
+    if (files.some((l) => l === null)) return null;
+    const [d10, d25, d100, d500] = files.map((l) => {
+      const d = peakBuildingDepth(gold, l as Levels, position);
+      return d.kind === "ok" ? d.depthM : 0;
+    });
+    return { "10yr": d10, "25yr": d25, "100yr": d100, "500yr": d500 };
+  };
+  const [on10, on25, on100, on500, onMilton, off10, off25, off100, off500, fema, milton, low, high] = await Promise.all([
     peak("10yr", "on"), peak("25yr", "on"), peak("100yr", "on"), peak("500yr", "on"), peak("milton", "on"),
     peak("10yr", "off"), peak("25yr", "off"), peak("100yr", "off"), peak("500yr", "off"),
-    loadLayer("fema-zones"), loadLayer("milton-damage"),
+    loadLayer("fema-zones"), loadLayer("milton-damage"), variantPeaks("low"), variantPeaks("high"),
   ]);
   return gradeFromFacts({
     peakOn: { "10yr": on10, "25yr": on25, "100yr": on100, "500yr": on500, milton: onMilton },
     peakOff: { "10yr": off10, "25yr": off25, "100yr": off100, "500yr": off500 },
     ...evidenceAt(position, fema, milton),
     cutOffFromEveryFireStation: null, // HOOK: set from lib/routing rescueReach when routing exists
+    rainVariants: low && high ? { low, high } : null,
   });
 }

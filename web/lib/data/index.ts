@@ -7,10 +7,11 @@ import type {
 } from "@/lib/types";
 import { decodePng } from "./png";
 import {
-  DataContractError, validateBowls, validateLayer, validateLevels, validateManifest, validateValidation,
+  DataContractError, validateBowls, validateLayer, validateLevels, validateManifest, validateParcels, validateValidation,
+  type Parcel,
 } from "./validate";
 
-export { DataContractError } from "./validate";
+export { DataContractError, type Parcel } from "./validate";
 
 // ---------- fetching ----------
 
@@ -95,6 +96,38 @@ export function loadLevels(scenario: Scenario, pump: PumpState): Promise<Levels>
       scenario, pump, hours: gold.manifest.hours, bowlIds: gold.bowls.map((x) => x.id),
     });
   });
+}
+
+/** The four storms that have low and high rainfall variants (grade range only). */
+export type VariantStorm = "10yr" | "25yr" | "100yr" | "500yr";
+export type RainVariant = "low" | "high";
+
+/**
+ * Load levels/<storm>-<low|high>-pump-on.json: the storm re-run with rainfall at the low or high end of NOAA
+ * Atlas 14's 90% confidence interval. Pump on only. Resolves null when the file does not exist (HTTP 404),
+ * e.g. on the toy fixture; any other failure rejects. The `scenario` field inside is the plain storm name.
+ */
+export function loadLevelsVariant(scenario: VariantStorm, variant: RainVariant): Promise<Levels | null> {
+  const file = `levels/${scenario}-${variant}-pump-on.json`;
+  return cached(file, async () => {
+    const [gold, res] = await Promise.all([loadGold(), fetch(`${DATA_BASE}/${file}`)]);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`${file} failed to load from ${DATA_BASE} (HTTP ${res.status})`);
+    let raw: unknown;
+    try {
+      raw = (await res.json()) as unknown;
+    } catch {
+      throw new Error(`${file} is not valid JSON`);
+    }
+    return validateLevels(raw, file, {
+      scenario, pump: "on", hours: gold.manifest.hours, bowlIds: gold.bowls.map((x) => x.id),
+    });
+  });
+}
+
+/** Load parcels.json (residential homes with per-storm building depths). Rejects when the file is missing. */
+export function loadParcels(): Promise<Parcel[]> {
+  return cached("parcels.json", async () => validateParcels(await getJson("parcels.json"), "parcels.json"));
 }
 
 export function loadLayer(name: LayerName): Promise<GeoJSON.FeatureCollection> {
