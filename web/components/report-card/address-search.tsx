@@ -55,7 +55,7 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
         if (s) void pick(s);
       }}
     >
-      <label htmlFor={`${listId}-input`} className="sr-only">Address near USF</label>
+      <label htmlFor={`${listId}-input`} className="sr-only">Search for a place or address</label>
       <input
         id={`${listId}-input`}
         type="search"
@@ -66,7 +66,7 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
         autoComplete="off"
         enterKeyHint="search"
-        placeholder="Search an address near USF"
+        placeholder="Search for a place or address"
         value={text}
         onChange={(e) => {
           setText(e.target.value);

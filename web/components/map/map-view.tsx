@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource } from "maplibre-gl";
+import { GeolocateControl, Map as MapLibreMap, Marker, setWorkerUrl, type CanvasSource, type ExpressionSpecification } from "maplibre-gl";
 import { loadGold, loadLayer, loadLevels } from "@/lib/data";
 import type { GoldData, Hour, LayerName, LngLat, PumpState, Scenario } from "@/lib/types";
 import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
@@ -109,9 +109,15 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
     ]).then(() => {
       const g = gold.current;
       if (disposed || !g || m.getSource("flood-water")) return;
-      // The map is the content and water is the showpiece: drop points of interest and transit.
+      // Keep place names (apartment communities, shops, campus buildings) so people know where they are; drop transit.
       for (const layer of m.getStyle().layers) {
-        if (/poi|transit|aerialway/.test(layer.id)) m.setLayoutProperty(layer.id, "visibility", "none");
+        if (/transit|aerialway/.test(layer.id)) m.setLayoutProperty(layer.id, "visibility", "none");
+        // ponytail: parking and bus-stop icons crowd out the names people navigate by; hide those classes only.
+        else if (/^poi_r/.test(layer.id)) {
+          const noise: ExpressionSpecification = ["match", ["get", "class"], ["parking", "bus", "bicycle_parking", "railway", "entrance"], false, true];
+          const base = m.getFilter(layer.id) as ExpressionSpecification | undefined;
+          m.setFilter(layer.id, base ? ["all", base, noise] : noise);
+        }
       }
       c.width = g.manifest.grid.width;
       c.height = g.manifest.grid.height;
@@ -279,7 +285,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
   // maplibre-gl.css sets the map element to position: relative, so the wrapper does the positioning.
   return (
     <div className="absolute inset-0">
-      <div ref={container} className="h-full w-full" aria-label="Map of the area around USF" role="region" />
+      <div ref={container} className="h-full w-full" aria-label="Flood map" role="region" />
     </div>
   );
 }

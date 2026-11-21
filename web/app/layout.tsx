@@ -5,7 +5,7 @@ import { BootIntro } from "@/components/boot/boot-intro";
 
 export const metadata: Metadata = {
   title: "Fludd",
-  description: "A flood report card for any address near USF.",
+  description: "A flood report card for any address: a grade, where the water goes hour by hour, and when to move your car.",
   appleWebApp: { capable: true, title: "Fludd", statusBarStyle: "default" },
 };
 
