@@ -254,25 +254,54 @@ def find_bowls(
     depth = spill - zmin
     significant = (depth >= min_depth_m) & (size >= min_cells) & np.isfinite(spill)
 
-    # Top-down: a significant node under a final internal node (or at the top) is final.
-    # A final node is internal only if both children are significant; otherwise it
-    # absorbs everything below it. rep[i] = the final node that stands for i, or -1.
+    # Top-down (parents have higher ids than children). rep[i] = the final bowl whose
+    # region contains node i, or -1 (drains away). A final bowl F keeps the spill height
+    # and capacity of its top node, but its shape below is decided by `split_at[F]`:
+    # - where both children are significant, F splits into two final child bowls;
+    # - where only one is, F simply continues down into that child (the tiny one is absorbed);
+    # - where neither is, F stops: everything below is part of F.
     rep = np.full(n, -1, dtype=np.int64)
-    internal = np.zeros(n, dtype=bool)
+    split_at = np.full(n, -1, dtype=np.int64)  # per final node: the original node where it splits
+    walk = np.full(n, -1, dtype=np.int64)  # per original node: is it on a final bowl's path down?
     for i in range(n - 1, -1, -1):
         p = parent[i]
         if p < 0:
-            rep[i] = i if significant[i] else -1
-        elif internal[p] and significant[i]:
-            rep[i] = i
+            if significant[i]:
+                rep[i] = i
+                walk[i] = i
+        elif rep[p] < 0:
+            continue
+        elif walk[p] >= 0:
+            f = walk[p]
+            both = bool(significant[c0[p]] and significant[c1[p]])
+            if both:
+                split_at[f] = p
+                rep[i] = i
+                walk[i] = i
+            elif significant[i]:
+                rep[i] = f
+                walk[i] = f
+            else:
+                rep[i] = f
         else:
             rep[i] = rep[p]
-        if rep[i] == i and c0[i] >= 0 and significant[c0[i]] and significant[c1[i]]:
-            internal[i] = True
+    # a final bowl that never reaches a split is a leaf
+    for f in np.flatnonzero(rep == np.arange(n)):
+        s = split_at[f]
+        if s >= 0 and not (rep[c0[s]] == c0[s] and rep[c1[s]] == c1[s]):
+            split_at[f] = -1
 
     final = np.flatnonzero(rep == np.arange(n))
     new_id = np.full(n, -1, dtype=np.int64)
     new_id[final] = np.arange(final.size)
+    internal = np.zeros(n, dtype=bool)
+    internal[final[split_at[final] >= 0]] = True
+    final_parent = np.full(n, -1, dtype=np.int64)
+    for f in final:
+        s = split_at[f]
+        if s >= 0:
+            final_parent[c0[s]] = f
+            final_parent[c1[s]] = f
 
     def remap(old: NDArray[np.int64]) -> NDArray[np.int32]:
         out = np.full(old.shape, -1, dtype=np.int32)
@@ -281,13 +310,27 @@ def find_bowls(
         out[ok] = np.where(r >= 0, new_id[np.maximum(r, 0)], -1)
         return out
 
-    f_parent = np.array([new_id[parent[i]] if parent[i] >= 0 and internal[parent[i]] else -1 for i in final], dtype=np.int32)
-    f_c0 = np.array([new_id[c0[i]] if internal[i] else -1 for i in final], dtype=np.int32)
-    f_c1 = np.array([new_id[c1[i]] if internal[i] else -1 for i in final], dtype=np.int32)
+    f_parent = np.array([new_id[final_parent[i]] if final_parent[i] >= 0 else -1 for i in final], dtype=np.int32)
+    f_c0 = np.array([new_id[c0[split_at[i]]] if internal[i] else -1 for i in final], dtype=np.int32)
+    f_c1 = np.array([new_id[c1[split_at[i]]] if internal[i] else -1 for i in final], dtype=np.int32)
     f_over = np.array(
         [OUTLET if (over[i] < 0 or f_parent[k] < 0) else int(remap(np.array([over[i]]))[0]) for k, i in enumerate(final)],
         dtype=np.int32,
     )
+    # Water that arrives at a bowl which has split runs down to its lowest leaf.
+    f_min = zmin[final]
+    entry = np.arange(final.size, dtype=np.int32)
+    for k in range(final.size):
+        node = k
+        while f_c0[node] >= 0:
+            a, b = int(f_c0[node]), int(f_c1[node])
+            node = a if f_min[a] <= f_min[b] else b
+        entry[k] = node
+    catchment = remap(catch)
+    if final.size:
+        f_over = np.where(f_over >= 0, entry[np.maximum(f_over, 0)], f_over).astype(np.int32)
+        catchment = np.where(catchment >= 0, entry[np.maximum(catchment, 0)], catchment).astype(np.int32)
+
     area = float(cell_size_m) ** 2
     return BowlTree(
         parent=f_parent,
@@ -299,6 +342,6 @@ def find_bowls(
         min_m=zmin[final].astype(np.float64),
         min_cell=mincell[final].astype(np.int64),
         cell_node=remap(cell_node),
-        cell_catchment=remap(catch),
+        cell_catchment=catchment,
         cell_area_m2=area,
     )
