@@ -2,6 +2,7 @@
 // GET /api/food-campaigns -> { campaigns, sources, fetchedAt }. Cached in memory for 6 hours per server instance,
 // so one search serves everyone and the key is never hit per visitor.
 import { GoogleGenAI } from "@google/genai";
+import { connection } from "next/server";
 import { apiError } from "@/lib/api";
 import { serverConfig } from "@/lib/config";
 import { findFoodCampaigns, type Campaign, type SearchAnswer } from "@/lib/food/campaigns";
@@ -11,6 +12,8 @@ const CACHE_MS = 6 * 3_600_000;
 let cache: { at: number; body: { campaigns: Campaign[]; sources: SearchAnswer["sources"]; fetchedAt: string } } | null = null;
 
 export async function GET() {
+  // Ask at request time, never at build time (a build has no reason to spend search quota).
+  await connection();
   if (cache && Date.now() - cache.at < CACHE_MS) return Response.json(cache.body);
   const cfg = serverConfig();
   if (!cfg.geminiApiKey) return apiError(503, "not_configured", "The search agent is not set up on this server");
