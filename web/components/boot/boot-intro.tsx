@@ -103,6 +103,13 @@ export function BootIntro() {
           <video
             key={variant}
             data-boot-video
+            // React sets `muted` as a property after insertion, which browsers treat as unmuted and block
+            // autoplay. Mute on the element and start it explicitly; if play() is refused, the give-up timer skips.
+            ref={(el) => {
+              if (!el) return;
+              el.muted = true;
+              el.play().catch(() => {});
+            }}
             className="boot-video"
             autoPlay
             muted
