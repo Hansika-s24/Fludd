@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { saveProfile } from "@/components/onboarding/profile";
 import { rangeWords } from "@/components/report/depth-words";
 import { recordContribution } from "@/components/rewards/contributions";
@@ -140,26 +140,33 @@ export function FloodCamera({ home }: { home: LngLat | null }) {
         Prop an old phone in a window facing the street and open this screen on it. Fludd takes one photo when you ask, or once an hour, and reads how deep the water is.
       </p>
 
-      <div className={`relative mt-3 overflow-hidden rounded-[var(--radius-control)] bg-fill ${on ? "" : "hidden"}`}>
+      <div className={`relative mt-3 overflow-hidden rounded-[var(--radius-control)] bg-fill ${on ? "swap-in" : "hidden"}`}>
         <video ref={video} muted playsInline className="block aspect-video w-full object-cover" aria-label="Live view from this phone's camera" />
         {phase.kind === "checking" && (
-          <p className="absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-footnote text-white">Reading the water…</p>
+          <p className="rise-in absolute inset-x-0 bottom-0 bg-black/55 px-3 py-2 text-footnote text-white">
+            Reading the water…
+            <span className="typing ml-2 align-middle" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </p>
         )}
       </div>
 
       <div aria-live="polite">
         {phase.kind === "result" && (
-          <div className="mt-3 rounded-[var(--radius-control)] bg-fill px-3 py-3">
+          <div className="pop-in mt-3 rounded-[var(--radius-control)] bg-fill px-3 py-3">
             <p className="text-headline font-semibold">
               {phase.reading ? (phase.reading.waterPresent ? `About ${rangeWords(phase.reading.depthRangeM)} of water` : "No standing water seen") : "Photo sent"}
             </p>
-            <p className="mt-0.5 text-footnote text-label-2">
+            <p className="rise-in mt-0.5 text-footnote text-label-2" style={{ "--i": 2 } as CSSProperties}>
               Checked at {clock(phase.at)}. A reviewer looks at it before it goes on the map.
             </p>
           </div>
         )}
         {phase.kind === "error" && (
-          <p role="alert" className="mt-3 text-subhead text-late">
+          <p role="alert" className="nudge mt-3 text-subhead text-late">
             {phase.message}
           </p>
         )}
@@ -175,7 +182,7 @@ export function FloodCamera({ home }: { home: LngLat | null }) {
           {phase.kind === "starting" ? "Starting the camera…" : "Start the camera"}
         </button>
       ) : (
-        <>
+        <div className="swap-in">
           <button
             type="button"
             onClick={() => void check()}
@@ -193,15 +200,15 @@ export function FloodCamera({ home }: { home: LngLat | null }) {
             </span>
             <input type="checkbox" role="switch" className="switch" checked={hourly} aria-checked={hourly} onChange={(e) => void toggleHourly(e.target.checked)} />
           </label>
-          <button type="button" onClick={stop} className="min-h-11 text-subhead font-medium text-late">
+          <button type="button" onClick={stop} className="pressable min-h-11 text-subhead font-medium text-late">
             Turn the camera off
           </button>
-        </>
+        </div>
       )}
 
       <details className="mt-2">
-        <summary className="min-h-11 cursor-pointer py-2.5 text-subhead font-medium text-tint">Have a doorbell or security camera?</summary>
-        <p className="pb-1 text-subhead text-label-2">
+        <summary className="pressable min-h-11 cursor-pointer py-2.5 text-subhead font-medium text-tint">Have a doorbell or security camera?</summary>
+        <p className="rise-in pb-1 text-subhead text-label-2">
           Ring and Google Nest don&apos;t let other apps read their cameras, so Fludd can&apos;t connect to them. Cameras with a snapshot link only answer on your home
           Wi-Fi over an unsecured connection, which browsers block on a secure site like this one. A spare phone is the way that works today.
         </p>
