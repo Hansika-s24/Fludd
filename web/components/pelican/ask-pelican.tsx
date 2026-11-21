@@ -7,6 +7,7 @@ import { useId, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 import { aboutTime } from "@/components/stages/shared";
 import { bestRoute } from "@/lib/routing";
+import { OpenInMaps } from "./open-in-maps";
 import type { LngLat, PumpState, Scenario } from "@/lib/types";
 
 export const SAFETY_LINE = "Never drive into floodwater. Turn around if you see water on the road.";
@@ -238,6 +239,7 @@ function RouteReply({ reply, onRoute }: { reply: Extract<Reply, { kind: "routes"
         </button>
         , about {mins(best.minutes)} min {mode}, on roads the model keeps open at {when}.
       </p>
+      <OpenInMaps line={best.line} vehicle={mode === "on foot" ? "foot" : "car"} />
       {others.length > 0 && (
         <div className="rise-in mt-2 overflow-hidden rounded-control bg-group" style={at(1)}>
           <p className="px-3 pt-2 text-footnote text-label-2">Other open routes</p>
