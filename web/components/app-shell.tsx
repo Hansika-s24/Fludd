@@ -169,7 +169,8 @@ export function AppShell() {
     } else if (scenario === "milton" && s === "before") setScenario("100yr");
   };
   const open = (t: Tab) => {
-    if (t !== "home") window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    // Every shortcut shows its content: raise the sheet off peek.
+    window.dispatchEvent(new Event(SHEET_HALF_EVENT));
     // Live is the During stage of Home.
     if (t === "live") {
       setTab("home");
