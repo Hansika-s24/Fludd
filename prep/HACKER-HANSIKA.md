@@ -368,7 +368,7 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 **Lane F: backend half**
 - [x] F1 Supabase table, private bucket, access rules; refusals shown. Migrations in `supabase/migrations/`. Live check: anon refused on reports, moderation_log, photo list and photo download. Grants migration (`20261121131500`) still to run
 - [x] F1a Admin sign-in and typed queries; demo admin user created (Hansika's account is in `public.admins`). 27 tests. Commit 734d3ac
-- [ ] F0 Health route
+- [x] F0 Health route. Commit 2651065. Five health tests passed. Full web suite: 337 passed, 5 skipped after rebase.
 - [x] F2 Report intake route: metadata stripped, public position snapped, model depth recorded (Milton pump-off peak). Live end to end at 13:25: upload 201 in 1.3 s with a real Gemini reading; stored photo has no EXIF; public position snapped ~38 m to a road; moderate without token 401; approved report appears in the public feed without the exact position, rejected one disappears
 - [ ] F8 Plain form upload works on the live site; Harshith told
 - [x] F3 Gemini provider and photo reading with fixed schema; rate-limit path (manual review when unreadable)
@@ -502,6 +502,9 @@ Claude appends here, newest last, whenever something on this side affects Harshi
   4. Gemini: guidance answers `{ text }`, remedies `{ sentences }` (as your stubs had). Request bodies are in `web/lib/gemini/schemas.ts`: remedies takes `letter`, `depthByStorm`, `femaZone`, `miltonPointNearby`, `pumpDependent`, `depthAtBuilding100yrM`. Header `x-fludd-text-source` says gemini / fallback / off.
   5. Layer `pump-stations` has `approximate: true` on Duck Pond East (county record says it needs GPS).
 - 12:20 `npm run typecheck` shows 2 errors in your files: `RouteContext` in `app/api/reports/[id]/moderate/route.ts` and `LayoutProps` in `app/layout.tsx` (Next's generated types, probably need `next build` or `next typegen`). All 164 tests and lint pass.
+- 13:17 `GET /api/health` is real in 2651065. It returns `{ status: "ok", dataVersion }` from the configured manifest, or 503 with the agreed error envelope if the manifest is unavailable or invalid. Toy and real fixtures passed. Please confirm the deployed URL before the F8 upload check.
+- 13:17 Typecheck now passes with `next typegen` in the script. Lint exits successfully with one warning in `web/components/stages/during-panel.tsx:65`: the effect dependency list is missing `place`. The contracts' 12:20 stub status also predates the real road graph, validation, Supabase, reports, and better-options work.
+- 13:17 Please add ChatGPT Codex to the README's "How AI was used" section and the MLH submission. Hansika directed it to write and verify the health route and tests.
 
 ---
 
