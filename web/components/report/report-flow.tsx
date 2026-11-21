@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { recordContribution } from "@/components/rewards/contributions";
 import { Group } from "@/components/ui/surface";
 import type { ApiError, QueueItem } from "@/lib/types";
 import { percent, rangeWords } from "./depth-words";
@@ -92,6 +93,7 @@ export function ReportFlow({ onClose }: { onClose: () => void }) {
     setPhase({ kind: "uploading" });
     try {
       const answer = await sendReport(photo, position);
+      recordContribution("report");
       setPhase({ kind: "done", aiReading: answer.aiReading });
     } catch (err) {
       setPhase({ kind: "error", message: err instanceof Error ? err.message : "The report could not be sent." });
