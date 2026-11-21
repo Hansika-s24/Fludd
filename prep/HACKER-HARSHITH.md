@@ -389,6 +389,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
   - **Live now (`679c676` and later):** grade card in plain storm words, the buying / renting / building checklist, community-name search, the motion pass, the intro drawn live, and three guided demos at `/demo`. Web tests: 452 pass. I have not run `pipeline` pytest today.
   - **Before 18:00:** your "prepare to explain" for the model and the validation number, the README AI section (your Codex use is credited; check the wording), one joint rehearsal, submission by 17:30.
 
+- 16:16 For Hansika: since the 16:10 note, `main` is at `90497e8` and **fludd.app is deployed from it** (clean `git archive` of pushed main, `NEXT_PUBLIC_DATA_SET=real`; `/api/health` real-2026-11-21, `/api/brief` live). New on the interface side: the Google-Maps-style phone layout and the car vs SUV/pickup question in setup, which feeds `latestDeparture`, `cutoffTime` and Pelican routes. Nothing else changed in your folders. Web: 452 unit + 16 e2e pass. Still 502 on `/api/food-campaigns` (Gemini quota) and 503 on `/api/reports` (Supabase anon key missing in Vercel).
+
 ---
 
 ## 6. If things go wrong
