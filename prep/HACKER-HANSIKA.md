@@ -372,6 +372,23 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 
 ### Notes
 
+**11:31 Review of "Storm report card: end-to-end build plan" (Harshith's 2-page draft) against PLAN.md**
+
+The draft is an early outline. PLAN.md already covers it and fixes its pitch claims. Do not pitch from the draft.
+
+- Draft pitch line 1 ("mapped as flood zone X, a 1-in-500 annual chance"): wrong as a blanket claim. Use PLAN.md section 1 "Pitch corrections": parts are X, parts are AE; show the zone per address.
+- Draft pitch line 2 ("a county pump station that lost power", hcfl.gov link): name Duck Pond; the hcfl.gov pages return 404, so cite the Tampa Free Press reprint.
+- Draft scope ("official layers for the whole city"): PLAN.md narrows to the 4 x 4 mile box. Keep the box.
+- Draft audience "builders and buyers": not in PLAN.md's demo close. Optional one-line mention.
+
+Gaps in PLAN.md itself, to raise with Harshith:
+
+1. **Too much for 6.5 hours.** Demo-critical routing is only "move your car by" and "rescue reach". "Best route now" and "cut-off time" are not in the demo script: build them last, cut first.
+2. **Demo order of priority** (what wins Home Turf): address → grade with "official map says / we found" → water playback → pump switch → Milton validation number → "move your car by". Photo report, admin, calibration and the Shortcut come after all of these work on real data.
+3. **No backup demo.** Judging is science-fair style with three rooms. Record a 60-second screen capture of the full loop by 17:00 in case Wi-Fi or Vercel fails.
+4. **Newer elevation exists.** File 02 B3: a 2025 lidar DEM (2.5 ft pixels) was published 2026-11-05. The plan uses 2011 3DEP (~3 m). Stay with 3DEP for speed; mention the newer data as a next step.
+5. **Off the Grid** stays a tick-only track. Only one prize can be won; Home Turf is the target.
+
 ### Notes for my teammate
 
 Claude appends here, newest last, whenever something on this side affects Harshith. Format: time, what changed, what they need to do.
