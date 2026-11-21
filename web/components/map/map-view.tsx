@@ -6,6 +6,7 @@ import { cellIndex, depthAtCell, loadGold, loadLayer, loadLevels } from "@/lib/d
 import type { GoldData, Hour, LayerName, Levels, LngLat, PumpState, Scenario } from "@/lib/types";
 import { STORM_WORDS } from "@/components/ui/storm-words";
 import { SHEET_HALF_EVENT } from "@/components/ui/sheet";
+import type { Gauge } from "./gauges";
 import { onBootDone } from "@/components/boot/boot-signal";
 
 // ponytail: the bundler breaks MapLibre's relative worker URL; predev/prebuild copy the worker into public/.
@@ -81,6 +82,10 @@ export interface MapViewProps {
   arrived: boolean;
   /** Map layers to show (drainage network etc.); [] hides them all. */
   overlays: LayerName[];
+  /** false in the live view: no flood is happening, so the simulated water stays off. */
+  water?: boolean;
+  /** Live river gauges to draw (live view only). */
+  gauges?: Gauge[];
   /** A suggested route to draw in the tint colour, or null. */
   route: LngLat[] | null;
   /** A tap or click on the map: grade that spot (a building, usually). */
@@ -99,7 +104,7 @@ export interface MapMark {
   label: string;
 }
 
-export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, route, onSelect, marks, onError }: MapViewProps) {
+export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, water = true, gauges = [], route, onSelect, marks, onError }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -107,6 +112,8 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
   const marker = useRef<Marker | null>(null);
   const ready = useRef<Promise<void> | null>(null);
   const pinMarkers = useRef<Marker[]>([]);
+  const gaugeMarkers = useRef<Marker[]>([]);
+  const waterOn = useRef(water);
   const markMarkers = useRef(new Map<string, Marker>());
   // What the water layer shows right now, for the depth readout under the pointer.
   const shown = useRef<{ levels: Levels; hour: Hour; scenario: Scenario } | null>(null);
@@ -191,7 +198,7 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
       const i = cellIndex(g.manifest, [lngLat.lng, lngLat.lat]);
       const d = i === null ? 0 : depthAtCell(g, now.levels, i, now.hour);
       const storm = STORM_WORDS[now.scenario].name;
-      if (d >= MIN_SHOWN_M) return callout(`${depthWords(d)} of floodwater`, `${storm}, this hour`);
+      if (waterOn.current && d >= MIN_SHOWN_M) return callout(`${depthWords(d)} of floodwater`, `${storm}, this hour`);
       if (m.queryRenderedFeatures(point, { layers: lakeLayers() }).length) return callout("Pond or lake", "Normal water, there in dry weather too");
       return null;
     };
@@ -222,6 +229,32 @@ export function MapView({ scenario, pump, hour, focus, pins, arrived, overlays, 
       map.current = null;
     };
   }, [onError]);
+
+  // Live view hides the simulated water; storm mode shows it.
+  useEffect(() => {
+    waterOn.current = water;
+    const m = map.current;
+    if (!m) return;
+    void ready.current?.then(() => {
+      if (m.getLayer("flood-water")) m.setLayoutProperty("flood-water", "visibility", water ? "visible" : "none");
+    });
+  }, [water]);
+
+  // Live river gauges: a small chip per site with its height now.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    gaugeMarkers.current.forEach((x) => x.remove());
+    gaugeMarkers.current = gauges.map((g) => {
+      const el = document.createElement("div");
+      el.style.cssText =
+        "padding:2px 7px;border-radius:999px;background:#fff;box-shadow:0 2px 6px rgb(0 0 0/.2);font:600 11px/1.4 var(--font-sans);color:#23467f;white-space:nowrap";
+      el.textContent = `${g.heightFt.toFixed(1)} ft`;
+      el.title = `${g.name}: ${g.heightFt.toFixed(2)} ft${g.flowCfs !== null ? `, ${g.flowCfs} cfs` : ""} at ${g.at} (USGS)`;
+      el.setAttribute("aria-label", el.title);
+      return new Marker({ element: el }).setLngLat(g.position).addTo(m);
+    });
+  }, [gauges]);
 
   // Repaint water when the storm, pump or hour changes.
   useEffect(() => {

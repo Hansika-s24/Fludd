@@ -49,7 +49,8 @@ test("first run: onboarding leads to a graded home", async ({ page }) => {
   await expect(page.getByRole("dialog").getByText("4202 E Fowler Ave, Tampa, 33620")).toBeVisible();
   await page.getByRole("button", { name: "Show me my home" }).click();
   await expect(sheet(page).getByText("Flood grade")).toBeAttached();
-  await expect(stageCtl(page, /Plan a move/)).toHaveAttribute(picked(page), "true");
+  // The app opens on live conditions: no flood is happening.
+  await expect(page.getByRole("button", { name: /^Now/ }).first()).toHaveAttribute("aria-pressed", "true");
   // The vehicle chosen in setup drives the storm answers.
   await stageCtl(page, /Storm mode/).click();
   await expect(sheet(page).getByText("Last way out by SUV or pickup")).toBeVisible();

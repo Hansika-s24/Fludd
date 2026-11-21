@@ -5,6 +5,7 @@ import { onBootDone } from "@/components/boot/boot-signal";
 import { FloodCamera } from "@/components/camera/flood-camera";
 import { EmptyAddressIllustration } from "@/components/illustrations";
 import { MapView, RAMP } from "@/components/map/map-view";
+import { fetchGauges, type Gauge } from "@/components/map/gauges";
 import { StormControls } from "@/components/map/storm-controls";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { forgetProfile, saveProfile, useProfile } from "@/components/onboarding/profile";
@@ -70,6 +71,10 @@ export function AppShell() {
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("home");
   const [stage, setStage] = useState<Stage>("before");
+  // Live is the default: no flood is happening, so the map shows real feeds; the stages play a simulated storm.
+  const [live, setLive] = useState(true);
+  const [gauges, setGauges] = useState<Gauge[] | null>(null);
+  const [alerts, setAlerts] = useState<string[] | null>(null);
   const narrow = useNarrow();
   const reduceMotion = useReducedMotion();
   const [scenario, setScenario] = useState<Scenario>("100yr");
@@ -80,6 +85,16 @@ export function AppShell() {
   const [graded, setGraded] = useState<Graded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [arrived, setArrived] = useState(false);
+  useEffect(() => {
+    let stale = false;
+    const load = () => fetchGauges().then((g) => !stale && setGauges(g), () => !stale && setGauges([]));
+    void load();
+    const t = window.setInterval(load, 5 * 60_000);
+    return () => {
+      stale = true;
+      window.clearInterval(t);
+    };
+  }, []);
   // Phones: the floating search and chips own the top edge, so the map's locate button moves below them.
   useEffect(() => {
     const ctrl = document.querySelector<HTMLElement>(".maplibregl-ctrl-top-right");
@@ -162,6 +177,20 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meterKey, arrived]);
 
+  // Weather Service alerts for the place on the card (or USF), for the live view and the meter.
+  const alertAt = (place?.position ?? USF_AREA).join(",");
+  useEffect(() => {
+    let stale = false;
+    const [lng, lat] = alertAt.split(",");
+    fetch(`/api/weather?lat=${lat}&lng=${lng}`)
+      .then((r) => (r.ok ? r.json() : { alerts: [] }))
+      .then((j: { alerts?: { event: string }[] }) => !stale && setAlerts([...new Set((j.alerts ?? []).map((a) => a.event))]))
+      .catch(() => !stale && setAlerts([]));
+    return () => {
+      stale = true;
+    };
+  }, [alertAt]);
+
   const hours = manifest?.hours ?? 48;
   const safeHour = Math.min(hour, hours - 1);
   const hourZero = manifest?.hourZeroByScenario?.[scenario] ?? manifest?.hourZero ?? null;
@@ -230,7 +259,14 @@ export function AppShell() {
   const showStage = (s: Stage) => {
     window.dispatchEvent(new Event(SHEET_HALF_EVENT));
     setTab("home");
+    setLive(false);
     pickStage(s);
+  };
+  const showLive = () => {
+    window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    setTab("home");
+    setRoute(null);
+    setLive(true);
   };
   const open = (t: Tab) => {
     // Every shortcut shows its content: raise the sheet off peek.
@@ -323,9 +359,10 @@ export function AppShell() {
         </div>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {[
-            { label: "Plan a move", on: tab === "home" && stage === "before", act: () => showStage("before"), icon: STAGES[0].icon },
-            { label: "Storm mode", on: tab === "home" && stage === "during", act: () => showStage("during"), icon: STAGES[1].icon },
-            { label: "After a flood", on: tab === "home" && stage === "after", act: () => showStage("after"), icon: STAGES[2].icon },
+            { label: "Now", on: tab === "home" && live, act: showLive, icon: null },
+            { label: "Plan a move", on: tab === "home" && !live && stage === "before", act: () => showStage("before"), icon: STAGES[0].icon },
+            { label: "Storm mode", on: tab === "home" && !live && stage === "during", act: () => showStage("during"), icon: STAGES[1].icon },
+            { label: "After a flood", on: tab === "home" && !live && stage === "after", act: () => showStage("after"), icon: STAGES[2].icon },
             { label: "Weather", on: tab === "weather", act: () => open("weather"), icon: ICONS.weather },
             { label: "Food & help", on: tab === "help", act: () => open("help"), icon: ICONS.help },
             { label: "Your impact", on: tab === "rewards", act: () => open("rewards"), icon: ICONS.rewards },
@@ -380,6 +417,8 @@ export function AppShell() {
         pins={{ home: profile?.home?.position ?? null, car: profile?.car?.position ?? null }}
         arrived={arrived}
         overlays={drainage ? DRAINAGE : []}
+        water={!live}
+        gauges={live ? gauges ?? [] : []}
         route={route}
         onSelect={selectSpot}
         onError={onError}
@@ -403,15 +442,15 @@ export function AppShell() {
           className="material-glass pressable fixed bottom-[calc(var(--peek)+env(safe-area-inset-bottom)+0.75rem)] left-3 z-10 flex items-center gap-2.5 rounded-[1rem] py-2 pl-2 pr-3 text-left md:bottom-4 md:left-[412px]"
           style={{ ["--peek" as string]: `${PEEK_PX}px` }}
         >
-          <MeterBar depthM={meter?.key === meterKey ? meter.depthM : null} />
+          <MeterBar depthM={live ? 0 : meter?.key === meterKey ? meter.depthM : null} />
           <span>
             <span className="block text-[0.6875rem] font-semibold text-label-2">{place === profile?.home ? "Water at home" : "Water here"}</span>
             <span className="block text-headline font-semibold tabular-nums">
-              {meter?.key === meterKey && meter.depthM !== null ? meterWords(meter.depthM) : "…"}
+              {live ? (alerts?.length ? "Alert" : "Dry") : meter?.key === meterKey && meter.depthM !== null ? meterWords(meter.depthM) : "…"}
             </span>
             <span className="block text-[0.6875rem] text-label-2">
-              {STORM_WORDS[scenario].short}
-              {hourZero ? ` · ${clockLabel(hourZero, safeHour)}` : ""}
+              {live ? (alerts?.length ? alerts[0] : "Live · no flood alerts") : STORM_WORDS[scenario].short}
+              {!live && hourZero ? ` · ${clockLabel(hourZero, safeHour)}` : ""}
             </span>
           </span>
         </button>
@@ -432,7 +471,28 @@ export function AppShell() {
         <div key={tab} id="tab-panel" role="region" aria-label={TITLES[tab]} className="tab-enter" aria-live="polite">
           {tab === "home" && (
             <>
-              {!narrow && <StageControl stage={stage} onChange={pickStage} />}
+              {!narrow && (
+                <div className="px-4 pt-1">
+                  <button
+                    type="button"
+                    aria-pressed={live}
+                    onClick={showLive}
+                    className={`pressable mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-control)] text-subhead font-semibold ${live ? "bg-tint text-white" : "bg-group text-label"}`}
+                  >
+                    <span className={`size-2 rounded-full ${live ? "bg-white" : "bg-safe"}`} aria-hidden />
+                    Now: live conditions
+                  </button>
+                </div>
+              )}
+              {!narrow && (
+                <StageControl
+                  stage={stage}
+                  onChange={(s) => {
+                    setLive(false);
+                    pickStage(s);
+                  }}
+                />
+              )}
               {/* Switching stage: the new content opens in a circle from the card that was tapped. */}
               <motion.div
                 key={stage}
@@ -442,10 +502,37 @@ export function AppShell() {
                 transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               >
               {placeState}
-              {!narrow && stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
-              {!narrow && stage === "before" && <WeeklyHighlight onOpen={() => open("rewards")} />}
-              {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
-              {stage === "during" &&
+              {live && ok && (
+                <Group>
+                  <button type="button" onClick={() => showStage("before")} className="pressable flex w-full items-center gap-3 px-4 py-3 text-left">
+                    <span className={`grid size-10 shrink-0 place-items-center rounded-full text-headline font-bold text-white ${LETTER_BG[ok.grade.letter] ?? "bg-late"}`}>
+                      {ok.grade.letter}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-headline font-semibold">Flood grade {ok.grade.letter}</span>
+                      <span className="block truncate text-subhead text-label-2">{ok.place.label.split(",")[0]} · tap for the full report</span>
+                    </span>
+                  </button>
+                </Group>
+              )}
+              {live && (
+                <LivePanel
+                  alerts={alerts}
+                  gauges={
+                    gauges &&
+                    // Nearest first, by a flat-earth distance (fine at city scale).
+                    [...gauges].sort((a, b) => {
+                      const [x, y] = place?.position ?? USF_AREA;
+                      const d = (g: Gauge) => (g.position[0] - x) ** 2 * 0.78 + (g.position[1] - y) ** 2;
+                      return d(a) - d(b);
+                    })
+                  }
+                />
+              )}
+              {!narrow && (live || stage !== "after") && <WeatherCard position={place?.position ?? USF_AREA} />}
+              {!narrow && (live || stage === "before") && <WeeklyHighlight onOpen={() => open("rewards")} />}
+              {!live && stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
+              {!live && stage === "during" &&
                 (ok ? (
                   <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} vehicle={profile?.vehicle ?? "car"} grade={ok.grade} controls={controls} />
                 ) : (
@@ -453,7 +540,7 @@ export function AppShell() {
                     <StormControls {...controls} />
                   </Group>
                 ))}
-              {stage === "after" && ok && (
+              {!live && stage === "after" && ok && (
                 <AfterPanel
                   key={`after-${placeKey}`}
                   place={ok.place}
@@ -466,7 +553,7 @@ export function AppShell() {
                   }}
                 />
               )}
-              {stage === "before" && <ValidationPanel />}
+              {!live && stage === "before" && <ValidationPanel />}
               </motion.div>
               {searched && profile?.home && (
                 <div className="px-5 pt-3">
@@ -571,5 +658,47 @@ function MeterBar({ depthM }: { depthM: number | null }) {
         style={{ height: `${fill * 100}%`, background: `rgb(${r} ${g} ${b})` }}
       />
     </span>
+  );
+}
+
+/** The default view: what is true right now. No flood model runs live, so this shows real feeds only. */
+function LivePanel({ gauges, alerts }: { gauges: Gauge[] | null; alerts: string[] | null }) {
+  return (
+    <>
+      <Group title="Right now">
+        <div className="px-4 py-3">
+          <p className="flex items-center gap-2 text-headline font-semibold">
+            <span className={`size-2.5 rounded-full ${alerts?.length ? "bg-late" : "bg-safe"}`} aria-hidden />
+            {alerts === null ? "Checking the Weather Service…" : alerts.length ? alerts.join(", ") : "No flood or storm alerts"}
+          </p>
+          <p className="mt-1 text-subhead text-label-2">
+            {alerts?.length
+              ? "Follow official instructions. Never drive or walk into floodwater."
+              : "No flood is happening here now. Tap Storm mode to see what a storm would do."}
+          </p>
+        </div>
+      </Group>
+      <Group title="Rivers and creeks now">
+        {gauges === null ? (
+          <div className="space-y-2 px-4 py-3" aria-busy>
+            <div className="shimmer h-5 w-3/4 rounded-md" />
+            <div className="shimmer h-5 w-2/3 rounded-md" />
+          </div>
+        ) : gauges.length === 0 ? (
+          <p className="px-4 py-3 text-subhead text-label-2">River gauges are unavailable right now.</p>
+        ) : (
+          gauges.slice(0, 6).map((g, i, all) => (
+            <div key={g.id} className={`flex items-center justify-between gap-3 px-4 py-2.5 ${i < all.length - 1 ? "border-b border-separator" : ""}`}>
+              <span className="min-w-0">
+                <span className="block truncate text-body">{g.name}</span>
+                <span className="block text-footnote text-label-2">{g.flowCfs !== null ? `${g.flowCfs.toLocaleString()} cfs · ` : ""}{g.at}</span>
+              </span>
+              <span className="shrink-0 text-headline font-semibold tabular-nums">{g.heightFt.toFixed(1)} ft</span>
+            </div>
+          ))
+        )}
+      </Group>
+      <p className="px-5 pt-2 text-footnote text-label-3">Gauge heights from USGS, read live; each gauge has its own zero, so compare a gauge with itself over time.</p>
+    </>
   );
 }
