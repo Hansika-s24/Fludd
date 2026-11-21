@@ -1,53 +1,120 @@
-# Judging script: 3½ minutes, then the phone
+# Fludd: what we say to the judges
 
-Built around the scorecard: Technical Implementation 25%, Innovation & Creativity 20%, Relevance to the Track 20%, Execution & Completeness 20%, Presentation & Understanding 15%. Each block says which line it scores on.
+3½ minutes, then the phone goes into their hands.
 
-**Before the judges arrive**
-- Phone: fludd.app open from the Home Screen icon, onboarding done, home set to **1514 E 139th Ave** (grade F), sheet resting, **Now** chip on.
-- Laptop: the 42-second film open full screen and paused on its first frame, sound up. Second tab: `fludd.app/demo` as a backup.
-- Decide who holds the phone (Harshith) and who drives the laptop (Hansika).
+Scorecard: Technical 25 · Innovation 20 · Track 20 · Execution 20 · Presentation 15.
+Every line below is short on purpose. Say it slower than feels natural. Look at the judges, not the screen.
 
-| Time | Who | Say | Do | Scores |
-|---|---|---|---|---|
-| 0:00–0:40 | Harshith | **Why we built it.** The opening from `docs/presentation.md`, slowly, eyes on the judges: October 9th, 2024, 11.43 inches in one day; 500+ people rescued that night; **547** damaged properties around this campus, **207** of them outside the official high-risk zones, where the map said *minimal flood hazard*; nearly half the homes in Tampa at risk in the next 30 years. "Nobody hands a renter a flood report. So we built one." | Nothing in your hands. One beat of silence. | Relevance, Presentation |
-| 0:40–0:55 | Harshith | **What it is, two lines.** "This is Fludd. Type any address and you get a flood grade, where the water goes hour by hour in a storm, and when to move your car. On a normal day it's live: weather, river gauges, alerts. In a storm it's your map." | Hold up the phone: map, **Now** chip, the F home. | Relevance, Innovation |
-| 0:55–1:00 | Harshith | "We built it today, in seven hours. Hansika built the engine." | Hand over to Hansika. | Presentation |
-| 1:00–2:15 | Hansika | **How it works and the features** (see below). | Laptop or her own phone. Point, don't scroll. | Technical, Execution |
-| 2:15–2:57 | Both, silent | **The film**, 42 seconds. "Here's what that looks like on a phone." | Hansika presses play. Let it run; no talking over it. | Innovation, Presentation |
-| 2:57–3:30 | Harshith | **Close.** "It's live right now at fludd.app. It's honest about what it knows: together with FEMA's map it flags **87%** of the damage Milton did here, and it caught **136 of the 207** homes FEMA's map missed. It never tells anyone a flooded road is safe. Who's it for? Renters deciding where to live, and everyone on storm day." | Phone back in hand. | Execution, Relevance |
-| 3:30 | Harshith | "Try it yourself." | **Hand the phone to a judge** (tasks below). | Execution, Presentation |
+**Set up before they arrive:** phone on fludd.app (Home Screen icon), home set to **1514 E 139th Ave**, the **Now** chip on. Laptop: the 42-second film, paused on frame one, sound up. Backup tab: `fludd.app/demo`.
 
-## Hansika's 75 seconds (1:00–2:15)
+---
 
-Say the mechanism plainly, one feature per line, each with its number.
+## 0:00 · Harshith · why we built it
 
-1. **The model (Technical).** "We took 3-metre lidar of the area and found **8,612 low spots**, bowls, and where each one spills into the next. A storm fills them hour by hour, pump stations on or off. One storm runs in about a second and a half, then the phone just draws it."
-2. **The grade (Technical).** "The letter is a rule you can repeat: the smallest storm that puts 6 inches of water at the building. It can only go down, never up."
-3. **Roads (Technical, Innovation).** "We loaded the real road network, **6,481 junctions**, and every road closes at its own hour for a car, an SUV or a fire truck. That's how it says *move your car by 6 pm* and *fire trucks can reach you until 9*. You tell it what you drive."
-4. **Live now (Relevance).** "On a dry day it shows live Weather Service alerts, **USGS river gauges** and the forecast. Storm mode is a simulation, and it's labelled as one."
-5. **Pelican (Innovation).** "Ask Pelican: *I need groceries*. It routes only on roads the model keeps open, and it still works if the AI is down."
-6. **Community (Relevance).** "Residents send flood photos; AI reads the depth and a person checks it. And food share: restaurants offer meals and supplies within a few miles, and people ask with no name. Givers only ever see a count."
-7. **Proof (Execution).** "**493** unit tests and **16** end-to-end tests, phone and desktop. Checked against Milton: **87%** with FEMA's map, **52.3%** for our model alone, never tuned to those points."
+*Phone in your pocket. Nothing on screen. Just talk.*
 
-## When you hand over the phone (3:30)
+> October 9th, 2024. Hurricane Milton.
+>
+> Eleven and a half inches of rain fell on Tampa in one day. More than this city had ever seen in a whole October.
+>
+> That night, firefighters pulled more than five hundred people out of flooded homes.
+>
+> Around this campus alone, the county counted five hundred and forty-seven flooded properties.
+>
+> And two hundred and seven of them? The official flood map said *minimal flood hazard*.
+>
+> If you rented one of those apartments, nobody warned you. Nobody hands a renter a flood report.
 
-Say: "Three things to try."
-1. **"Tap any building."** It gets its own grade and history.
-2. **"Tap Storm mode, then Play."** Water spreads street by street; the meter bottom-left climbs.
-3. **"Tap the pelican and ask for groceries."** A route appears that avoids the water.
+*Pause. One full second.*
 
-Stay quiet while they explore. Answer only what they ask.
+## 0:40 · Harshith · what it is
 
-## Questions, and who takes them
+*Take out the phone. Hold it up.*
 
-- **"Is it 87% accurate?"** (Hansika) "No. Our model alone hits 52.3%. Together with FEMA's map it covers 87%, and ours is the half FEMA misses: 136 of 207. We never tuned it to those points." *Never let 87% stand as the model's own number.*
-- **"What did AI build versus you?"** (each for your own side) The README's AI-use section: we chose the model, the grade rule, the design and every safety line; Claude Code and ChatGPT Codex wrote code to those decisions; Gemini only reads requests and photos.
-- **"Why not Google Maps?"** (Hansika) "Google learns a road is closed after someone reports it. Fludd predicts depth, per vehicle, hour by hour, before anyone drives there."
-- **"Privacy?"** (Harshith) "Home, car and insurance stay on your phone. Photos lose their metadata and a person approves each one. Food requests keep only a 500-metre area and are deleted after 48 hours."
-- **"Does it cover all of Tampa?"** (Harshith) "Search, weather, gauges and food share do. The flood model covers 16 square miles around USF today; the city-wide run is set up."
+> So we built one. This is Fludd.
+>
+> Type any address in Tampa. You get a flood grade, you see where the water goes hour by hour, and it tells you when to move your car.
+>
+> On a normal day, like today, it's live: rain, river levels, alerts.
+
+> We built all of it today. Hansika built the engine.
+
+## 1:00 · Hansika · how it works
+
+*Phone or laptop. Point at one thing at a time.*
+
+> Most flood maps are a yes-or-no line drawn years ago. Ours actually moves water.
+>
+> We took laser scans of the ground and found every low spot, eight and a half thousand of them, and where each one overflows into the next. Rain fills them hour by hour, and you can switch the pump stations off, like Milton did.
+>
+> Then the roads. Every street gets its own closing time, for a car, a truck, a fire engine. That's how it can say *move your car by 6 pm*, or *fire trucks can reach you until 9*.
+
+*Tap the pelican.*
+
+> You can just ask. "I need groceries." Pelican finds an open store and routes you only on roads that stay dry.
+
+*Open Food & help.*
+
+> And neighbours help each other. Send a photo of flooding and it reads the depth. Restaurants can offer meals, and anyone can ask for food, with no name attached.
+
+> Does it work? We checked it against Milton. Together with FEMA's map, it flags eighty-seven percent of the real damage. And of the two hundred and seven homes FEMA's map missed, we caught a hundred and thirty-six.
+
+## 2:15 · the film
+
+> Here's what that feels like.
+
+*Hansika presses play. Say nothing for 42 seconds. Let it land.*
+
+## 2:57 · Harshith · close
+
+> It's live right now, at fludd.app.
+>
+> It's for the student signing a lease next month, and for everyone who's stuck at home when the next storm hits.
+>
+> And it will never tell you a flooded road is safe.
+
+*Hold out the phone.*
+
+> Try it yourself.
+
+## 3:30 · the judge holds the phone
+
+Give them three things, then stop talking:
+
+1. "Tap any building on the map." *(It gets its own grade.)*
+2. "Tap Storm mode, then Play." *(Watch the water spread; the meter climbs.)*
+3. "Tap the pelican. Ask for groceries." *(A route around the water.)*
+
+Answer only what they ask.
+
+---
+
+## Questions
+
+**"So it's 87% accurate?"** *(Hansika)*
+"No, and that matters to us. On its own the model hits 52%. Together with FEMA's map it's 87%, because ours finds what theirs misses. We never tuned it to those points."
+*Never let 87% stand as the model's own number.*
+
+**"What did you build, and what did AI build?"** *(each for your own side)*
+"We made every decision: the model, the grading rule, the design, every safety line. Claude Code and Codex wrote code to those decisions. Inside the app, Gemini only reads what you type and what's in a photo. The grade, the map and the routes never use AI."
+
+**"Isn't this just Google Maps?"** *(Hansika)*
+"Google finds out a road is flooded after someone reports it. We predict how deep, for your vehicle, hours before anyone drives there."
+
+**"What about privacy?"** *(Harshith)*
+"Your home and car never leave your phone. Photos lose their location data and a person checks each one. Food requests keep only a rough area and disappear after two days."
+
+**"Does it cover all of Tampa?"** *(Harshith)*
+"Search, weather, river gauges and food help work across Tampa. The flood model covers sixteen square miles around USF today; the city-wide run is set up and next."
 
 ## If something breaks
 
-- **No Wi-Fi:** phone hotspot. The film plays from the laptop.
-- **The app stalls:** switch to `fludd.app/demo` on the laptop and keep talking.
-- **Pelican says routes are unavailable:** "the router's busy", then tap Food & help instead.
+- **Wi-Fi drops:** phone hotspot. The film plays from the laptop either way.
+- **App freezes:** switch to `fludd.app/demo` and keep talking.
+- **Pelican can't route:** "The router's busy," and open Food & help instead.
+
+## Sources for the opening
+
+- 11.43 in in one day, wettest October on record: [NWS Milton summary](https://www.weather.gov/media/tbw/TropicalEventSummary/PSHTBW_2024AL14_Milton_Summary.pdf)
+- 500+ rescued that night: [Axios Tampa Bay](https://www.axios.com/local/tampa-bay/2024/10/10/tampa-bay-flooding-recovery-hurricane-milton)
+- 547 damaged, 207 outside high-risk zones, 136 caught, 87% together: our `validation.json`, from Hillsborough County's damage records
