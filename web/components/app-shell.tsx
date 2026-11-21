@@ -20,6 +20,7 @@ import { Icon, ListRow, type Place } from "@/components/stages/shared";
 import { StageControl, type Stage } from "@/components/stages/stage-control";
 import { SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
 import { Logo } from "@/components/ui/logo";
+import { WeatherCard } from "@/components/weather/weather-card";
 import { Group } from "@/components/ui/surface";
 import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
 import { loadGold } from "@/lib/data";
@@ -36,6 +37,9 @@ type ManifestWithClocks = Manifest & { hourZeroByScenario?: Partial<Record<Scena
 
 /** Drainage network layers shown by the map's Drainage button. */
 const DRAINAGE: LayerName[] = ["storm-pipes", "ponds", "drains", "outfalls", "pump-stations"];
+
+/** Weather for the USF area until an address is chosen. */
+const USF_AREA: LngLat = [-82.4139, 28.0587];
 
 /** Longest the map waits for the boot intro before flying in anyway. */
 const INTRO_FALLBACK_MS = 6000;
@@ -298,6 +302,7 @@ export function AppShell() {
             <>
               <StageControl stage={stage} onChange={pickStage} />
               {placeState}
+              {stage !== "after" && <WeatherCard position={place?.position ?? USF_AREA} />}
               {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
               {stage === "during" &&
                 (ok ? (
