@@ -2,3 +2,5 @@
 .env.txt
 New Text Document.txt
 DEVLOG.md
+.local/
+design/boot/*.blend1
