@@ -16,6 +16,7 @@ import { AfterPanel } from "@/components/stages/after-panel";
 import { BeforePanel } from "@/components/stages/before-panel";
 import { DuringPanel } from "@/components/stages/during-panel";
 import { Icon, ListRow, type Place } from "@/components/stages/shared";
+import { StageControl, type Stage } from "@/components/stages/stage-control";
 import { SHEET_HALF_EVENT, Sheet } from "@/components/ui/sheet";
 import { Group } from "@/components/ui/surface";
 import { ICONS, Shortcuts, type Tab } from "@/components/ui/tab-bar";
@@ -50,6 +51,7 @@ type Graded = { place: Place; grade: GradeResult };
 export function AppShell() {
   const profile = useProfile();
   const [tab, setTab] = useState<Tab>("home");
+  const [stage, setStage] = useState<Stage>("before");
   const [scenario, setScenario] = useState<Scenario>("100yr");
   const [pump, setPump] = useState<PumpState>("on");
   const [hour, setHour] = useState<Hour>(14);
@@ -156,9 +158,28 @@ export function AppShell() {
   );
 
   // Home shows your home again: drop a searched address if there is a home to go back to.
+  // Before, during and after a flood at one address. The stage sets the map too: After replays Milton at its peak.
+  const pickStage = (s: Stage) => {
+    setStage(s);
+    setRoute(null);
+    if (s === "after") {
+      setScenario("milton");
+      setPump("on");
+      setHour(24);
+    } else if (scenario === "milton" && s === "before") setScenario("100yr");
+  };
   const open = (t: Tab) => {
-    if (t === "home" && profile?.home) setSearched(null);
-    else if (t !== "home") window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    if (t !== "home") window.dispatchEvent(new Event(SHEET_HALF_EVENT));
+    // Live is the During stage of Home.
+    if (t === "live") {
+      setTab("home");
+      pickStage("during");
+      return;
+    }
+    if (t === "home") {
+      if (profile?.home) setSearched(null);
+      setStage("before");
+    }
     setTab(t);
   };
 
@@ -179,7 +200,7 @@ export function AppShell() {
             {ICONS.you}
           </button>
         </div>
-        <Shortcuts tab={tab} onOpen={open} homeLetter={!searched && ok ? ok.grade.letter : null} />
+        <Shortcuts tab={tab === "home" && stage === "during" ? "live" : tab} onOpen={open} homeLetter={!searched && ok ? ok.grade.letter : null} />
       </>
     ) : (
       <div className="flex items-center justify-between gap-3 pb-2 pl-5 pr-2 pt-1">
@@ -235,13 +256,22 @@ export function AppShell() {
         Drainage
       </button>
 
-      <Sheet header={header} scrollKey={tab} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
+      <Sheet header={header} scrollKey={`${tab}-${stage}`} className={arrived ? "surface-arrive surface-shine" : "opacity-0"}>
         <div key={tab} id="tab-panel" role="region" aria-label={TITLES[tab]} className="tab-enter" aria-live="polite">
           {tab === "home" && (
             <>
+              <StageControl stage={stage} onChange={pickStage} />
               {placeState}
-              {ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
-              {ok && (
+              {stage === "before" && ok && <BeforePanel key={placeKey} place={ok.place} grade={ok.grade} onPick={(p) => setSearched(p)} />}
+              {stage === "during" &&
+                (ok ? (
+                  <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} grade={ok.grade} controls={controls} />
+                ) : (
+                  <Group title="Storm">
+                    <StormControls {...controls} />
+                  </Group>
+                ))}
+              {stage === "after" && ok && (
                 <AfterPanel
                   key={`after-${placeKey}`}
                   place={ok.place}
@@ -250,30 +280,17 @@ export function AppShell() {
                     controls.onScenario("milton");
                     setPump("on");
                     setHour(24);
-                    setTab("live");
+                    setStage("during");
                   }}
                 />
               )}
-              <ValidationPanel />
+              {stage === "before" && <ValidationPanel />}
               {searched && profile?.home && (
                 <div className="px-5 pt-3">
                   <button type="button" onClick={() => setSearched(null)} className="min-h-11 text-subhead font-medium text-tint">
                     Back to your home
                   </button>
                 </div>
-              )}
-            </>
-          )}
-
-          {tab === "live" && (
-            <>
-              {placeState}
-              {ok ? (
-                <DuringPanel key={placeKey} place={ok.place} car={profile?.car ?? null} grade={ok.grade} controls={controls} />
-              ) : (
-                <Group title="Storm">
-                  <StormControls {...controls} />
-                </Group>
               )}
             </>
           )}

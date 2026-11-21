@@ -8,10 +8,10 @@ const STAGES: { key: Stage; label: string }[] = [
   { key: "after", label: "After" },
 ];
 
-/** Segmented control: plan ahead, get through it, learn from it. */
+/** Segmented control: plan ahead, get through it, learn from it. Each stage also sets what the map shows. */
 export function StageControl({ stage, onChange }: { stage: Stage; onChange: (s: Stage) => void }) {
   return (
-    <div role="tablist" aria-label="When" className="mx-4 mt-3 grid grid-cols-3 gap-0.5 rounded-[var(--radius-control)] bg-fill p-0.5">
+    <div role="tablist" aria-label="When" className="mx-4 mt-1 grid grid-cols-3 gap-0.5 rounded-[var(--radius-control)] bg-fill p-0.5">
       {STAGES.map((s) => (
         <button
           key={s.key}
@@ -21,10 +21,10 @@ export function StageControl({ stage, onChange }: { stage: Stage; onChange: (s: 
           aria-selected={stage === s.key}
           aria-controls="stage-panel"
           onClick={() => onChange(s.key)}
-          className={`pressable h-9 rounded-[calc(var(--radius-control)-2px)] text-subhead font-medium
+          className={`pressable h-11 rounded-[calc(var(--radius-control)-2px)] text-subhead font-medium
             ${stage === s.key ? "bg-group text-label shadow-[var(--shadow-control)]" : "text-label-2"}`}
         >
-          {s.label} a flood
+          {s.label}
         </button>
       ))}
     </div>
