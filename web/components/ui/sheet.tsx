@@ -154,7 +154,13 @@ export function Sheet({
         <button
           type="button"
           aria-label="Resize panel"
-          onClick={() => settle(y.get() > snaps[1] ? -1500 : 1500)}
+          // A tap steps up a stop like Maps: peek to half to full, and full back down to peek.
+          onClick={() => {
+            const at = y.get();
+            const to = at > snaps[1] + 4 ? snaps[1] : at > snaps[0] + 4 ? snaps[0] : snaps[2];
+            if (reduce) y.set(to);
+            else animate(y, to, { type: "spring", bounce: 0.2, duration: 0.3 });
+          }}
           className="mx-auto mt-1.5 block h-6 w-16"
         >
           <span className="mx-auto block h-[5px] w-9 rounded-full bg-label-3/50" />
