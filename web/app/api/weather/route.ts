@@ -1,8 +1,33 @@
-// STUB (Harshith's 11:00 scaffold). Real version proxies api.weather.gov with NWS_USER_AGENT.
+// Active National Weather Service alerts at a point. NWS requires a User-Agent, which the browser cannot set,
+// hence this proxy. Coordinates are rounded to 4 decimals (NWS rejects more).
 import { apiError } from "@/lib/api";
+import { serverConfig } from "@/lib/config";
 
-export function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  if (!searchParams.get("lat") || !searchParams.get("lng")) return apiError(400, "bad_request", "lat and lng are required");
-  return Response.json({ alerts: [{ event: "Flood Watch", headline: "Toy alert: Flood Watch until 8 pm", severity: "Moderate" }] });
+interface NwsAlerts {
+  features?: { properties?: { event?: string; headline?: string | null; severity?: string } }[];
+}
+
+export async function GET(request: Request) {
+  const q = new URL(request.url).searchParams;
+  const lat = Number(q.get("lat"));
+  const lng = Number(q.get("lng"));
+  if (!q.get("lat") || !q.get("lng") || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return apiError(400, "bad_request", "lat and lng must be numbers in range");
+  }
+  const point = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  try {
+    const res = await fetch(`https://api.weather.gov/alerts/active?point=${point}`, {
+      headers: { "User-Agent": serverConfig().nwsUserAgent, Accept: "application/geo+json" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return apiError(502, "upstream_error", `The weather service answered ${res.status}`);
+    const body = (await res.json()) as NwsAlerts;
+    const alerts = (body.features ?? [])
+      .map((f) => f.properties ?? {})
+      .filter((p) => typeof p.event === "string" && p.event.length > 0)
+      .map((p) => ({ event: p.event as string, headline: p.headline ?? p.event ?? "", severity: p.severity ?? "Unknown" }));
+    return Response.json({ alerts });
+  } catch {
+    return apiError(502, "upstream_error", "The weather service could not be reached");
+  }
 }
