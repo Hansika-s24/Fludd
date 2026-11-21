@@ -21,6 +21,9 @@ const manifestSchema = z.object({
   grid: z.object({ width: z.number().int().positive(), height: z.number().int().positive(), cellSizeM: num.refine((v) => v > 0, "must be > 0") }),
   groundRange: z.object({ min: num, max: num }),
   hourZero: z.string().refine((s) => !Number.isNaN(Date.parse(s)), "must be an ISO 8601 time"),
+  hourZeroByScenario: z
+    .partialRecord(z.enum(["10yr", "25yr", "100yr", "500yr", "milton"]), z.string().refine((s) => !Number.isNaN(Date.parse(s)), "must be an ISO 8601 time"))
+    .optional(),
   hours: z.number().int().positive(),
   scenarios: z.array(scenario),
   units: z.literal("m"),

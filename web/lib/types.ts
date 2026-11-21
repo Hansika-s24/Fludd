@@ -44,6 +44,8 @@ export interface Manifest {
   groundRange: { min: number; max: number };
   /** Clock time of hour 0, ISO 8601 with offset */
   hourZero: string;
+  /** Clock time of hour 0 per scenario where it differs (the Milton replay starts 2024-10-09 12:00 EDT). Falls back to hourZero. */
+  hourZeroByScenario?: Partial<Record<Scenario, string>>;
   hours: number;
   scenarios: Scenario[];
   units: "m";

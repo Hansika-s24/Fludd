@@ -36,3 +36,10 @@ describe.skipIf(!has)("real export", () => {
     }
   });
 });
+
+describe.skipIf(!has)("real manifest clock", () => {
+  it("keeps Milton's own hour zero", () => {
+    const manifest = validateManifest(json("manifest.json"), "manifest.json");
+    expect(manifest.hourZeroByScenario?.milton).toBe("2024-10-09T12:00:00-04:00");
+  });
+});
