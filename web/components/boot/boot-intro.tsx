@@ -46,9 +46,11 @@ const serverSize = () => "0x0";
 
 /** Where the logo and the words sit on this screen: one centred block, a little above the middle. */
 function layout(w: number, h: number) {
-  const size = Math.min(320, w * 0.62, h * 0.34);
-  const word = size * 0.29;
-  const caption = Math.max(15, size * 0.09);
+  const base = Math.min(320, w * 0.62, h * 0.34);
+  // The mark sits 20% smaller than the text scale, so the wordmark leads (Harshith, 16:25).
+  const size = base * 0.8;
+  const word = base * 0.29;
+  const caption = Math.max(15, base * 0.09);
   const block = size + word * 1.1 + caption * 0.3 + caption * 1.3 * 2;
   const top = Math.max(h * 0.06, (h - block) / 2 - h * 0.04);
   return { size, cx: w / 2, cy: top + size / 2, textTop: top + size, word, caption };
