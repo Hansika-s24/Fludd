@@ -309,6 +309,22 @@ Skills named below are in the repo's `.claude/` folder: `search-first`, `eval-ha
 
 ---
 
+## 4.15 Handoff for the next coding agent (Codex or another Claude), written 13:10
+
+Start here. Read `AGENTS.md`, `CLAUDE.md`, this file (checklist below, then "Notes" and "Notes for my teammate"), and `docs/contracts.md`. Then `git log --oneline -30` and `git status`.
+
+Laptop quirks (Windows):
+- Windows blocks `.exe` launchers in virtual environments. Run Python as `python -m uv run python ...` from `pipeline/`; tests as `python -m uv run python -m pytest -q`.
+- Web: from `web/`, `npm test`, `npm run lint`, `npm run typecheck` (2 known errors are in Harshith's files).
+- Rebuild all gold data: from `pipeline/`, `python -m uv run python -m gold.export` (about 6 minutes; raw downloads in `pipeline/data/bronze/` are reused, never re-fetched). Road graph: `python -m uv run python -m graph.build`.
+- Keys live only in `web/.env.local` (git-ignored). Never print, log or commit them.
+- Live Supabase privacy test: `RUN_LIVE_SUPABASE=1 npx vitest run tests/reports/live-rls.test.ts` from `web/`. Its last case fails by design until `delete` on `public.reports` is granted to `service_role` (not granted on purpose).
+- Gemini: default model `gemini-3.5-flash-lite`, fallback `gemini-4-hydrogen`. Photo input needs the `v1beta` API (already set in `web/lib/gemini/photo.ts`).
+
+Rules that still bind: only edit Hansika's folders (`pipeline/`, `supabase/`, `web/lib/`, `web/app/api/`, `web/public/data/`, their tests, this file); tests before code; small conventional commits with no AI attribution in the message; pull with rebase before push. **Any new AI tool (e.g. ChatGPT Codex) must be named in the README's "How AI was used" section and the MLH submission: tell Harshith.**
+
+Next unticked items, in order: F0 health route (`/api/health`: status + manifest version); F8 check the Shortcut upload on the live site once Harshith deploys; F9 weather proxy (stretch, after 15:00 only); X1 to X6 end of day (16:30 prepare-to-explain prompt in 4.14; 17:00 README inputs; last push 17:50).
+
 ## 5. Progress checklist
 
 Claude ticks these and adds a note after each (commit id, test count, what was cut).
