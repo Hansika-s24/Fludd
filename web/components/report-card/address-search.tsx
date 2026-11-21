@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { resolveAddress, suggestAddresses } from "@/lib/address";
+import { resolveCommunity, suggestCommunities } from "@/components/report-card/communities";
 import type { AddressMatch, AddressSuggestion } from "@/lib/types";
 import { SHEET_FULL_EVENT, SHEET_HALF_EVENT } from "@/components/ui/sheet";
 
@@ -11,6 +12,8 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
   const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [active, setActive] = useState(-1);
+  // The text the current suggestions answer, so "nothing found" is only said once a search has come back.
+  const [answered, setAnswered] = useState("");
   const [open, setOpen] = useState(false);
   const listId = useId();
 
@@ -18,13 +21,14 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
     if (text.trim().length < 3) return;
     let stale = false;
     const t = setTimeout(() => {
-      suggestAddresses(text)
-        .then((s) => {
-          if (stale) return;
-          setSuggestions(s.slice(0, 6));
-          setActive(-1);
-        })
-        .catch(() => !stale && setSuggestions([]));
+      // Community names first (a local list, instant), then street addresses and other places.
+      Promise.all([suggestCommunities(text), suggestAddresses(text).catch(() => [] as AddressSuggestion[])]).then(([named, found]) => {
+        if (stale) return;
+        const have = new Set(named.map((n) => n.label.toLowerCase()));
+        setSuggestions([...named, ...found.filter((f) => !have.has(f.label.split(",")[0].trim().toLowerCase()))].slice(0, 6));
+        setActive(-1);
+        setAnswered(text.trim());
+      });
     }, DEBOUNCE_MS);
     return () => {
       stale = true;
@@ -38,7 +42,7 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
     // Back down to half so the map shows the place (no-op outside the sheet).
     window.dispatchEvent(new Event(SHEET_HALF_EVENT));
     try {
-      onPick(await resolveAddress(s.id));
+      onPick(resolveCommunity(s.id) ?? (await resolveAddress(s.id)));
     } catch (e) {
       onPick(null, e instanceof Error ? e.message : "The address lookup failed");
     }
@@ -47,6 +51,7 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
   // Fewer than 3 letters: show nothing, without clearing state inside the effect.
   const shown = text.trim().length >= 3 ? suggestions : [];
   const showList = open && shown.length > 0;
+  const nothing = open && text.trim().length >= 3 && shown.length === 0 && answered === text.trim();
 
   return (
     <form
@@ -108,6 +113,11 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
             </li>
           ))}
         </ul>
+      )}
+      {nothing && (
+        <p role="status" className="rise-in mt-2 rounded-[var(--radius-group)] bg-group px-3.5 py-3 text-subhead text-label-2">
+          Nothing called &ldquo;{text.trim()}&rdquo; near USF. Try its street address.
+        </p>
       )}
     </form>
   );
