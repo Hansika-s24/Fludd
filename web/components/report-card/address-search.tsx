@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { resolveAddress, suggestAddresses } from "@/lib/address";
 import type { AddressMatch, AddressSuggestion } from "@/lib/types";
+import { SHEET_FULL_EVENT, SHEET_HALF_EVENT } from "@/components/ui/sheet";
 
 const DEBOUNCE_MS = 250;
 
@@ -34,6 +35,8 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
   async function pick(s: AddressSuggestion) {
     setText(s.label);
     setOpen(false);
+    // Back down to half so the map shows the place (no-op outside the sheet).
+    window.dispatchEvent(new Event(SHEET_HALF_EVENT));
     try {
       onPick(await resolveAddress(s.id));
     } catch (e) {
@@ -72,7 +75,11 @@ export function AddressSearch({ onPick }: { onPick: (match: AddressMatch | null,
           setText(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setOpen(true);
+          // In the sheet, searching raises it to full so suggestions have room (no-op on onboarding and desktop).
+          window.dispatchEvent(new Event(SHEET_FULL_EVENT));
+        }}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(shown.length - 1, a + 1)); }

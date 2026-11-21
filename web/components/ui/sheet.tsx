@@ -7,6 +7,8 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 const PEEK_PX = 196;
 /** Fired on window to move the phone sheet to half height. */
 export const SHEET_HALF_EVENT = "fludd:sheet-half";
+/** Fired on window to raise the phone sheet to full height (search focused, like Maps). */
+export const SHEET_FULL_EVENT = "fludd:sheet-full";
 
 const narrowQuery = "(max-width: 767px)";
 const subscribeNarrow = (cb: () => void) => {
@@ -78,8 +80,16 @@ export function Sheet({
       if (reduce) y.set(half);
       else animate(y, half, { type: "spring", bounce: 0.2, duration: 0.3 });
     };
+    const toFull = () => {
+      if (reduce) y.set(0);
+      else animate(y, 0, { type: "spring", bounce: 0.2, duration: 0.3 });
+    };
     window.addEventListener(SHEET_HALF_EVENT, toHalf);
-    return () => window.removeEventListener(SHEET_HALF_EVENT, toHalf);
+    window.addEventListener(SHEET_FULL_EVENT, toFull);
+    return () => {
+      window.removeEventListener(SHEET_HALF_EVENT, toHalf);
+      window.removeEventListener(SHEET_FULL_EVENT, toFull);
+    };
   }, [half, reduce, y]);
 
   function settle(velocity: number) {
@@ -128,6 +138,11 @@ export function Sheet({
           drag.current = null;
           if (!d) return;
           const a = d.samples[0], b = d.samples[d.samples.length - 1];
+          // A tap (on the search field, say) is not a drag: leave the sheet where it is or where it is going.
+          if (Math.abs(b.y - d.startY) < 6) {
+            if (!y.isAnimating()) settle(0);
+            return;
+          }
           const dt = Math.max(1, b.t - a.t);
           settle(((b.y - a.y) / dt) * 1000);
         }}
