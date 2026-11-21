@@ -145,7 +145,10 @@ export function MapView({ scenario, pump, hour, focus, onError }: MapViewProps) 
     if (!focus) return;
     marker.current = new Marker({ color: "#0a6cff" }).setLngLat(focus).addTo(m);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    m.flyTo({ center: focus, zoom: 16.5, essential: false, animate: !reduce });
+    // Keep the address clear of the surface: the sheet covers the bottom 46% on phones, the sidebar 396 px on desktop.
+    const narrow = window.matchMedia("(max-width: 767px)").matches;
+    const padding = narrow ? { top: 0, right: 0, left: 0, bottom: window.innerHeight * 0.46 } : { top: 0, right: 0, bottom: 0, left: 396 };
+    m.flyTo({ center: focus, zoom: 16.5, padding, essential: false, animate: !reduce });
   }, [focus]);
 
   // maplibre-gl.css sets the map element to position: relative, so the wrapper does the positioning.
