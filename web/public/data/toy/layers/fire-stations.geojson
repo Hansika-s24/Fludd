@@ -1,0 +1,18 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Toy fire station"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.418875,
+     28.062875
+    ]
+   }
+  }
+ ]
+}

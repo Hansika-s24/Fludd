@@ -1,0 +1,44 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "inlet"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.416875,
+     28.059625
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "inlet"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.411625,
+     28.059125
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "culvert"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.413875,
+     28.059375
+    ]
+   }
+  }
+ ]
+}

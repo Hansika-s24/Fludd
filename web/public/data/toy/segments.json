@@ -1,0 +1,114 @@
+[
+ {
+  "id": 0,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 13.89
+   }
+  ]
+ },
+ {
+  "id": 1,
+  "bowls": [
+   {
+    "bowl": 2,
+    "lowestGroundM": 13.67
+   }
+  ]
+ },
+ {
+  "id": 2,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 10.35
+   }
+  ]
+ },
+ {
+  "id": 3,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 12.87
+   },
+   {
+    "bowl": 2,
+    "lowestGroundM": 9.36
+   }
+  ]
+ },
+ {
+  "id": 4,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 14.37
+   }
+  ]
+ },
+ {
+  "id": 5,
+  "bowls": [
+   {
+    "bowl": 2,
+    "lowestGroundM": 14.15
+   }
+  ]
+ },
+ {
+  "id": 6,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 13.25
+   }
+  ]
+ },
+ {
+  "id": 7,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 12.87
+   }
+  ]
+ },
+ {
+  "id": 8,
+  "bowls": [
+   {
+    "bowl": 2,
+    "lowestGroundM": 12.64
+   }
+  ]
+ },
+ {
+  "id": 9,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 13.25
+   }
+  ]
+ },
+ {
+  "id": 10,
+  "bowls": [
+   {
+    "bowl": 1,
+    "lowestGroundM": 12.87
+   }
+  ]
+ },
+ {
+  "id": 11,
+  "bowls": [
+   {
+    "bowl": 2,
+    "lowestGroundM": 12.64
+   }
+  ]
+ }
+]

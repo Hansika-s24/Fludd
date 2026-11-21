@@ -1,0 +1,11 @@
+{
+ "hitRate": 0.8,
+ "hits": 4,
+ "total": 5,
+ "falseAlarmAreaKm2": 0.02,
+ "femaBaseline": {
+  "insideHighRisk": 2,
+  "total": 5
+ },
+ "computedAt": "2026-11-21T11:10:00-05:00"
+}

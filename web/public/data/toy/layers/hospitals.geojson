@@ -1,0 +1,18 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Toy hospital"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.408875,
+     28.062875
+    ]
+   }
+  }
+ ]
+}

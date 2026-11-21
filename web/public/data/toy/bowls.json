@@ -1,0 +1,32 @@
+[
+ {
+  "id": 1,
+  "lowestPoint": {
+   "position": [
+    -82.416375,
+    28.059375
+   ],
+   "heightM": 10.35
+  },
+  "spillHeightM": 12,
+  "spillsTo": 2,
+  "parent": null,
+  "pump": false,
+  "storageAtSpillM3": 41000
+ },
+ {
+  "id": 2,
+  "lowestPoint": {
+   "position": [
+    -82.411375,
+    28.059375
+   ],
+   "heightM": 9.36
+  },
+  "spillHeightM": 13,
+  "spillsTo": null,
+  "parent": null,
+  "pump": true,
+  "storageAtSpillM3": 96000
+ }
+]

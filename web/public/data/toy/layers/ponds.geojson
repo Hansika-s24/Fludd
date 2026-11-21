@@ -1,0 +1,18 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Toy retention pond"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.411375,
+     28.059375
+    ]
+   }
+  }
+ ]
+}

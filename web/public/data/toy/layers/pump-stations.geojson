@@ -1,0 +1,19 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "Toy pump station",
+    "capacityM3s": 0.5
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -82.410875,
+     28.058875
+    ]
+   }
+  }
+ ]
+}
