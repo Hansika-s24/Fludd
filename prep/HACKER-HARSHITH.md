@@ -367,6 +367,8 @@ Claude appends here, newest last, whenever something on this side affects Hansik
 
 - 14:20 For Hansika: while you were out of usage I finished `app/api/weather` (NWS proxy, tests in `web/tests/routes/`) and `app/api/health` (manifest version), and added `outputFileTracingIncludes` for `/api/reports` and `/api/health` in `web/next.config.ts`. Your F0 and F9 can be ticked once you've looked.
 
+- 14:05 For Hansika: Harshith wants the model to cover all of Tampa, not just the 4x4-mile USF box. Change `STUDY_BOX_WGS84` in `pipeline/config.py` (about 12x12 miles; Harshith to confirm the exact box) and rerun the pipeline. At 3 m cells the gold data grows from 67 MB to about 600 MB, too big for phones and Vercel, so consider 9 m cells for the wider box. The Milton validation number (52.3% of 547) gets recomputed; tell Harshith the new one for the README and demo. The interface says "near USF" in the search placeholder and the outside-the-area messages; Harshith's side changes that once your data lands.
+
 ---
 
 ## 6. If things go wrong
