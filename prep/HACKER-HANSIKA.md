@@ -315,9 +315,9 @@ Claude ticks these and adds a note after each (commit id, test count, what was c
 
 **Start**
 - [ ] S1 Contracts talk held with Harshith (11:00 to 11:15)
-- [ ] S2 Repo cloned; git settings set; Claude started from the repo root
+- [x] S2 Repo cloned; git settings set; Claude started from the repo root
 - [ ] S3 Supabase project created; Harshith invited; keys passed privately
-- [ ] S4 `pipeline/` project created (uv, Python 3.11); empty test suite runs
+- [x] S4 `pipeline/` project created (uv, Python 3.11); empty test suite runs. 3 config tests pass. On this laptop Windows blocks venv `.exe` launchers: run `python -m uv run python -m pytest` from `pipeline/`
 - [ ] S5 Scaffold pulled (11:20); stubs and placeholder routes located
 
 **Lane A: data**

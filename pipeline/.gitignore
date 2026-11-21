@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+.pytest_cache/
+# Raw downloads and intermediate files: too large for git, listed in the manifest instead.
+data/
