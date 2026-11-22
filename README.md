@@ -147,3 +147,9 @@ CI runs lint, typecheck, both test suites and a secret scan on every push.
 - `docs/food-share.md`: design for restaurants giving food to neighbours during a flood (giver and receiver portals, anonymous by design). Not built yet.
 - `prep/`: planning and research notes written before the event. They contain no code.
 - `design/boot/`: the boot animation's references and the earlier Blender build. The shipped intro is `web/components/boot/`.
+
+## License
+
+The code is released under the [MIT License](LICENSE).
+
+The data is not ours to license. The files in `web/public/data/` are derived from the public sources listed under "Data sources" and stay under those sources' own terms; road and place data from OpenStreetMap is © OpenStreetMap contributors under the Open Database License (ODbL).
